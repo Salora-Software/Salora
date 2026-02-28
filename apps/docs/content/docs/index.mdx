@@ -1,13 +1,67 @@
 ---
-title: Hello World
-description: Your first document
+title: Overview
+description: Open-source booking system built with SvelteKit, Cloudflare Workers, and tRPC
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+Welcome to the Salora Core documentation. This guide will help you understand, develop, and deploy the open-source booking system.
 
-## What is Next?
+## What is Salora?
+
+Salora is a modern, open-source booking management system designed for service-based businesses. Built with cutting-edge technologies including SvelteKit, Cloudflare Workers, and tRPC, Salora provides a robust foundation for scheduling, customer management, and service organization.
+
+**License**: AGPLv3
+
+## Technology Stack
+
+Salora is built on a modern, performant stack:
+
+- Frontend: SvelteKit with TypeScript
+- Backend: Cloudflare Workers for serverless compute
+- API: tRPC for type-safe RPCs
+- Database: Prisma ORM
+- Documentation: Fumadocs with MDX
+
+## Getting Started
+
+Choose your starting point based on your role:
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="Development Setup" href="/development-setup" />
+  <Card title="Project Structure" href="/project-structure" />
+  <Card title="Architecture Overview" href="/architecture" />
+  <Card title="Core Concepts" href="/concepts" />
 </Cards>
+
+## Key Features
+
+- Full-featured booking and appointment management
+- Customer relationship management
+- Service and employee scheduling
+- Opening hours and availability management
+- Calendar integration
+- Dashboard and analytics
+
+## Repository Structure
+
+The codebase is organized as a monorepo using Turborepo:
+
+```
+/apps
+  /frontend      - SvelteKit main application
+  /docs          - Fumadocs documentation
+  /widgets       - Embeddable booking widgets
+  /email-worker  - Email service worker
+/packages
+  /database      - Prisma schema and migrations
+  /scheduler     - Availability engine
+  /emails        - Email templates
+  /mailer        - Email service
+  /trpc-types    - Shared tRPC types
+```
+
+## Next Steps
+
+1. Start with Development Setup to get your environment ready
+2. Review Project Structure to understand the codebase organization
+3. Explore Architecture for system design patterns
+4. Check Core Concepts for domain understanding

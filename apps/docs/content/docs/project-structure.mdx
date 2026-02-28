@@ -1,0 +1,291 @@
+---
+title: Project Structure
+description: Understanding the Salora monorepo layout and organization
+---
+
+Salora is organized as a Turborepo monorepo with clearly separated applications and shared packages.
+
+## Directory Organization
+
+```
+Salora/
+├── apps/                 # Production applications
+│   ├── frontend/        # SvelteKit main application
+│   ├── docs/            # Fumadocs documentation site
+│   ├── widgets/         # Embeddable booking widgets
+│   └── email-worker/    # Cloudflare Workers email service
+├── packages/            # Shared libraries and utilities
+│   ├── database/        # Prisma schema and database layer
+│   ├── scheduler/       # Availability and scheduling engine
+│   ├── emails/          # Email templates
+│   ├── mailer/          # Email service integration
+│   ├── trpc-types/      # Shared tRPC types
+│   ├── eslint-config/   # Shared ESLint config
+│   └── _template/       # Template for new packages
+├── scripts/             # Build and automation scripts
+├── docker-compose.yml   # Local development services
+├── turbo.json          # Turborepo configuration
+└── package.json        # Root workspace configuration
+```
+
+## Apps Directory
+
+### Frontend
+
+The main SvelteKit application serving users and staff.
+
+```
+apps/frontend/
+├── src/
+│   ├── lib/
+│   │   ├── server/     # Server-side code
+│   │   │   ├── trpc/   # tRPC router definitions
+│   │   │   ├── prisma/ # Prisma client
+│   │   │   └── auth/    # Authentication
+│   │   ├── components/ # Reusable Svelte components
+│   │   ├── utils/      # Client utilities
+│   │   └── stores/     # Svelte stores
+│   ├── routes/         # SvelteKit page routes
+│   ├── app.html        # Root HTML template
+│   └── hooks.server.ts # Server hooks
+├── svelte.config.js    # Svelte configuration
+├── vite.config.ts      # Vite configuration
+└── tsconfig.json       # TypeScript configuration
+```
+
+**Key Technologies**:
+- SvelteKit for SSR and routing
+- tRPC for type-safe API
+- Prisma for database access
+
+### Docs
+
+Fumadocs documentation site for this project.
+
+```
+apps/docs/
+├── content/
+│   └── docs/          # MDX documentation files
+├── source.config.ts   # Fumadocs configuration
+├── next.config.mjs    # Next.js configuration
+└── components/        # Custom documentation components
+```
+
+### Widgets
+
+Embeddable booking widgets for external websites.
+
+```
+apps/widgets/
+├── src/
+│   ├── lib/           # Widget components
+│   ├── routes/        # Widget routes
+│   └── app.html       # Widget HTML template
+├── vite.config.ts     # Build configuration
+└── tsconfig.json
+```
+
+### Email Worker
+
+Cloudflare Worker for handling email sending.
+
+```
+apps/email-worker/
+├── index.ts           # Worker entry point
+├── lib/               # Email utilities
+│   └── nodemailer.d.ts # Type definitions
+├── package.json
+└── tsconfig.json
+```
+
+## Packages Directory
+
+### Database
+
+Core database layer using Prisma.
+
+```
+packages/database/
+├── prisma/
+│   ├── schema.prisma    # Database schema
+│   ├── migrations/      # Migration files
+│   └── generated/       # Generated Prisma client
+├── src/
+│   └── index.ts         # Database exports
+├── index.ts             # Main entry point
+├── prisma.config.ts     # Custom config
+└── tsconfig.json
+```
+
+### Scheduler
+
+Availability calculation and scheduling logic.
+
+```
+packages/scheduler/
+├── src/
+│   ├── AvailabilityEngine.ts  # Core availability logic
+│   ├── index.ts                # Public API
+│   ├── core/                   # Core scheduling functions
+│   ├── modules/                # Feature modules
+│   └── utils/                  # Utility functions
+├── tests/
+│   └── AvailabilityEngine.test.ts
+└── tsconfig.json
+```
+
+### Emails
+
+Email template definitions and rendering.
+
+```
+packages/emails/
+├── src/
+│   ├── renderEmail.ts   # Email rendering function
+│   └── index.ts         # Public API
+├── templates/
+│   ├── appointment.tsx  # Appointment confirmation
+│   ├── index.ts         # Template registry
+│   └── static/          # Static assets for emails
+└── tsconfig.json
+```
+
+### Mailer
+
+Email service integration (SMTP configuration).
+
+```
+packages/mailer/
+├── src/
+│   └── index.ts         # Mailer service
+└── tsconfig.json
+```
+
+### tRPC Types
+
+Shared type definitions for tRPC.
+
+```
+packages/trpc-types/
+├── src/
+│   └── index.ts         # Type exports
+├── README.md
+└── tsconfig.json
+```
+
+### ESLint Config
+
+Shared ESLint configuration.
+
+```
+packages/eslint-config/
+├── index.js             # Main ESLint config
+└── package.json
+```
+
+## Key File Patterns
+
+### tRPC Routes
+
+Located in `apps/frontend/src/lib/server/trpc/routers/`:
+
+```
+routers/
+├── v1/                  # API version 1
+│   ├── authenticated/   # Protected routes
+│   │   ├── dashboard/
+│   │   ├── customers/
+│   │   ├── services/
+│   │   ├── schedule/
+│   │   ├── calendar/
+│   │   └── employees/
+│   └── protected/       # Rate-limited routes
+├── v2/                  # API version 2
+│   └── authenticated/
+├── appointment/         # Public appointment routes
+└── router.ts            # Router composition
+```
+
+### Environment Files
+
+```
+.env.example            # Template for environment variables
+.env.local             # Local development (git-ignored)
+.env.production        # Production config
+```
+
+## Configuration Files
+
+### Turborepo Configuration
+
+`turbo.json` defines the task pipeline:
+
+```json
+{
+  "pipeline": {
+    "build": { "outputs": ["dist/**"] },
+    "dev": { "cache": false },
+    "lint": {}
+  }
+}
+```
+
+### TypeScript
+
+Each package has its own `tsconfig.json` extending the root configuration.
+
+### Package Management
+
+`package.json` at root configures workspaces:
+
+```json
+{
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
+```
+
+## Development Patterns
+
+### Adding a New Package
+
+Use the template:
+
+```bash
+cp -r packages/_template packages/my-new-package
+cd packages/my-new-package
+# Update package.json name and fields
+```
+
+### Adding a New tRPC Route
+
+Create a new folder in `routers/v1/authenticated/` with `router.ts`:
+
+```typescript
+import { z } from 'zod';
+import { router as createRouter, privateProcedure } from '../../../context';
+
+export const router = createRouter({
+  // your procedures
+});
+```
+
+### Imports
+
+Use path aliases for cleaner imports:
+
+```typescript
+// Instead of: ../../lib/utils
+// Use: $lib/utils
+import { myUtil } from '$lib/utils';
+```
+
+Aliases are defined in `tsconfig.json` of each package.
+
+## Next Steps
+
+- Explore the [Architecture Overview](/architecture) to understand system design
+- Review [Core Concepts](/concepts) for domain knowledge
+- Check the [Development Setup](/development-setup) guide for environment configuration

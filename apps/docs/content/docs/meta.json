@@ -1,0 +1,13 @@
+{
+	"title": "Salora Documentation",
+	"icon": "Building",
+	"root": true,
+	"pages": [
+		"---Getting Started---",
+		"index",
+		"installation",
+		"project-structure",
+		"---Architecture---",
+		"architecture"
+	]
+}

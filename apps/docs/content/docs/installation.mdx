@@ -1,0 +1,117 @@
+---
+title: Installation
+description: Get your local Salora Core development environment up and running.
+---
+
+This guide explains how to set up your local development environment. Because Salora uses Turborepo and Bun, dependencies, database generation, and internal builds are orchestrated automatically. You do not need to build packages individually.
+
+
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) (Recommended) or Node.js 18+
+- Git
+- Docker (Optional, for the local PostgreSQL database)
+
+---
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/salora/salora.git
+cd salora
+
+```
+
+### 2. Dependencies and Orchestration
+
+Salora is a monorepo. Bun installs dependencies for all workspaces in a single step. Turborepo then maps and links the internal packages automatically.
+
+```bash
+bun install
+
+```
+
+### 3. Configuration
+
+Copy the example environment file. Turborepo injects these variables automatically during runtime into the underlying apps (SvelteKit and Next.js).
+
+```bash
+cp .env.example .env.local
+
+```
+
+Key variables in `.env.local`:
+
+```
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/salora
+
+# Authentication
+AUTH_SECRET=generate-a-secure-secret
+AUTH_URL=http://localhost:5173
+
+# Cloudflare Edge (Optional for local dev)
+CLOUDFLARE_API_TOKEN=your-token
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+
+```
+
+### 4. Initialize Database
+
+Start the local database via Docker and run the Prisma migrations. Turborepo ensures the generated Prisma client is available throughout the workspace.
+
+```bash
+docker-compose up -d
+cd packages/database
+bun prisma migrate dev
+
+```
+
+---
+
+## Development
+
+Start the full stack with a single command. Turborepo analyzes internal dependencies, builds required background packages, and starts the dev servers in parallel.
+
+```bash
+bun run dev
+
+```
+
+* **SvelteKit (Salora Core):** `http://localhost:5173`
+* **Next.js (Documentation):** `http://localhost:3000`
+
+### Additional Commands
+
+Turborepo uses aggressive caching. Unchanged code is retrieved directly from the cache on subsequent runs (both locally and in CI/CD), significantly speeding up builds.
+
+* `bun run build`: Builds all apps and packages in the correct order.
+* `bun run test`: Runs tests in parallel across the entire workspace.
+* `bun run lint`: Checks code quality.
+
+---
+
+## Troubleshooting
+
+### Port Conflicts
+
+If port 5173 or 3000 is already in use, force a different port. Turborepo passes this along correctly.
+
+```bash
+PORT=3001 bun run dev
+
+```
+
+### Unexplained TypeScript Errors or Cache Issues
+
+If internal packages get out of sync, clear the Turborepo and framework caches for a clean slate:
+
+```bash
+rm -rf node_modules .next .turbo
+bun install
+bun run build
+
+```

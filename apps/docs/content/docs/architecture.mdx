@@ -1,0 +1,348 @@
+---
+title: Architecture Overview
+description: Understanding Salora's system design and component interactions
+---
+
+Salora follows a modern, layered architecture designed for scalability, maintainability, and performance.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────┐
+│         Client Layer                    │
+│   Browser / SvelteKit Frontend          │
+└──────────────────┬──────────────────────┘
+                   │ HTTP
+                   ▼
+┌─────────────────────────────────────────┐
+│      Application Server Layer           │
+│   SvelteKit (with tRPC integration)     │
+└──────────────────┬──────────────────────┘
+                   │ tRPC RPCs
+                   ▼
+┌─────────────────────────────────────────┐
+│         API Layer (tRPC)                │
+│  ├─ Procedures (Queries/Mutations)      │
+│  ├─ Middleware (Auth, Validation)       │
+│  └─ Type Safety (End-to-End)            │
+└──────────────────┬──────────────────────┘
+                   │
+      ┌────────────┼────────────┐
+      │            │            │
+      ▼            ▼            ▼
+   Business   Scheduling   Authentication
+    Logic     Engine       Service
+      │            │            │
+      ▼            ▼            ▼
+┌──────────────────────────────────────────┐
+│       Data Access Layer                  │
+│    Prisma ORM with Type Safety           │
+└──────────────────┬───────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────┐
+│         Database Layer                   │
+│     PostgreSQL (Relational)              │
+└──────────────────────────────────────────┘
+```
+
+## Layered Design
+
+### 1. Presentation Layer
+
+**Frontend (SvelteKit)**
+
+- Server-side rendering for performance
+- File-based routing for simplicity
+- Reactive components with Svelte
+- Type-safe client code through tRPC
+
+**Key Files**:
+- `apps/frontend/src/routes/` - Page components
+- `apps/frontend/src/lib/components/` - Reusable components
+
+### 2. API Layer (tRPC)
+
+**Type-Safe Remote Procedure Calls**
+
+tRPC provides:
+- End-to-end TypeScript type safety
+- Input validation with Zod schemas
+- Output type definitions
+- Automatic code generation
+
+**Structure**:
+```
+src/lib/server/trpc/
+├── context.ts         # Request context setup
+├── router.ts          # Root router composition
+└── routers/           # Organized route definitions
+    ├── v1/            # API v1 endpoints
+    └── v2/            # API v2 endpoints
+```
+
+**Procedure Types**:
+- `publicProcedure` - Publicly accessible endpoints
+- `privateProcedure` - Authenticated user endpoints
+- `portalProcedure` - Public portal endpoints (appointments)
+
+### 3. Business Logic Layer
+
+**Domain-Specific Services**
+
+- **AvailabilityEngine** - Slot calculation and availability
+- **NotificationService** - Email and notification dispatch
+- **Authentication** - User auth and sessions
+
+**Key Directories**:
+- `src/lib/server/` - Server-side utilities
+- `packages/scheduler/` - Scheduling algorithms
+
+### 4. Data Access Layer
+
+**Prisma ORM**
+
+- Database-agnostic queries
+- Type-safe models
+- Migration management
+- Transaction support
+
+**Schema Structure**:
+- `packages/database/prisma/schema.prisma` - Data model
+
+### 5. Database Layer
+
+**PostgreSQL**
+
+- ACID compliance
+- Relational data integrity
+- Full-text search capability
+- JSON support
+
+## Key Components
+
+### Authentication System
+
+```
+┌─────────────────┐
+│   User Login    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Auth.js (BetterAuth)│
+└────────┬────────────┘
+         │ Session/Token
+         ▼
+┌──────────────────────┐
+│  Session Validation  │
+└────────┬─────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│  tRPC Context (ctx)  │
+└──────────────────────┘
+```
+
+**Features**:
+- Magic links for passwordless auth
+- Session-based authentication
+- Organization/role support
+- User context in tRPC
+
+### Data Model
+
+**Core Entities**:
+
+```
+Organization
+├── Members (Team)
+├── Services
+├── Customers
+├── Employees
+├── OpeningTimes
+└── CalendarItems (Appointments)
+    └── Bookings
+```
+
+**Relationships**:
+- Users can be members of multiple organizations
+- Organizations have services and employees
+- Customers book services with employees
+- Calendar items track availability and appointments
+
+### Availability Engine
+
+The scheduling subsystem calculates available slots:
+
+```
+┌──────────────────────────────────┐
+│  Request for Available Slots      │
+│  (Service, Date, Employee)        │
+└──────────────────┬───────────────┘
+                   │
+      ┌────────────┴────────────┐
+      │                         │
+      ▼                         ▼
+  1. Fetch Opening     2. Fetch Booked
+     Times                Slots
+      │                         │
+      └────────────┬────────────┘
+                   │
+                   ▼
+         3. Calculate Free Slots
+         (Opening Hours - Bookings)
+                   │
+                   ▼
+         4. Apply Service Duration
+                   │
+                   ▼
+         5. Return Available Times
+```
+
+## API Versioning
+
+Salora maintains multiple API versions for backward compatibility:
+
+```
+tRPC Router
+├── v1/
+│   ├── authenticated/  (user-scoped)
+│   └── protected/      (rate-limited public)
+├── v2/
+│   └── authenticated/  (enhanced endpoints)
+└── appointment/        (public booking)
+```
+
+## Request/Response Flow
+
+### Authenticated Query Example
+
+```typescript
+// Client request
+const result = await trpc.v1.authenticated.customers.getCustomers
+  .query({ organizationId })
+
+// Flow:
+1. Client sends tRPC query
+2. Server receives in tRPC handler
+3. Context middleware validates session
+4. Procedure input validated with Zod
+5. Business logic executes query
+6. Prisma queries database
+7. Results returned and type-checked
+8. Client receives fully typed response
+```
+
+### Mutation Example
+
+```typescript
+// Client sends mutation
+const result = await trpc.v1.authenticated.customers.updateCustomer
+  .mutate({ id, organizationId, name, email })
+
+// Flow:
+1. Input validation (Zod schema)
+2. User auth check (session)
+3. Organization ownership verification
+4. Database update transaction
+5. Notification service triggered
+6. Response returned with new state
+7. Client updates local state
+```
+
+## Error Handling
+
+**tRPC Error Codes**:
+- `NOT_FOUND` - Resource doesn't exist
+- `UNAUTHORIZED` - User not authenticated
+- `FORBIDDEN` - User lacks permissions
+- `BAD_REQUEST` - Invalid input
+- `INTERNAL_SERVER_ERROR` - Server error
+
+**Pattern**:
+```typescript
+if (!user) {
+  throw new TRPCError({
+    code: 'UNAUTHORIZED',
+    message: 'user_not_authenticated'
+  });
+}
+```
+
+## Performance Considerations
+
+### Database Optimization
+
+- **Indexes** on frequently queried fields
+- **Eager loading** with Prisma `include`
+- **Transaction batching** for multi-step operations
+- **Pagination** with skip/take
+
+### Caching Strategy
+
+- Session tokens for auth
+- Redis for rate limiting
+- Client-side query caching with Svelte stores
+
+### Asset Delivery
+
+- Static files via CDN (Cloudflare)
+- SvelteKit SSR for initial page load
+- Component-level code splitting
+
+## Deployment Architecture
+
+```
+┌─────────────────────┐
+│   Git Repository    │
+└────────────┬────────┘
+             │
+             ▼
+    ┌────────────────┐
+    │  Verification  │
+    │  (Lint, Test)  │
+    └────────┬───────┘
+             │
+      ┌──────┴──────┐
+      │             │
+      ▼             ▼
+  Frontend     Email Worker/
+  (Cloudflare    Cloudflare
+   Pages)        Workers
+      │
+      ▼
+┌──────────────┐
+│  Production  │
+│  Environment │
+└──────────────┘
+```
+
+**Deployment Options**:
+- Frontend: Cloudflare Pages (SvelteKit adapter)
+- Database: Managed PostgreSQL (AWS RDS, Heroku, etc.)
+- Email Worker: Cloudflare Workers
+- Email Queue: Redis or message queue
+
+## Development vs Production
+
+### Development Environment
+
+- Local database (docker-compose)
+- Hot module reloading
+- Detailed error messages
+- No authentication required (dev mode)
+
+### Production Environment
+
+- Managed database with backups
+- Optimized builds
+- Error tracking/logging
+- Full authentication enforced
+- Rate limiting active
+
+## Next Steps
+
+- Review [Core Concepts](/concepts) to understand domain entities
+- Check [Development Setup](/development-setup) for environment configuration
+- Explore the codebase using [Project Structure](/project-structure) as a guide

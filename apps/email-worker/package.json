@@ -1,0 +1,20 @@
+{
+  "name": "email-worker",
+  "module": "index.ts",
+  "scripts": {
+    "start": "bun  index.ts",
+    "dev": "bun --hot index.ts",
+    "test": "bun test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.7.9"
+  },
+  "dependencies": {
+    "@salora/database": "workspace:*",
+    "@salora/mailer": "workspace:*",
+    "nodemailer": "^6.10.0",
+    "process": "^0.11.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}

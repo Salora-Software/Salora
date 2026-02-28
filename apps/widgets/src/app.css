@@ -1,0 +1,276 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	/* SIDEBAR VARIABLES */
+	--widget-sidebar-bg: oklch(0.98 0.01 220);
+	--widget-sidebar-text: oklch(0.35 0.03 220);
+	--widget-sidebar-text-muted: oklch(0.55 0.02 220);
+	--widget-sidebar-accent: oklch(0.67 0.08 220);
+	--widget-sidebar-border: oklch(0.92 0.02 220);
+	
+	/* CONTENT VARIABLES */
+	--widget-content-bg: oklch(0.995 0.005 220);
+	--widget-content-text: oklch(0.1 0.02 220);
+	--widget-content-text-muted: oklch(0.4 0.02 220);
+	
+	/* INPUT VARIABLES */
+	--widget-input-bg: oklch(0.99 0.008 220);
+	--widget-input-border: oklch(0.87 0.02 220);
+	
+	/* ACCENT VARIABLES */
+	--widget-accent: oklch(0.67 0.08 220);
+	--widget-accent-hover: oklch(0.62 0.1 220);
+	--widget-accent-rgb: 102, 153, 204; /* Approximate RGB for the accent color */
+	
+	/* STATE VARIABLES */
+	--widget-success: oklch(0.4 0.15 150);
+	--widget-error: oklch(0.55 0.2 15);
+	
+	/* CALENDAR VARIABLES */
+	--widget-calendar-bg: oklch(0.96 0.015 220);
+	--widget-calendar-available: oklch(0.9 0.02 220);
+	--widget-calendar-selected: oklch(0.67 0.08 220);
+	
+	/* TIME SLOT VARIABLES */
+	--widget-time-slot-bg: oklch(0.94 0.015 220);
+	--widget-time-slot-hover: oklch(0.88 0.025 220);
+	--widget-time-slot-selected: oklch(0.67 0.08 220);
+	
+	/* DESIGN SYSTEM VARIABLES */
+	--widget-font-family: 'Inter', system-ui, sans-serif;
+	--widget-border-radius: 8px;
+	--widget-border-radius-small: 6px;
+	--widget-border-radius-large: 12px;
+	--widget-spacing-xs: 4px;
+	--widget-spacing-sm: 8px;
+	--widget-spacing-md: 16px;
+	--widget-spacing-lg: 24px;
+	--widget-spacing-xl: 32px;
+	--widget-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	--widget-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+	--widget-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+	/* SIDEBAR VARIABLES */
+	--widget-sidebar-bg: oklch(0.2 0.02 220);
+	--widget-sidebar-text: oklch(0.8 0.03 220);
+	--widget-sidebar-text-muted: oklch(0.7 0.02 220);
+	--widget-sidebar-accent: oklch(0.75 0.08 220);
+	--widget-sidebar-border: oklch(0.3 0.02 220);
+	
+	/* CONTENT VARIABLES */
+	--widget-content-bg: oklch(0.25 0.02 220);
+	--widget-content-text: oklch(0.9 0.02 220);
+	--widget-content-text-muted: oklch(0.7 0.02 220);
+	
+	/* INPUT VARIABLES */
+	--widget-input-bg: oklch(0.3 0.02 220);
+	--widget-input-border: oklch(0.4 0.03 220);
+	
+	/* ACCENT VARIABLES */
+	--widget-accent: oklch(0.75 0.08 220);
+	--widget-accent-hover: oklch(0.8 0.1 220);
+	--widget-accent-rgb: 115, 173, 230; /* Approximate RGB for the accent color in dark mode */
+	
+	/* STATE VARIABLES */
+	--widget-success: oklch(0.5 0.15 150);
+	--widget-error: oklch(0.6 0.2 15);
+	
+	/* CALENDAR VARIABLES */
+	--widget-calendar-bg: oklch(0.3 0.02 220);
+	--widget-calendar-available: oklch(0.4 0.03 220);
+	--widget-calendar-selected: oklch(0.75 0.08 220);
+	
+	/* TIME SLOT VARIABLES */
+	--widget-time-slot-bg: oklch(0.3 0.02 220);
+	--widget-time-slot-hover: oklch(0.35 0.03 220);
+	--widget-time-slot-selected: oklch(0.75 0.08 220);
+	
+	/* DESIGN SYSTEM VARIABLES */
+	--widget-font-family: 'Inter', system-ui, sans-serif;
+	--widget-border-radius: 8px;
+	--widget-border-radius-small: 6px;
+	--widget-border-radius-large: 12px;
+	--widget-spacing-xs: 4px;
+	--widget-spacing-sm: 8px;
+	--widget-spacing-md: 16px;
+	--widget-spacing-lg: 24px;
+	--widget-spacing-xl: 32px;
+	--widget-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	--widget-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2);
+	--widget-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+@theme inline {
+	/* Widget theme variables */
+	--color-widget-sidebar-bg: var(--widget-sidebar-bg);
+	--color-widget-sidebar-text: var(--widget-sidebar-text);
+	--color-widget-sidebar-text-muted: var(--widget-sidebar-text-muted);
+	--color-widget-sidebar-accent: var(--widget-sidebar-accent);
+	--color-widget-sidebar-border: var(--widget-sidebar-border);
+	
+	--color-widget-content-bg: var(--widget-content-bg);
+	--color-widget-content-text: var(--widget-content-text);
+	--color-widget-content-text-muted: var(--widget-content-text-muted);
+	
+	--color-widget-input-bg: var(--widget-input-bg);
+	--color-widget-input-border: var(--widget-input-border);
+	
+	--color-widget-accent: var(--widget-accent);
+	--color-widget-accent-hover: var(--widget-accent-hover);
+	
+	--color-widget-success: var(--widget-success);
+	--color-widget-error: var(--widget-error);
+	
+	--color-widget-calendar-bg: var(--widget-calendar-bg);
+	--color-widget-calendar-available: var(--widget-calendar-available);
+	--color-widget-calendar-selected: var(--widget-calendar-selected);
+	
+	--color-widget-time-slot-bg: var(--widget-time-slot-bg);
+	--color-widget-time-slot-hover: var(--widget-time-slot-hover);
+	--color-widget-time-slot-selected: var(--widget-time-slot-selected);
+
+	/* Widget design system variables */
+	--widget-font: var(--widget-font-family);
+	--widget-radius: var(--widget-border-radius);
+	--widget-radius-sm: var(--widget-border-radius-small);
+	--widget-radius-lg: var(--widget-border-radius-large);
+	--widget-space-xs: var(--widget-spacing-xs);
+	--widget-space-sm: var(--widget-spacing-sm);
+	--widget-space-md: var(--widget-spacing-md);
+	--widget-space-lg: var(--widget-spacing-lg);
+	--widget-space-xl: var(--widget-spacing-xl);
+	--widget-shadow-sm: var(--widget-shadow);
+	--widget-shadow-md: var(--widget-shadow-md);
+	--widget-shadow-lg: var(--widget-shadow-lg);
+}
+
+@layer base {
+	* {
+		border-color: var(--widget-input-border);
+		outline-color: rgba(var(--widget-accent-rgb), 0.5);
+	}
+	body {
+		background-color: var(--widget-content-bg);
+		color: var(--widget-content-text);
+		font-family: var(--widget-font-family, 'Inter', system-ui, sans-serif);
+	}
+
+	/* Widget-specific base styles */
+	.widget-container {
+		font-family: var(--widget-font-family);
+		border-radius: var(--widget-border-radius);
+		box-shadow: var(--widget-shadow);
+	}
+
+	/* SIDEBAR STYLES */
+	.widget-sidebar {
+		background: var(--widget-sidebar-bg);
+		color: var(--widget-sidebar-text);
+		border-color: var(--widget-sidebar-border);
+	}
+
+	.widget-sidebar-text {
+		color: var(--widget-sidebar-text);
+	}
+
+	.widget-sidebar-text-muted {
+		color: var(--widget-sidebar-text-muted);
+	}
+
+	.widget-sidebar-accent {
+		color: var(--widget-sidebar-accent);
+	}
+	
+	.widget-sidebar-button {
+		background: var(--widget-sidebar-bg);
+		border-color: var(--widget-sidebar-border);
+	}
+	
+	.widget-sidebar-button:hover {
+		background: var(--widget-sidebar-border);
+	}
+
+	/* CONTENT STYLES */
+	.widget-content {
+		background: var(--widget-content-bg);
+		color: var(--widget-content-text);
+	}
+
+	.widget-content-text {
+		color: var(--widget-content-text);
+	}
+
+	.widget-content-text-muted {
+		color: var(--widget-content-text-muted);
+	}
+
+	/* INPUT STYLES */
+	.widget-input {
+		background: var(--widget-input-bg);
+		border-color: var(--widget-input-border);
+		border-radius: var(--widget-border-radius-small);
+	}
+
+	/* BUTTON STYLES */
+	.widget-button {
+		background: var(--widget-accent);
+		border-radius: var(--widget-border-radius);
+		padding: var(--widget-spacing-sm) var(--widget-spacing-md);
+		box-shadow: var(--widget-shadow);
+		transition: all 0.2s ease;
+	}
+
+	.widget-button:hover {
+		background: var(--widget-accent-hover);
+		box-shadow: var(--widget-shadow-md);
+	}
+
+	/* CARD STYLES */
+	.widget-card {
+		background: var(--widget-content-bg);
+		border-radius: var(--widget-border-radius);
+		box-shadow: var(--widget-shadow);
+		padding: var(--widget-spacing-md);
+	}
+	
+	/* STATE STYLES */
+	.widget-error {
+		color: var(--widget-error);
+	}
+	
+	.widget-success {
+		color: var(--widget-success);
+	}
+	
+	/* CALENDAR STYLES */
+	.widget-calendar {
+		background: var(--widget-calendar-bg);
+	}
+	
+	.widget-calendar-available {
+		background: var(--widget-calendar-available);
+	}
+	
+	.widget-calendar-selected {
+		background: var(--widget-calendar-selected);
+	}
+	
+	/* TIME SLOT STYLES */
+	.widget-time-slot {
+		background: var(--widget-time-slot-bg);
+	}
+	
+	.widget-time-slot:hover {
+		background: var(--widget-time-slot-hover);
+	}
+	
+	.widget-time-slot-selected {
+		background: var(--widget-time-slot-selected);
+	}
+}

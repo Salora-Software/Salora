@@ -1,0 +1,138 @@
+import { z } from 'zod';
+import { router as createRouter, privateProcedure } from '../../../../context';
+import { prisma } from '$lib/server/prisma';
+import { TRPCError } from '@trpc/server';
+import { auth } from '$lib/server/auth';
+import { deleteImage, uploadImage } from '$lib/server/s3';
+
+export const router = createRouter({
+	changeProfilePicture: privateProcedure
+		.input(z.object({ image: z.string().url() }))
+		.output(z.string())
+		.mutation(
+			async ({
+				input: { image },
+				ctx: {
+					session: { user }
+				}
+			}) => {
+				const response = await fetch(image);
+				const imageBlob = await response.blob();
+				const imageId = crypto.randomUUID().replace(/-/g, '');
+				if (user.image)
+					deleteImage(user.image[0] === '/' ? user.image.substring(1) : user.image).catch((e) => {
+						console.error(e);
+					});
+				const imageurl = await uploadImage(imageBlob, `users/${user.id}/profile_${imageId}.png`);
+
+				//save the image in the database
+				await prisma.user.update({
+					where: {
+						id: user.id
+					},
+					data: {
+						image: `/users/${user.id}/profile_${imageId}.png`
+					}
+				});
+				return `/users/${user.id}/profile_${imageId}.png`;
+			}
+		),
+
+	changePassword: privateProcedure
+		.input(
+			z.object({
+				password: z.string().min(8),
+				newPassword: z.string().min(8)
+			})
+		)
+		.output(z.boolean())
+		.mutation(async ({ input: { password, newPassword }, ctx }) => {
+			// get the hashed passwords
+			const ctxAuth = await auth.$context;
+			const newPasswordHash = await ctxAuth.password.hash(newPassword);
+
+			// Check if the user exists and the password is correct
+			const account = await prisma.account.findFirst({
+				where: {
+					userId: ctx.session.user.id
+				},
+				select: {
+					password: true
+				}
+			});
+			if (!account) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'account_not_found'
+				});
+			}
+			const isPasswordCorrect = await ctxAuth.password.verify({
+				password: password,
+				hash: account.password || ''
+			});
+
+			if (!isPasswordCorrect) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'invalid_password'
+				});
+			}
+
+			// Update the password
+			await ctxAuth.internalAdapter.updatePassword(ctx.session.user.id, newPasswordHash);
+			return true;
+		}),
+
+	changeName: privateProcedure
+		.input(
+			z.object({
+				name: z.string().min(3)
+			})
+		)
+		.output(z.boolean())
+		.mutation(
+			async ({
+				input: { name },
+				ctx: {
+					session: { user }
+				}
+			}) => {
+				await prisma.user.update({
+					where: {
+						id: user.id
+					},
+					data: {
+						name
+					}
+				});
+				return true;
+			}
+		),
+
+	changeEmail: privateProcedure
+		.input(
+			z.object({
+				email: z.string().email()
+			})
+		)
+		.output(z.boolean())
+		.mutation(
+			async ({
+				input: { email },
+				ctx: {
+					session: { user }
+				}
+			}) => {
+				await prisma.user.update({
+					where: {
+						id: user.id
+					},
+					data: {
+						email,
+						emailVerified: false
+					}
+				});
+				return true;
+			}
+		)
+});

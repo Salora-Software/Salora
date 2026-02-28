@@ -6,8 +6,5 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
-	"main": "@tanstack/react-start/server-entry",
-	"observability": {
-		"enabled": true,
-	},
+	"pages_build_output_dir": "dist/client"
 }

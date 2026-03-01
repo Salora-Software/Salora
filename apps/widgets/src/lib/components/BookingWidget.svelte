@@ -321,7 +321,6 @@
 			isMobile ? '!w-[100%]' : ''
 		)}
 	>
-{locale}
 		{#if bookingSteps.find((step) => step.selected)}
 			{@const selectedStep = bookingSteps.find((step) => step.selected)}
 			{@const index = selectedStep ? bookingSteps.indexOf(selectedStep) : -1}

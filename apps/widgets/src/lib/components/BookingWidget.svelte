@@ -31,7 +31,8 @@
 	import { trpc } from '$lib/trpc.js';
 	import * as Avatar from '$lib/components/ui/avatar/';
 	import { DateTime, Interval } from 'luxon';
-	import { language } from '$lib/translation';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import BookingSidebar from './BookingSidebar.svelte';
 	import AppointmentStep from './steps/AppointmentStep.svelte';
 	import ContactStep from './steps/ContactStep.svelte';
@@ -85,21 +86,13 @@
 	}
 
 	let { branch, collapsed = $bindable(), branchId }: Props = $props();
+	const locale = getLocale();
 
-	const monthOptions = [
-		'Januari',
-		'Februari',
-		'Maart',
-		'April',
-		'Mei',
-		'Juni',
-		'Juli',
-		'Augustus',
-		'September',
-		'Oktober',
-		'November',
-		'December'
-	].map((month, i) => ({ value: String(i + 1), label: month }));
+	const monthFormatter = new DateFormatter(locale, { month: 'long' });
+	const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+		value: String(i + 1),
+		label: monthFormatter.format(new CalendarDate(2024, i + 1, 1).toDate(getLocalTimeZone()))
+	}));
 
 	let bookingState = $state<BookingValues>({
 		appointment: {
@@ -136,22 +129,24 @@
 	let bookingSteps = $state<BookingButton[]>([
 		{
 			icon: ShoppingBag,
-			name: 'Afspraak',
+			id: 'appointment',
+			name: m['booking.steps.appointment'](),
 			description: () =>
 				branch?.services.find((service: any) => service.id === bookingState.appointment.value)
 					?.name || '',
 			active: false,
 			selected: true,
 			onNext: async () => {
-				if (!validateBookingStep('Afspraak', bookingState)) {
+				if (!validateBookingStep('appointment', bookingState)) {
 					return false;
 				}
-				if (!bookingSteps.find((step) => step.name === 'Betaling')) {
+				if (!bookingSteps.find((step) => step.id === 'payment')) {
 					bookingSteps = [
 						...bookingSteps,
 						{
 							icon: CreditCard,
-							name: 'Betaling',
+							id: 'payment',
+							name: m['booking.steps.payment'](),
 							description: '',
 							active: false,
 							selected: false,
@@ -172,23 +167,25 @@
 		},
 		{
 			icon: Clock,
-			name: 'Datum & Tijd',
+			id: 'datetime',
+			name: m['booking.steps.dateTime'](),
 			description: () =>
 				bookingState.date.calendarValue && bookingState.date.timeValue
 					? `${DateTime.fromJSDate(bookingState.date.calendarValue.toDate(branch?.timeZone || 'utc')).toFormat('yyyy-MM-dd')}, ${bookingState.date.timeValue?.start?.toFormat('HH:mm')} - ${bookingState.date.timeValue?.end?.toFormat('HH:mm')}`
 					: '',
 			active: false,
 			selected: false,
-			onNext: async () => validateBookingStep('Datum & Tijd', bookingState)
+			onNext: async () => validateBookingStep('datetime', bookingState)
 		},
 		{
 			icon: UserRound,
-			name: 'Jouw informatie',
+			id: 'contact',
+			name: m['booking.steps.contact'](),
 			description: '',
 			active: false,
 			selected: false,
 			onNext: async () => {
-				if (!validateBookingStep('Jouw informatie', bookingState)) {
+				if (!validateBookingStep('contact', bookingState)) {
 					return false;
 				}
 				saveContactToLocalStorage(bookingState.contact);
@@ -245,7 +242,7 @@
 		let selectedStep = bookingSteps.find((step) => step.selected);
 		if (check && selectedStep?.onNext) {
 			if (!(await selectedStep.onNext())) {
-				toast.error('Vul alle velden in');
+				toast.error(m['booking.toast.fillAllFields']());
 				return;
 			}
 		}
@@ -324,7 +321,7 @@
 			isMobile ? '!w-[100%]' : ''
 		)}
 	>
-
+{locale}
 		{#if bookingSteps.find((step) => step.selected)}
 			{@const selectedStep = bookingSteps.find((step) => step.selected)}
 			{@const index = selectedStep ? bookingSteps.indexOf(selectedStep) : -1}
@@ -354,13 +351,13 @@
 							rel="noopener noreferrer"
 							class="widget-content-text-muted ml-auto flex flex-col items-end"
 						>
-							<span class="ml-auto text-[0.6rem] leading-tight">POWERED BY </span>
+							<span class="ml-auto text-[0.6rem] leading-tight">{m['booking.labels.poweredBy']()}</span>
 							<p class="w-max text-sm font-bold">Salora</p>
 						</a>
 					</div>
 					<div class="px-4">
 						<Separator class="my-2 " />
-						{#if selectedStep?.name == 'Afspraak'}
+						{#if selectedStep?.id === 'appointment'}
 							<AppointmentStep
 								bind:bookingState
 								{branch}
@@ -368,8 +365,8 @@
 									availabilityData = undefined;
 								}}
 							/>
-						{:else if selectedStep?.name == 'Medewerker'}
-							<Label class="text-widget-content-text mb-2">Kies een medewerker</Label>
+						{:else if selectedStep?.id === 'employee'}
+							<Label class="text-widget-content-text mb-2">{m['booking.labels.chooseEmployee']()}</Label>
 							<div class="flex flex-wrap items-center justify-center gap-4">
 								{#each branch.members as employee}
 									<div class="flex flex-col items-center gap-2">
@@ -380,7 +377,7 @@
 											</Avatar.Fallback>
 										</Avatar.Root>
 										<h1>
-											{employee.name}
+											{employee?.name}
 										</h1>
 									</div>
 								{/each}
@@ -391,10 +388,10 @@
 											<img src="/images/placeholder-small.svg" alt="" />
 										</Avatar.Fallback>
 									</Avatar.Root>
-									<h1>Geen voorkeur</h1>
+									<h1>{m['booking.labels.noPreference']()}</h1>
 								</div>
 							</div>
-						{:else if selectedStep?.name == 'Datum & Tijd'}
+						{:else if selectedStep?.id === 'datetime'}
 							<ScrollArea
 								id="calendar-scroll-area"
 								class="h-[349px] [&>[data-scroll-area-scrollbar]]:!fixed [&>[data-scroll-area-scrollbar]]:!right-[2px] [&>[data-scroll-area-scrollbar]]:py-[2.5px]"
@@ -402,7 +399,7 @@
 								<Calendar
 									type="single"
 									{isDateDisabled}
-									locale={language}
+									locale={locale}
 									notAvailable={!occupancyData?.days.some(
 										(d) => d.available
 									)}
@@ -463,7 +460,7 @@
 										{DateTime.fromJSDate(
 											bookingState.date.calendarValue.toDate(branch?.timeZone || 'utc')
 										)
-											.setLocale(language)
+											.setLocale(locale)
 											.toFormat('cccc, dd MMMM yyyy')}
 									</h3>
 									<div class="mb-2 grid grid-cols-2 gap-2">
@@ -493,9 +490,9 @@
 									</div>
 								{/if}
 							</ScrollArea>
-						{:else if selectedStep?.name == 'Jouw informatie'}
+						{:else if selectedStep?.id === 'contact'}
 							<ContactStep bind:bookingState />
-						{:else if selectedStep?.name == 'Betaling'}
+						{:else if selectedStep?.id === 'payment'}
 							<PaymentStep {bookingState} {branch} />
 						{/if}
 					</div>
@@ -505,14 +502,14 @@
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
 							<span class="widget-error text-sm">*</span>
-							<p class="widget-content-text text-sm">Verplicht</p>
+							<p class="widget-content-text text-sm">{m['booking.labels.required']()}</p>
 						</div>
 						<div class="flex gap-2">
 							<Button
 								class="widget-button ml-auto bg-transparent hover:bg-opacity-10"
 								variant="outline"
 								disabled={index === 0}
-								onclick={() => goToStep(index - 1, false)}>Terug</Button
+								onclick={() => goToStep(index - 1, false)}>{m['booking.buttons.back']()}</Button
 							>
 							<Button
 								class="widget-button ml-auto w-[94px]"
@@ -527,7 +524,7 @@
 								}}
 							>
 								{#if !isLoadingNextStep}
-									volgende
+									{m['booking.buttons.next']()}
 								{:else}
 									<LoaderCircle class="animate-spin text-white" size="20" />
 								{/if}

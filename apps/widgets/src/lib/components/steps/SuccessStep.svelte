@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	// Remove writable, use Svelte 5 runes
 	import type { BookingValues } from '$lib/booking-utils.js';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		bookingState: BookingValues;
@@ -27,7 +28,7 @@
 			<DotLottieSvelte src="/animations/successAnimation.lottie" autoplay />
 		</div>
 		<h1 class="widget-content-text mt-[-15px] text-2xl" in:scale={{ duration: 500, start: 0.7 }}>
-			Bedankt voor uw afspraak!
+			{m['success.title']()}
 		</h1>
 	</div>
 
@@ -35,7 +36,7 @@
 		{#await new Promise((resolve) => setTimeout(resolve, 0)) then}
 			<div class="widget-content-text w-full">
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 700 }}>
-					<span class="widget-content-text-muted font-semibold">Datum:</span>
+					<span class="widget-content-text-muted font-semibold">{m['success.date']()}</span>
 					<span class="widget-content-text">
 						{bookingState.date.calendarValue
 							? bookingState.date.calendarValue.toString().split('-').join(' ')
@@ -43,33 +44,33 @@
 					</span>
 				</p>
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 800 }}>
-					<span class="widget-content-text-muted font-semibold">Lokale tijd:</span>
+					<span class="widget-content-text-muted font-semibold">{m['success.localTime']()}</span>
 					<span class="widget-content-text"
 						>{bookingState.date.timeValue?.toFormat('HH:mm') || ''}</span
 					>
 				</p>
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 900 }}>
-					<span class="widget-content-text-muted font-semibold">Dienst:</span>
+					<span class="widget-content-text-muted font-semibold">{m['success.service']()}</span>
 					<span class="widget-content-text">
 						{branch?.services.find((service: any) => service.id === bookingState.appointment.value)
 							?.name || ''}
 					</span>
 				</p>
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 1000 }}>
-					<span class="widget-content-text-muted font-semibold">Medewerker:</span>
-					<span class="widget-content-text"
-						>{branch.members.find(
+					<span class="widget-content-text-muted font-semibold">{m['success.employee']()}</span>
+					<span class="widget-content-text">
+						{branch.members.find(
 							(member: any) => member.id === bookingState.appointment.employeeId
-						)?.name || 'Geen voorkeur'}</span
+						)?.name || m['booking.labels.noPreference']()}</span
 					>
 				</p>
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 1100 }}>
-					<span class="widget-content-text-muted font-semibold">Locatie:</span>
+					<span class="widget-content-text-muted font-semibold">{m['success.location']()}</span>
 					<span class="widget-content-text">{branch?.location || ''}</span>
 				</p>
 				<p class="flex justify-between" transition:fly={{ y: 25, duration: 400, delay: 1200 }}>
-					<span class="widget-content-text-muted font-semibold">Betaling:</span>
-					<span class="widget-content-text">Betaling vindt ter plaatse plaats</span>
+					<span class="widget-content-text-muted font-semibold">{m['success.payment']()}</span>
+					<span class="widget-content-text">{m['success.payOnSite']()}</span>
 				</p>
 			</div>
 		{/await}

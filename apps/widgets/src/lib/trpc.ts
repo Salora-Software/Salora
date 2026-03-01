@@ -2,11 +2,11 @@
 import { createTRPCProxyClient, httpBatchLink, type TRPCLink } from '@trpc/client';
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
-import type { AppRouter, RouterOutput } from '@salora/trpc-types';
+import type { AppRouter } from '@salora/trpc-types';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
-import { t } from './translation';
+import { m } from '$lib/paraglide/messages.js';
 import superjson from './superjson';
 
 type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
@@ -20,15 +20,22 @@ export const customLink: TRPCLink<AppRouter> = () => {
 				},
 				error(err) {
 					try {
-						let errors: { message: keyof typeof t.errors; code: keyof typeof t.errors }[] =
-							JSON.parse(err.message);
-
+						let errors: { message: string; code: string }[] = JSON.parse(err.message);
 						for (let error of errors) {
 							console.error(error);
-							toast.error(t.errors[error.message] || t.errors[error.code] || t.errors.default);
+							toast.error(
+								(m['errors.' + error.message]?.() as string | undefined) ||
+								(m['errors.' + error.code]?.() as string | undefined) ||
+								(m['errors.default']?.() as string | undefined) ||
+								err.message
+							);
 						}
 					} catch (e) {
-						toast.error(t.errors[err.message as keyof typeof t.errors] || t.errors.default);
+						toast.error(
+							(m['errors.' + (err.message as string)]?.() as string | undefined) ||
+							(m['errors.default']?.() as string | undefined) ||
+							err.message
+						);
 						if (Array.isArray(err)) {
 							for (let error of err) {
 								console.error(error);

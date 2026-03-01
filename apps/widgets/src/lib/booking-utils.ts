@@ -4,6 +4,7 @@ import type { DateValue } from '@internationalized/date';
 import { DateTime, Interval } from 'luxon';
 import type { DetailedValue } from 'svelte-tel-input/types';
 import type { RouterOutput } from '@salora/trpc-types';
+import { m } from '$lib/paraglide/messages.js';
 
 export interface BookingValues {
 	appointment: {
@@ -28,6 +29,7 @@ export interface BookingValues {
 export interface BookingButton {
 	icon: any;
 	name: string;
+	id?: string;
 	description: string | (() => string);
 	active: boolean;
 	selected: boolean;
@@ -92,12 +94,12 @@ export async function createBooking(
 	branch: any
 ): Promise<{ success: boolean; employeeId?: string }> {
 	if (!values.contact.phone.phoneNumber || values.contact.phone.phoneNumber === '') {
-		toast.error('Please provide a valid phone number.');
+		toast.error(m['booking.toast.invalidPhone']());
 		return { success: false };
 	}
 	let date = values.date.timeValue?.start;
 	if (!date) {
-		toast.error('Please select a valid date and time.');
+		toast.error(m['booking.toast.invalidDateTime']());
 		return { success: false };
 	}
 	try {
@@ -124,13 +126,13 @@ export async function createBooking(
 	}
 }
 
-export function validateBookingStep(stepName: string, values: BookingValues): boolean {
-	switch (stepName) {
-		case 'Afspraak':
+export function validateBookingStep(stepId: string, values: BookingValues): boolean {
+	switch (stepId) {
+		case 'appointment':
 			return !!values.appointment.value;
-		case 'Datum & Tijd':
+		case 'datetime':
 			return !!(values.date.calendarValue && values.date.timeValue);
-		case 'Jouw informatie':
+		case 'contact':
 			return !!(values.contact.firstName && values.contact.lastName && values.contact.email);
 		default:
 			return true;

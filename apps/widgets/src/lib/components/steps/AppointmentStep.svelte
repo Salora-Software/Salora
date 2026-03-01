@@ -3,6 +3,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import type { BookingValues } from '$lib/booking-utils.js';
 	import type { Prisma } from '@salora/database';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		bookingState: BookingValues;
@@ -17,7 +18,7 @@
 	let { bookingState = $bindable(), branch, onServiceChange }: Props = $props();
 </script>
 
-<Label class="widget-content-text mb-2">Soort afspraak *</Label>
+<Label class="widget-content-text mb-2">{m['appointment.typeLabel']()}</Label>
 <Select.Root
 	type="single"
 	bind:value={bookingState.appointment.value}

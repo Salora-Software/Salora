@@ -6,8 +6,8 @@
 		"---Getting Started---",
 		"index",
 		"installation",
-		"project-structure",
 		"---Architecture---",
-		"architecture"
+		"architecture",
+		"project-structure"
 	]
 }

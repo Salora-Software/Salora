@@ -5,42 +5,42 @@ import { RootProvider } from 'fumadocs-ui/provider/tanstack';
 import SearchDialog from '@/components/search';
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Fumadocs on TanStack Start',
-      },
-    ],
-    links: [{ rel: 'stylesheet', href: appCss }],
-  }),
-  component: RootComponent,
+	head: () => ({
+		meta: [
+			{
+				charSet: 'utf-8',
+			},
+			{
+				name: 'viewport',
+				content: 'width=device-width, initial-scale=1',
+			},
+			{
+				title: 'Salora Core Documentation',
+			},
+		],
+		links: [{ rel: 'stylesheet', href: appCss }],
+	}),
+	component: RootComponent,
 });
 
 function RootComponent() {
-  return (
-    <RootDocument>
-      <Outlet />
-    </RootDocument>
-  );
+	return (
+		<RootDocument>
+			<Outlet />
+		</RootDocument>
+	);
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body className="flex flex-col min-h-screen">
-        <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
+	return (
+		<html suppressHydrationWarning>
+			<head>
+				<HeadContent />
+			</head>
+			<body className="flex flex-col min-h-screen">
+				<RootProvider search={{ SearchDialog }}>{children}</RootProvider>
+				<Scripts />
+			</body>
+		</html>
+	);
 }

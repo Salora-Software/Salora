@@ -13,7 +13,7 @@ export default defineConfig({
 		 outdir: './src/lib/paraglide',
 			disableAsyncLocalStorage: true,
 			
-	strategy: ["preferredLanguage", "url", "baseLocale "],
+	strategy: ["preferredLanguage", "url", "baseLocale"],
 			
 		}), tailwindcss(), sveltekit()]
 });

@@ -8,7 +8,6 @@ const paraglideHandle: Handle = ({ event, resolve }) =>
 		event.request = localizedRequest;
 		return resolve(event, {
 			transformPageChunk: ({ html }) => {
-				console.log("Transforming page chunk for locale:", locale);
 				return html
 					.replace('%lang%', locale)
 					.replace('%dir%', getTextDirection(locale));

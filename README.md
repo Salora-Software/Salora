@@ -4,8 +4,6 @@
   <br />
   <br />
 
-  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="800" />
-
   <br />
   <br />
 

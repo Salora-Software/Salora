@@ -4,7 +4,7 @@
   <br />
   <br />
 
-  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="800" />
+  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="600" style="border-radius: 12px;" />
 
   <br />
   <br />
@@ -20,6 +20,7 @@
       <img src="https://img.shields.io/badge/Docs-available-orange.svg?style=flat-square" alt="Documentation">
     </a>
   </p>
+
 </div>
 
 ---

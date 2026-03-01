@@ -1,4 +1,4 @@
-<div align="center">
+<div >
   <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
   
   <p>

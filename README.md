@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
+  <img src="images/salora/banner3.png" alt="Salora Logo" width="100%" />
 
   <br />
   <br />

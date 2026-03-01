@@ -57,7 +57,7 @@ const clientLoader = browserCollections.docs.createClientLoader({
           <LLMCopyButton markdownUrl={markdownUrl} />
           <ViewOptions
             markdownUrl={markdownUrl}
-            githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${path}`}
+            githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/apps/docs/content/docs/${path}`}
           />
         </div>
         <DocsBody>

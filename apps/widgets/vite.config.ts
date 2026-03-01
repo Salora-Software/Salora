@@ -8,5 +8,12 @@ export default defineConfig({
 		allowedHosts: ["widget.salora.app", "widgetdev.salora.app"]
 	},
 	envDir: '../../',
-	plugins: [paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' }), tailwindcss(), sveltekit()]
+	plugins: [paraglideVitePlugin({ 
+		project: './project.inlang',
+		 outdir: './src/lib/paraglide',
+			disableAsyncLocalStorage: true,
+			
+	strategy: ["preferredLanguage", "url", "baseLocale "],
+			
+		}), tailwindcss(), sveltekit()]
 });

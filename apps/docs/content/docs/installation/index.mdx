@@ -1,0 +1,33 @@
+---
+title: Installation & Deployment
+description: Choose your preferred method to set up and deploy Salora Core.
+icon: Download
+---
+
+Salora Core is designed with flexibility in mind. Whether you are setting up a local development environment for contributing, or deploying the system to production, you can choose the architecture that best fits your infrastructure.
+
+
+
+> Before starting any installation, ensure you have your environment variables configured. Copy `.env.example` to `.env` and configure your database credentials.
+
+## Deployment Environments
+
+Select the guide that matches your target environment. Salora supports edge deployments, containerized hosting, and local monorepo development.
+
+<Cards>
+  <Card 
+    title="Local Development" 
+    description="Set up the Turborepo monorepo with Bun for local development and testing." 
+    href="/docs/installation/local" 
+  />
+  <Card 
+    title="Cloudflare Pages" 
+    description="Deploy the frontend and tRPC API to the edge using Cloudflare." 
+    href="/docs/installation/cloudflare-workers" 
+  />
+  <Card 
+    title="Docker Deployment" 
+    description="Run Salora and PostgreSQL in an isolated containerized environment." 
+    href="/docs/installation/docker" 
+  />
+</Cards>

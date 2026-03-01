@@ -1,8 +1,6 @@
 <div align="center">
   <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
   
-  <h1>Salora Core</h1>
-
   <p>
     <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/salora-hq/salora-core">
       <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Pages" />
@@ -12,6 +10,8 @@
     </a>
   </p>
 </div>
+
+# Salora Core
 
 > **Note:** Salora Core is currently in active development (Alpha). Features, database schemas, and APIs are subject to change. It is not yet recommended for production use out of the box and requires technical setup.
 

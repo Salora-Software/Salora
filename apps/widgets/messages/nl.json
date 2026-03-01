@@ -115,5 +115,6 @@
 	"success.employee": "Medewerker:",
 	"success.location": "Locatie:",
 	"success.payment": "Betaling:",
-	"success.payOnSite": "Betaling vindt ter plaatse plaats"
+	"success.payOnSite": "Betaling vindt ter plaatse plaats",
+	"sidebar.getInContact": "Neem contact op"
 }

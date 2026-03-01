@@ -4,6 +4,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { Separator } from '$lib/components/ui/separator/';
 	import type { BookingButton } from '$lib/booking-utils.js';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		bookingSteps: BookingButton[];
@@ -71,7 +72,7 @@
 	</div>
 	<Separator class="bg-widget-sidebar-border my-2" />
 	<div class="flex flex-col gap-1">
-		<h2 class="widget-sidebar-text text-md font-semibold">Neem contact op</h2>
+		<h2 class="widget-sidebar-text text-md font-semibold">{m["sidebar.getInContact"]()}</h2>
 		<a
 			href={`tel:${branch.phone}`}
 			class="widget-sidebar-accent hover:widget-accent-text text-sm transition-colors"

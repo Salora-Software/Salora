@@ -115,5 +115,6 @@
 	"success.employee": "Employee:",
 	"success.location": "Location:",
 	"success.payment": "Payment:",
-	"success.payOnSite": "Payment takes place on site"
+	"success.payOnSite": "Payment takes place on site",
+	"sidebar.getInContact": "Get in contact"
 }

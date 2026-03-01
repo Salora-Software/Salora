@@ -4,7 +4,7 @@
   <br />
   <br />
 
-  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="600" style="border-radius: 12px;" />
+  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="500" style="border-radius: 12px;" />
 
   <br />
   <br />

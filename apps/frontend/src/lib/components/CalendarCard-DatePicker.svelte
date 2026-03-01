@@ -91,7 +91,7 @@
 		{startDate ? startDate.setZone(timezone).toLocaleString(DateTime.DATE_MED) : ''}
 	</Popover.Trigger>
 	<Popover.Content bind:ref={contentRef} class="w-auto p-0">
-		<Calendar locale={locale} type="single" bind:value />
+		<Calendar {locale} type="single" bind:value />
 	</Popover.Content>
 </Popover.Root>
 <div class="mt-2 grid h-10 grid-cols-[1fr_auto_1fr] place-items-center gap-2">

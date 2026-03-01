@@ -443,7 +443,7 @@
 				</div>
 				<!-- Calendar -->
 				<div class="p-0">
-					<RangeCalendar locale={locale} bind:value={selectedDatesRange} numberOfMonths={2} />
+					<RangeCalendar {locale} bind:value={selectedDatesRange} numberOfMonths={2} />
 				</div>
 			</div>
 		</Popover.Content>

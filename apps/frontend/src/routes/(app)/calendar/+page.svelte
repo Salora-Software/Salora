@@ -248,8 +248,7 @@
 				class={cn(
 					buttonVariants({
 						variant: 'outline',
-						class:
-							'w-content w-full max-w-full justify-start text-left font-normal sm:min-w-53.75'
+						class: 'w-content w-full max-w-full justify-start text-left font-normal sm:min-w-53.75'
 					})
 				)}
 			>
@@ -261,7 +260,7 @@
 					: ''}
 			</Popover.Trigger>
 			<Popover.Content class="w-auto p-0" align="end" side="bottom">
-				<Calendar locale={locale} type="single" bind:value={calendarDate} />
+				<Calendar {locale} type="single" bind:value={calendarDate} />
 			</Popover.Content>
 		</Popover.Root>
 	</div>

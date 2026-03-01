@@ -270,12 +270,8 @@
 								{:else}
 									{(() => {
 										const formats = getFormats(locale);
-										const dateStr = cancelDialog.appt.date
-											.setLocale(locale)
-											.toFormat(formats.date);
-										const timeStr = cancelDialog.appt.date
-											.setLocale(locale)
-											.toFormat(formats.time);
+										const dateStr = cancelDialog.appt.date.setLocale(locale).toFormat(formats.date);
+										const timeStr = cancelDialog.appt.date.setLocale(locale).toFormat(formats.time);
 										return t.appointments.cancel_desc
 											.replace('{company}', branch.name)
 											.replace('{service}', cancelDialog.appt.service)

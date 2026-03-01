@@ -9,12 +9,14 @@
 	import { cn } from '$lib/utils';
 	import { trpcQuery } from '$lib/trpc.js';
 	import moment from 'moment-timezone';
-	import { language, t } from '$lib/translation.js';
+	import { getLocale, t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
 	import type { BranchType } from '$lib/runes.svelte.js';
 	let { data } = $props();
 	let activeBranch: BranchType | null = $state(data.branchesState.getActiveBranch());
 	const queryClient = data.queryClient;
+
+	const locale = getLocale();
 
 	// Calendar queries and mutations using trpcQuery (TanStack Query)
 
@@ -254,12 +256,12 @@
 				<CalendarIcon />
 				{selectedDate
 					? DateTime.fromJSDate(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
-							.setLocale(language)
+							.setLocale(locale)
 							.toFormat('cccc, dd MMMM, yyyy')
 					: ''}
 			</Popover.Trigger>
 			<Popover.Content class="w-auto p-0" align="end" side="bottom">
-				<Calendar locale={language} type="single" bind:value={calendarDate} />
+				<Calendar locale={locale} type="single" bind:value={calendarDate} />
 			</Popover.Content>
 		</Popover.Root>
 	</div>

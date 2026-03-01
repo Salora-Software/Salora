@@ -27,9 +27,11 @@
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import type { DateRange } from 'bits-ui';
-	import { language } from '$lib/translation.js';
+	import { getLocale } from '$lib/translation.js';
 
 	const { data } = $props();
+
+	const locale = getLocale();
 
 	// Date picker setup - default to last 12 months
 	const todayDate = today(getLocalTimeZone());
@@ -356,7 +358,7 @@
 					</div>
 					<!-- Calendar -->
 					<div class="p-0">
-						<RangeCalendar locale={language} bind:value={selectedDatesRange} numberOfMonths={2} />
+						<RangeCalendar locale={locale} bind:value={selectedDatesRange} numberOfMonths={2} />
 					</div>
 				</div>
 			</Popover.Content>

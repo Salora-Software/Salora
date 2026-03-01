@@ -11,7 +11,7 @@
 	import * as Popover from '$lib/components/ui/popover/index';
 	import * as Select from '$lib/components/ui/select';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { language, t } from '$lib/translation.js';
+	import { getLocale, t } from '$lib/translation.js';
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	// Import DateValue and DateRange from bits-ui instead to ensure type compatibility
@@ -22,6 +22,8 @@
 	// Set default date range to last 30 days
 	const todayDate = today(getLocalTimeZone());
 	const thirtyDaysAgo = todayDate.subtract({ days: 29 }); // 29 days ago + today = 30 days total
+
+	const locale = getLocale();
 
 	let selectedDates: DateRange = $state({
 		start: thirtyDaysAgo,
@@ -441,7 +443,7 @@
 				</div>
 				<!-- Calendar -->
 				<div class="p-0">
-					<RangeCalendar locale={language} bind:value={selectedDatesRange} numberOfMonths={2} />
+					<RangeCalendar locale={locale} bind:value={selectedDatesRange} numberOfMonths={2} />
 				</div>
 			</div>
 		</Popover.Content>

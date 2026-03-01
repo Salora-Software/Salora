@@ -8,7 +8,7 @@
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import { language, t, translations } from '$lib/translation';
+	import { getLocale, t } from '$lib/translation';
 	import { DateTime } from 'luxon';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -32,6 +32,8 @@
 	let error = $derived(data.error);
 	// svelte-ignore state_referenced_locally
 	const TIMEZONE = branch?.timeZone || 'Europe/Amsterdam';
+
+	const locale = getLocale();
 
 	// Date/time formats for EN/NL
 	const DATE_FORMATS = {
@@ -189,9 +191,9 @@
 								<Skeleton class="h-4 w-1/2" />
 							{:else}
 								{(() => {
-									const formats = getFormats(language);
-									const dateStr = cancelDialog.appt.date.setLocale(language).toFormat(formats.date);
-									const timeStr = cancelDialog.appt.date.setLocale(language).toFormat(formats.time);
+									const formats = getFormats(locale);
+									const dateStr = cancelDialog.appt.date.setLocale(locale).toFormat(formats.date);
+									const timeStr = cancelDialog.appt.date.setLocale(locale).toFormat(formats.time);
 									return t.appointments.cancel_desc
 										.replace('{company}', branch.name)
 										.replace('{service}', cancelDialog.appt.service)
@@ -267,12 +269,12 @@
 									<Skeleton class="h-4 w-1/2" />
 								{:else}
 									{(() => {
-										const formats = getFormats(language);
+										const formats = getFormats(locale);
 										const dateStr = cancelDialog.appt.date
-											.setLocale(language)
+											.setLocale(locale)
 											.toFormat(formats.date);
 										const timeStr = cancelDialog.appt.date
-											.setLocale(language)
+											.setLocale(locale)
 											.toFormat(formats.time);
 										return t.appointments.cancel_desc
 											.replace('{company}', branch.name)
@@ -434,13 +436,13 @@
 											</div>
 											<div class="text-muted-foreground mt-1 text-xs">
 												{(() => {
-													const formats = getFormats(language);
-													const start = appt.date.setLocale(language).toFormat(formats.time);
+													const formats = getFormats(locale);
+													const start = appt.date.setLocale(locale).toFormat(formats.time);
 													const end = appt.date
 														.plus({ minutes: appt.duration })
-														.setLocale(language)
+														.setLocale(locale)
 														.toFormat(formats.time);
-													const dateStr = appt.date.setLocale(language).toFormat(formats.date);
+													const dateStr = appt.date.setLocale(locale).toFormat(formats.date);
 													return `${start} - ${end} | ${dateStr}`;
 												})()}
 											</div>
@@ -501,13 +503,13 @@
 											</div>
 											<div class="text-muted-foreground mt-1 text-xs">
 												{(() => {
-													const formats = getFormats(language);
-													const start = appt.date.setLocale(language).toFormat(formats.time);
+													const formats = getFormats(locale);
+													const start = appt.date.setLocale(locale).toFormat(formats.time);
 													const end = appt.date
 														.plus({ minutes: appt.duration })
-														.setLocale(language)
+														.setLocale(locale)
 														.toFormat(formats.time);
-													const dateStr = appt.date.setLocale(language).toFormat(formats.date);
+													const dateStr = appt.date.setLocale(locale).toFormat(formats.date);
 													return `${start} - ${end} | ${dateStr}`;
 												})()}
 											</div>
@@ -563,13 +565,13 @@
 											</div>
 											<div class="text-muted-foreground mt-1 text-xs">
 												{(() => {
-													const formats = getFormats(language);
-													const start = appt.date.setLocale(language).toFormat(formats.time);
+													const formats = getFormats(locale);
+													const start = appt.date.setLocale(locale).toFormat(formats.time);
 													const end = appt.date
 														.plus({ minutes: appt.duration })
-														.setLocale(language)
+														.setLocale(locale)
 														.toFormat(formats.time);
-													const dateStr = appt.date.setLocale(language).toFormat(formats.date);
+													const dateStr = appt.date.setLocale(locale).toFormat(formats.date);
 													return `${start} - ${end} | ${dateStr}`;
 												})()}
 											</div>

@@ -16,7 +16,7 @@
 	import * as Avatar from './ui/avatar';
 	import moment from 'moment-timezone';
 	import { DateTime, Interval } from 'luxon';
-	import { language, t } from '$lib/translation';
+	import { getLocale, t } from '$lib/translation';
 	import { trpc, type MemberType, type ServiceType } from '$lib/trpc';
 	import { browser } from '$app/environment';
 	// Bindable props with defaults and types
@@ -86,6 +86,8 @@
 		onItemDelete?: (item: (typeof calendarItems)[number] | undefined) => Promise<void>;
 		onUpsertItem?: (item: (typeof calendarItems)[number] | undefined) => Promise<void>;
 	} = $props();
+
+	const locale = getLocale();
 	let edited: Record<string, boolean> = $state({});
 
 	// Generate formatted hours for display – creates an array [00:00 ... 23:00]
@@ -121,7 +123,7 @@
 		const offsetNew = offset / hourHeight;
 		return DateTime.fromJSDate(new Date(time.getTime() + offsetNew * 60 * 60 * 1000), {
 			zone: timezone
-		}).setLocale(language);
+		}).setLocale(locale);
 	}
 
 	function parseIntervalToCorrectType(interval: Interval[], type: 'date' | 'repeated-date') {

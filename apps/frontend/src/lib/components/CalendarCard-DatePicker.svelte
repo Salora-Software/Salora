@@ -5,7 +5,7 @@
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { DateTime } from 'luxon';
-	import { language } from '$lib/translation';
+	import { getLocale } from '$lib/translation';
 	import { untrack } from 'svelte';
 	let {
 		startDate = $bindable(undefined),
@@ -16,6 +16,8 @@
 		endDate?: DateTime;
 		timezone?: string;
 	} = $props();
+
+	const locale = getLocale();
 
 	let value = $state<DateValue | undefined>();
 	let open = $state(false);
@@ -89,7 +91,7 @@
 		{startDate ? startDate.setZone(timezone).toLocaleString(DateTime.DATE_MED) : ''}
 	</Popover.Trigger>
 	<Popover.Content bind:ref={contentRef} class="w-auto p-0">
-		<Calendar locale={language} type="single" bind:value />
+		<Calendar locale={locale} type="single" bind:value />
 	</Popover.Content>
 </Popover.Root>
 <div class="mt-2 grid h-10 grid-cols-[1fr_auto_1fr] place-items-center gap-2">

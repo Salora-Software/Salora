@@ -19,6 +19,7 @@
 	import { CalendarDays, CalendarIcon, DollarSign, UserRoundPlus, UsersRound } from 'lucide-svelte';
 	import type { DateRange } from 'bits-ui';
 	import { getLocale } from '$lib/paraglide/runtime.js';
+	import { m } from '$lib/paraglide/messages.js';
 
 	// Set default date range to last 30 days
 	const todayDate = today(getLocalTimeZone());
@@ -393,14 +394,17 @@
 <div class="flex flex-col items-start justify-between gap-2 md:flex-row md:items-end">
 	<div>
 		<h1 class="mt-5 text-3xl font-semibold">
+			{m['dashboard.hello']({ name: session?.user?.name || 'Gast' })}
 			<span class="hand text-5xl">👋</span>
 		</h1>
 		{#if !dashboardStatsQuery.isSuccess}
 			<Skeleton class="mt-2 h-6 w-100 rounded-md" />
 		{:else}
 			<p class="text-muted-foreground mt-2">
-				je hebt {dashboardStatsQuery.data?.stats.appointments.current} afspraken en
-				{dashboardStatsQuery.data?.stats.customers.current} klanten deze maand.
+				{m['dashboard.summary']({
+					appointments: dashboardStatsQuery.data?.stats.appointments.current,
+					customers: dashboardStatsQuery.data?.stats.customers.current
+				})}
 				{#if selectedDates.start && selectedDates.end}
 					({df.format(selectedDates.start.toDate(getLocalTimeZone()))} - {df.format(
 						selectedDates.end.toDate(getLocalTimeZone())

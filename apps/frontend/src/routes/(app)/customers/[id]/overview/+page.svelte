@@ -27,7 +27,7 @@
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import type { DateRange } from 'bits-ui';
-	import { getLocale } from '$lib/translation.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 
 	const { data } = $props();
 

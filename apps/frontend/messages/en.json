@@ -1,6 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"dashboard": {
-		"hello": "Hello {name}"
+		"hello": "Hello {name}",
+		"summary": "You have {appointments} appointments and {customers} customers during this period."
 	}
 }

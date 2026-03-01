@@ -1,15 +1,35 @@
-<div >
+<div align="center">
   <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
-  
+
+  <br />
+  <br />
+
+  <p>
+    <a href="https://github.com/salora-hq/salora-core/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/License-AGPLv3-blue.svg?style=flat-square" alt="License: AGPLv3">
+    </a>
+    <a href="https://github.com/salora-hq/salora-core/pulls">
+      <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome">
+    </a>
+    <a href="https://docs.salora.app/docs">
+      <img src="https://img.shields.io/badge/Docs-available-orange.svg?style=flat-square" alt="Documentation">
+    </a>
+  </p>
+
+  <br />
+
   <p>
     <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/salora-hq/salora-core">
-      <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Pages" />
+      <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Pages" height="36" />
     </a>
+    &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://railway.app/template?template=https://github.com/salora-hq/salora-core">
-      <img src="https://railway.app/button.svg" alt="Deploy on Railway" />
+      <img src="https://railway.app/button.svg" alt="Deploy on Railway" height="36" />
     </a>
   </p>
 </div>
+
+---
 
 # Salora Core
 

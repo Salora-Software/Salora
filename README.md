@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
+</div>
+
 # Salora Core
 
 > **Note:** Salora Core is currently in active development (Alpha). Features, database schemas, and APIs are subject to change. It is not yet recommended for production use out of the box and requires technical setup.

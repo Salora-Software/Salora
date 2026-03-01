@@ -2,6 +2,23 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"dashboard": {
 		"hello": "Hallo {name}",
-		"summary": "Je hebt {appointments} afspraken en {customers} klanten tijdens deze periode."
+		"summary": [
+			{
+				"declarations": [
+					"input appointments",
+					"input customers"
+				],
+				"selectors": [
+					"appointments",
+					"customers"
+				],
+				"match": {
+					"appointments=1, customers=1": "Je hebt {appointments} afspraak en {customers} klant tijdens deze periode.",
+					"appointments=1": "Je hebt {appointments} afspraak en {customers} klanten tijdens deze periode.",
+					"customers=1": "Je hebt {appointments} afspraken en {customers} klant tijdens deze periode.",
+					"*": "Je hebt {appointments} afspraken en {customers} klanten tijdens deze periode."
+				}
+			}
+		]
 	}
 }

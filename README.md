@@ -2,6 +2,7 @@
   <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
 
   <br />
+  <br />
 
   <p>
     <a href="https://github.com/Salora-Software/Salora/blob/main/LICENSE">

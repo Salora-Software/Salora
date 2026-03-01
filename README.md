@@ -1,10 +1,5 @@
 <div align="center">
-  <img src="images/salora/logo-white.png" alt="Salora Logo" height="80" />
-
-  <br />
-  <br />
-
-  <img src="images/salora/calendar.png" alt="Salora Calendar Interface" width="500" style="border-radius: 12px;" />
+  <img src="images/salora/banner.png" alt="Salora Logo" height="80" />
 
   <br />
   <br />

@@ -16,16 +16,6 @@
     </a>
   </p>
 
-
-  <p>
-    <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/Salora-Software/Salora">
-      <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Pages" height="36" />
-    </a>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="https://railway.app/template?template=https://github.com/Salora-Software/Salora">
-      <img src="https://railway.app/button.svg" alt="Deploy on Railway" height="36" />
-    </a>
-  </p>
 </div>
 
 ---

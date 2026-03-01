@@ -5,8 +5,8 @@
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { DateTime } from 'luxon';
-	import { getLocale } from '$lib/translation';
 	import { untrack } from 'svelte';
+	import { getLocale } from '$lib/paraglide/runtime';
 	let {
 		startDate = $bindable(undefined),
 		endDate = $bindable(undefined),

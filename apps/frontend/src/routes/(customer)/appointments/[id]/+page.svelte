@@ -8,7 +8,7 @@
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import { getLocale, t } from '$lib/translation';
+	import { t } from '$lib/translation';
 	import { DateTime } from 'luxon';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -21,6 +21,7 @@
 	import { magicLink, signIn } from '$lib/auth-client.js';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 
 	// State for resend verification email
 	let resendEmail = $state(page.url.searchParams.get('email') || ''); // Get email from URL if available

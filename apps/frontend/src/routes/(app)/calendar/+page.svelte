@@ -9,9 +9,10 @@
 	import { cn } from '$lib/utils';
 	import { trpcQuery } from '$lib/trpc.js';
 	import moment from 'moment-timezone';
-	import { getLocale, t } from '$lib/translation.js';
+	import { t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
 	import type { BranchType } from '$lib/runes.svelte.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	let { data } = $props();
 	let activeBranch: BranchType | null = $state(data.branchesState.getActiveBranch());
 	const queryClient = data.queryClient;

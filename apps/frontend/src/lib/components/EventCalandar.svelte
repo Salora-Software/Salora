@@ -16,9 +16,10 @@
 	import * as Avatar from './ui/avatar';
 	import moment from 'moment-timezone';
 	import { DateTime, Interval } from 'luxon';
-	import { getLocale, t } from '$lib/translation';
+	import { t } from '$lib/translation';
 	import { trpc, type MemberType, type ServiceType } from '$lib/trpc';
 	import { browser } from '$app/environment';
+	import { getLocale } from '$lib/paraglide/runtime';
 	// Bindable props with defaults and types
 	let {
 		class: className,

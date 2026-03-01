@@ -11,13 +11,14 @@
 	import * as Popover from '$lib/components/ui/popover/index';
 	import * as Select from '$lib/components/ui/select';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { getLocale, t } from '$lib/translation.js';
+	import { t } from '$lib/translation.js';
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	// Import DateValue and DateRange from bits-ui instead to ensure type compatibility
 	import { trpc, trpcQuery } from '$lib/trpc.js';
 	import { CalendarDays, CalendarIcon, DollarSign, UserRoundPlus, UsersRound } from 'lucide-svelte';
 	import type { DateRange } from 'bits-ui';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 
 	// Set default date range to last 30 days
 	const todayDate = today(getLocalTimeZone());
@@ -392,7 +393,7 @@
 <div class="flex flex-col items-start justify-between gap-2 md:flex-row md:items-end">
 	<div>
 		<h1 class="mt-5 text-3xl font-semibold">
-			Hallo {session?.user?.name} <span class="hand text-5xl">👋</span>
+			<span class="hand text-5xl">👋</span>
 		</h1>
 		{#if !dashboardStatsQuery.isSuccess}
 			<Skeleton class="mt-2 h-6 w-100 rounded-md" />

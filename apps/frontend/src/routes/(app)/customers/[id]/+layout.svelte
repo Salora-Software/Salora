@@ -9,7 +9,7 @@
 	import TooltipContent from '$lib/components/ui/tooltip/tooltip-content.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getErrorMessage, t } from '$lib/translation.js';
+	import { t } from '$lib/translation.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { trpcQuery } from '$lib/trpc';
 	import EditCustomerModal from '$lib/components/EditCustomerModal.svelte';

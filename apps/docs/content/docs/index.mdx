@@ -1,68 +1,50 @@
 ---
 title: Overview
-description: Open-source booking system built with SvelteKit, Cloudflare Workers, and tRPC
+description: Open-source booking system built with SvelteKit, Cloudflare Workers, and tRPC.
 icon: Album
 ---
 
-Welcome to the Salora Core documentation. This guide will help you understand, develop, and deploy the open-source booking system.
+<Callout title="Active Development" type="warn">
+  Salora Core is currently in active development. While the foundational architecture is operational, it is not a plug-and-play solution out of the box. Deploying and utilizing the system requires manual setup, configuration of external providers (Cloudflare, PostgreSQL, SMTP), and sufficient technical expertise to adapt it to your environment.
+</Callout>
+
+Welcome to the Salora Core documentation. This guide provides the foundational knowledge required to develop, deploy, and scale the open-source booking system.
 
 ## What is Salora?
 
-Salora is a modern, open-source booking management system designed for service-based businesses. Built with cutting-edge technologies including SvelteKit, Cloudflare Workers, and tRPC, Salora provides a robust foundation for scheduling, customer management, and service organization.
+Salora started as a passionate project to solve complex scheduling challenges for service-based businesses. While our roots are in the Netherlands and the current interface is fully Dutch, the platform is built for global scale. We are actively migrating to a complete internationalization (i18n) architecture to support users worldwide.
+
+It serves as a modern, robust foundation for booking management, customer relationship handling, and team scheduling.
 
 **License**: AGPLv3
 
 ## Technology Stack
 
-Salora is built on a modern, performant stack:
+Salora utilizes a high-performance stack optimized for edge environments:
 
-- Frontend: SvelteKit with TypeScript
-- Backend: Cloudflare Workers for serverless compute
-- API: tRPC for type-safe RPCs
-- Database: Prisma ORM
-- Documentation: Fumadocs with MDX
+- **Frontend:** SvelteKit with TypeScript
+- **Backend:** Cloudflare Workers for serverless edge compute
+- **API:** tRPC for end-to-end type safety
+- **Database:** Prisma ORM
+- **Documentation:** Fumadocs with MDX
+
+
 
 ## Getting Started
 
-Choose your starting point based on your role:
+Choose your starting point based on your implementation goals:
 
 <Cards>
-  <Card title="Development Setup" href="/#" />
-  <Card title="Project Structure" href="/#" />
-  <Card title="Architecture Overview" href="/#" />
-  <Card title="Core Concepts" href="/#" />
+  <Card title="Installation & Setup" href="/docs/installation" />
+  <Card title="Project Structure" href="/docs/project-structure" />
+  <Card title="Architecture Overview" href="/docs/architecture" />
+  <Card title="Live Interactive Demo" href="/docs/demo" />
 </Cards>
 
 ## Key Features
 
-- Full-featured booking and appointment management
-- Customer relationship management
-- Service and employee scheduling
-- Opening hours and availability management
-- Calendar integration
-- Dashboard and analytics
-
-## Repository Structure
-
-The codebase is organized as a monorepo using Turborepo:
-
-```
-/apps
-  /frontend      - SvelteKit main application
-  /docs          - Fumadocs documentation
-  /widgets       - Embeddable booking widgets
-  /email-worker  - Email service worker
-/packages
-  /database      - Prisma schema and migrations
-  /scheduler     - Availability engine
-  /emails        - Email templates
-  /mailer        - Email service
-  /trpc-types    - Shared tRPC types
-```
-
-## Next Steps
-
-1. Start with Development Setup to get your environment ready
-2. Review Project Structure to understand the codebase organization
-3. Explore Architecture for system design patterns
-4. Check Core Concepts for domain understanding
+- Full-featured booking and appointment management.
+- Customer relationship management (CRM).
+- Advanced service and employee scheduling.
+- Dynamic opening hours and availability engine.
+- Calendar integration and dashboard analytics.

@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "bunx --bun vite dev --host",
+		"dev": "bun vite dev --host",
 		"start": "PORT=5173 node ./build",
 		"build": "bunx --bun vite build",
 		"buildWidget": "vite build --config vite.widget.config.js",
@@ -87,7 +87,7 @@
 		"d3-scale": "^4.0.2",
 		"d3-shape": "^3.2.0",
 		"i": "^0.3.7",
-		"ioredis": "^5.6.1",
+		"ioredis": "^5.10.0",
 		"layerchart": "2.0.0-next.43",
 		"libphonenumber-js": "^1.12.10",
 		"luxon": "^3.7.1",

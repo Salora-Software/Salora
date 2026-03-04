@@ -1,4 +1,4 @@
-import { RedisClient } from "bun";
+import {  Redis } from "ioredis";
 import nodemailer from "nodemailer";
 
 export interface MailCredential {
@@ -24,7 +24,7 @@ export const QUEUE_NAME = "emailQueue";
 
 export class Emailer {
   constructor(
-    private redis: RedisClient | null = null,
+    private redis: Redis | null = null,
     private credentials: MailCredential[],
   ) {}
 
@@ -60,7 +60,7 @@ export class Emailer {
 
 export async function sendEmailWithFailover(
   jobData: EmailJobData,
-  redis: RedisClient,
+  redis: Redis,
 ) {
   const {
     senderName,

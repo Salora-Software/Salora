@@ -172,14 +172,14 @@
 	const stats = $derived(dashboardStatsQuery.data?.stats);
 	let cards = $derived([
 		{
-			name: 'Afspraken',
+			name: m['general.appointments'](),
 			title:
 				stats?.appointments?.current !== undefined ? String(stats.appointments.current) : '+00',
 			description: `${stats?.appointments?.change !== undefined ? (stats.appointments.change >= 0 ? '+' : '') + String(stats.appointments.change) : '+00'}% meer dan vorige maand`,
 			icon: CalendarDays
 		},
 		{
-			name: 'Omzet',
+			name: m['general.revenue'](),
 			title:
 				stats?.revenue?.current !== undefined
 					? `€ ${Number(stats.revenue.current).toLocaleString('nl-NL')}`
@@ -188,13 +188,13 @@
 			icon: DollarSign
 		},
 		{
-			name: 'Klanten',
+			name: m['general.customers'](),
 			title: stats?.customers?.current !== undefined ? String(stats?.customers.current) : '+00',
 			description: `${stats?.customers?.change !== undefined ? (stats?.customers.change >= 0 ? '+' : '') + String(stats?.customers.change) : '+00'}% meer dan vorige maand`,
 			icon: UsersRound
 		},
 		{
-			name: 'Nieuwe Klanten',
+			name: m['general.new-customers'](),
 			title:
 				stats?.newCustomers?.current !== undefined ? String(stats?.newCustomers.current) : '+00',
 			description: `${stats?.newCustomers?.change !== undefined ? (stats?.newCustomers.change >= 0 ? '+' : '') + String(stats?.newCustomers.change) : '+00'}% meer dan vorige maand`,
@@ -468,7 +468,9 @@
 	<div class="col-span-3 h-full lg:col-span-2">
 		<Card.Root class="mt-4 h-full overflow-hidden">
 			<Card.Header class="flex flex-row items-center justify-between">
-				<Card.Title>Grafieken</Card.Title>
+				<Card.Title>
+					{m['dashboard.appointment-trends']()}
+				</Card.Title>
 			</Card.Header>
 			<Card.Content class="flex h-full items-center justify-center px-2 pt-0 pb-8">
 				<div class="w-full">
@@ -484,7 +486,9 @@
 	<div class="col-span-3 h-full min-h-87.5 lg:col-span-1">
 		<Card.Root class="mt-4 h-full overflow-hidden">
 			<Card.Header>
-				<Card.Title>Klanten</Card.Title>
+				<Card.Title>
+					{m['dashboard.customer-types']()}
+				</Card.Title>
 			</Card.Header>
 			<Card.Content class="flex h-full items-center justify-center pt-0">
 				{#if !dashboardStatsQuery.isSuccess}

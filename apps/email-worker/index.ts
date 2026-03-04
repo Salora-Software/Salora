@@ -1,11 +1,11 @@
-import { RedisClient } from "bun";
+import {  Redis } from "ioredis";
 import {
   sendEmailWithFailover,
   QUEUE_NAME,
   type EmailJobData,
 } from "@salora/mailer";
 
-const connection = new RedisClient(
+const connection = new Redis(
   process.env.REDIS_URL || "redis://localhost:6379",
 );
 

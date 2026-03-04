@@ -10,6 +10,7 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Separator from '$lib/components/ui/separator/index.js';
+	import { m } from '$lib/paraglide/messages';
 
 	// Dummy data voor notificaties
 	let errorNotifications = $state([
@@ -137,7 +138,7 @@
 				<Tabs.Root value="appointments" class="w-full">
 					<Tabs.List class="grid w-full grid-cols-2">
 						<Tabs.Trigger value="appointments" class="relative">
-							Afspraken
+							{m['general.appointments']()}
 							{#if appointmentRequests.length > 0}
 								<Badge
 									variant="destructive"

@@ -12,12 +12,12 @@ import type { $Enums } from '@salora/database';
 import redis from '$lib/server/redis';
 
 import { prisma as prismaInstance } from './prisma';
-import type { RedisClient } from 'bun';
+import type {  Redis } from 'ioredis';
 
 class NotificationService {
 	constructor(
 		private prisma: typeof prismaInstance,
-		private redis: RedisClient | null = null
+		private redis: Redis | null = null
 	) {}
 
 	async sendEmailNotification({

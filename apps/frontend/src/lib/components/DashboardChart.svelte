@@ -3,6 +3,7 @@
 	import { curveMonotoneX } from 'd3-shape';
 	import { scaleUtc } from 'd3-scale';
 	import { AreaChart } from 'layerchart';
+	import { m } from '$lib/paraglide/messages';
 
 	let {
 		chartData,
@@ -24,10 +25,10 @@
 	} = $props();
 
 	const chartConfig = {
-		bookings: { label: 'Afspraken', color: '#3b82f6' },
-		revenue: { label: 'Omzet', color: '#22c55e' },
-		customers: { label: 'Klanten', color: '#f97316' },
-		newCustomers: { label: 'Nieuwe Klanten', color: '#a855f7' }
+		bookings: { label: m['general.appointments'](), color: '#3b82f6' },
+		revenue: { label: m['general.revenue'](), color: '#22c55e' },
+		customers: { label: m['general.customers'](), color: '#f97316' },
+		newCustomers: { label: m['general.new-customers'](), color: '#a855f7' }
 	} satisfies Chart.ChartConfig;
 
 	let activeSeries = $derived([

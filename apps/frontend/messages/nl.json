@@ -2,6 +2,8 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"dashboard": {
 		"hello": "Hallo {name}",
+		"appointment-trends": "Grafieken",
+		"customer-types": "Soort klanten",
 		"summary": [
 			{
 				"declarations": [
@@ -20,5 +22,11 @@
 				}
 			}
 		]
+	},
+	"general": {
+		"appointments": "Afspraken",
+		"revenue": "Omzet",
+		"customers": "Klanten",
+		"new-customers": "Nieuwe klanten"
 	}
 }

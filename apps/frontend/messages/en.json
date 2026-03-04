@@ -2,6 +2,14 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"dashboard": {
 		"hello": "Hello {name}",
+		"appointment-trends": "Appointment trends",
+		"customer-types": "Customer types",
 		"summary": "You have {appointments} appointments and {customers} customers during this period."
+	},
+	"general": {
+		"appointments": "Appointments",
+		"revenue": "Revenue",
+		"customers": "Customers",
+		"new-customers": "New customers"
 	}
 }

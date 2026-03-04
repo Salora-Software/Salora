@@ -589,7 +589,7 @@
 	};
 </script>
 
-<div class="flex flex-wrap items-center justify-between gap-4 py-4">
+<div class="flex flex-wrap items-center justify-between gap-4 pb-4">
 	<div class="flex items-center gap-2">
 		<Tabs.Root bind:value>
 			<Tabs.List>

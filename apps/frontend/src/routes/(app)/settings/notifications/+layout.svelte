@@ -4,6 +4,7 @@
 	import { cn } from '$lib/utils.js';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import Button from '$lib/components/ui/button/button.svelte';
 
 	interface Props {
 		data: any;
@@ -59,14 +60,15 @@
 				<div class="space-y-1">
 					{#each notifications.customer as notification}
 						{@const isActive = page.url.pathname.includes(`/templates/CUSTOMER/${notification.id}`)}
-						<button
+						<Button
+							variant="ghost"
 							class={cn(
-								'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors',
+								'flex w-full items-center justify-between',
 								isActive
 									? 'bg-secondary text-primary font-medium'
-									: 'hover:bg-muted text-muted-foreground hover:text-foreground'
+									: 'hover:bg-muted text-muted-foreground '
 							)}
-							onclick={() => goto(`/settings/notifications/templates/CUSTOMER/${notification.id}`)}
+							href={`/settings/notifications/templates/CUSTOMER/${notification.id}`}
 						>
 							<span>{notification.name}</span>
 							<div
@@ -77,7 +79,7 @@
 										: 'bg-muted-foreground/30'
 								)}
 							></div>
-						</button>
+						</Button>
 					{/each}
 				</div>
 			</div>
@@ -89,14 +91,15 @@
 				<div class="space-y-1">
 					{#each notifications.employee as notification}
 						{@const isActive = page.url.pathname.includes(`/templates/EMPLOYEE/${notification.id}`)}
-						<button
+						<Button
+							variant="ghost"
 							class={cn(
-								'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors',
+								'flex w-full items-center justify-between',
 								isActive
 									? 'bg-secondary text-primary font-medium'
-									: 'hover:bg-muted text-muted-foreground hover:text-foreground'
+									: 'hover:bg-muted text-muted-foreground '
 							)}
-							onclick={() => goto(`/settings/notifications/templates/EMPLOYEE/${notification.id}`)}
+							href={`/settings/notifications/templates/EMPLOYEE/${notification.id}`}
 						>
 							<span>{notification.name}</span>
 							<div
@@ -107,7 +110,7 @@
 										: 'bg-muted-foreground/30'
 								)}
 							></div>
-						</button>
+						</Button>
 					{/each}
 				</div>
 			</div>
@@ -117,17 +120,18 @@
 					Algemeen
 				</h3>
 				<div class="space-y-1">
-					<button
+					<Button
+						variant="ghost"
 						class={cn(
-							'w-full rounded-md px-3 py-2 text-left text-sm transition-colors',
+							'flex w-full items-center justify-between',
 							page.url.pathname.endsWith('/settings')
 								? 'bg-secondary text-primary font-medium'
-								: 'hover:bg-muted text-muted-foreground hover:text-foreground'
+								: 'hover:bg-muted text-muted-foreground '
 						)}
-						onclick={() => goto('/settings/notifications/settings')}
+						href="/settings/notifications/settings"
 					>
 						SMTP Instellingen
-					</button>
+					</Button>
 				</div>
 			</div>
 		</div>

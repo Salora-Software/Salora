@@ -128,95 +128,116 @@
 						<Separator class="my-2" />
 					{/if}
 
-					<div class="group flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:gap-4">
-						<!-- Customer avatar -->
-						<div
-							class="bg-secondary text-secondary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-						>
-							{getInitials(item.customer?.name ?? 'Onbekend')}
+					<div class="group flex flex-col gap-4 py-2 sm:flex-row sm:items-start sm:gap-6">
+						<!-- Date & time (moved to front, clear text) -->
+						<div class="flex flex-col gap-1 sm:w-32">
+							<div class="mt-0.5 flex items-center gap-3 sm:flex-col sm:items-start sm:gap-1">
+								<div class="flex items-center gap-1.5">
+									<CalendarDays class="text-muted-foreground h-4 w-4 shrink-0" />
+									<span class="text-foreground text-sm font-medium"
+										>{formatDate(item.localStartTime || item.startTime)}</span
+									>
+								</div>
+								<div class="flex items-center gap-1.5 pl-5 sm:pl-0">
+									<Clock class="text-muted-foreground h-4 w-4 shrink-0 sm:hidden" />
+									<span class="text-foreground/80 text-sm"
+										>{formatTime(item.localStartTime || item.startTime)}
+										<span class="text-muted-foreground"
+											>({item.booking?.duration ? `${item.booking.duration}m` : '-'})</span
+										></span
+									>
+								</div>
+							</div>
 						</div>
 
-						<!-- Customer info -->
-						<div class="min-w-0 flex-1">
-							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-								<p class="truncate text-sm font-medium">
-									{item.customer?.name || 'Onbekende klant'}
-								</p>
+						<!-- Customer avatar & info -->
+						<div class="flex min-w-0 flex-1 flex-col gap-1">
+							<div class="mt-0.5 flex items-center gap-3">
+								<div
+									class="bg-secondary text-secondary-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+								>
+									{getInitials(item.customer?.name ?? 'Onbekend')}
+								</div>
+
+								<div class="min-w-0 flex-1">
+									<p class="text-foreground truncate text-sm font-medium">
+										{item.customer?.name || 'Onbekende klant'}
+									</p>
+									<p class="text-muted-foreground truncate text-xs">
+										{item.customer?.email || 'Geen email'}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Type/Service pill -->
+						<div class="hidden flex-col items-start gap-1 sm:flex sm:w-40">
+							<span class="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase"
+								>Dienst</span
+							>
+							<div class="mt-1">
 								<span
-									class="bg-secondary text-secondary-foreground inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium"
+									class="bg-secondary text-secondary-foreground inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium"
 								>
 									{item.booking?.service.name || 'Afspraak'}
 								</span>
 							</div>
-							<p class="text-muted-foreground truncate text-xs">
-								{item.customer?.email || 'Geen email'}
-							</p>
-						</div>
-
-						<!-- Date & time -->
-						<div class="flex items-center gap-3 sm:w-40 sm:flex-col sm:items-start sm:gap-0.5">
-							<div class="flex items-center gap-1">
-								<CalendarDays class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-								<span class="text-sm">{formatDate(item.localStartTime || item.startTime)}</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<Clock class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-								<span class="text-muted-foreground text-xs"
-									>{formatTime(item.localStartTime || item.startTime)} · {item.booking?.duration
-										? `${item.booking.duration} min`
-										: '-'}</span
-								>
-							</div>
 						</div>
 
 						<!-- Assigned staff -->
-						<div
-							class="hidden items-center gap-1.5 xl:flex xl:w-32 xl:flex-col xl:items-start xl:gap-0.5"
-						>
-							<div class="flex items-center gap-1">
-								<User class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-								<span class="text-muted-foreground text-xs">Toegewezen aan</span>
+						<div class="hidden xl:flex xl:w-32 xl:flex-col xl:items-start xl:gap-1">
+							<span class="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase"
+								>Medewerker</span
+							>
+							<div class="mt-1.5 flex items-center gap-1.5">
+								<User class="text-muted-foreground h-4 w-4 shrink-0" />
+								<span class="text-foreground text-sm font-medium"
+									>{item.member?.user?.name || '-'}</span
+								>
 							</div>
-							<span class="text-sm">{item.member?.user?.name || '-'}</span>
 						</div>
 
 						<!-- Status select -->
-						<div
-							class="flex shrink-0 items-center justify-between sm:flex-col sm:items-end sm:justify-center sm:gap-1.5"
-						>
-							<Select.Root
-								type="single"
-								disabled={item.isUpdating}
-								onValueChange={(value) => {
-									if (value && value !== currentStatus) {
-										onStatusChange(item, value);
-									}
-								}}
+						<div class="flex shrink-0 flex-col items-start gap-1 sm:w-36">
+							<span
+								class="text-muted-foreground hidden text-[10px] font-semibold tracking-wider uppercase sm:block"
+								>Status</span
 							>
-								<Select.Trigger
-									class="h-8 w-full min-w-[9rem] text-xs sm:w-auto"
+							<div class="mt-0.5 w-full">
+								<Select.Root
+									type="single"
 									disabled={item.isUpdating}
+									onValueChange={(value) => {
+										if (value && value !== currentStatus) {
+											onStatusChange(item, value);
+										}
+									}}
 								>
-									<span class="text-foreground">
-										{item.isUpdating
-											? 'Bijwerken...'
-											: t.database.enums.bookingStatus[
-													currentStatus as keyof typeof t.database.enums.bookingStatus
-												] || 'Status wijzigen'}
-									</span>
-								</Select.Trigger>
-								<Select.Content>
-									{#each statusTypes as status}
-										<Select.Item value={status} class="text-sm">
-											<span class="flex items-center gap-2">
-												{t.database.enums.bookingStatus[
-													status as keyof typeof t.database.enums.bookingStatus
-												]}
-											</span>
-										</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
+									<Select.Trigger
+										class="h-8 w-full min-w-[9rem] text-xs sm:w-auto"
+										disabled={item.isUpdating}
+									>
+										<span class="text-foreground">
+											{item.isUpdating
+												? 'Bijwerken...'
+												: t.database.enums.bookingStatus[
+														currentStatus as keyof typeof t.database.enums.bookingStatus
+													] || 'Status wijzigen'}
+										</span>
+									</Select.Trigger>
+									<Select.Content>
+										{#each statusTypes as status}
+											<Select.Item value={status} class="text-sm">
+												<span class="flex items-center gap-2">
+													{t.database.enums.bookingStatus[
+														status as keyof typeof t.database.enums.bookingStatus
+													]}
+												</span>
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							</div>
 						</div>
 					</div>
 				{/each}

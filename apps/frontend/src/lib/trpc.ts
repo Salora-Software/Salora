@@ -84,6 +84,7 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 export type RouterInput = inferRouterInputs<AppRouter>;
 export type RouterOutput = inferRouterOutputs<AppRouter>;
 
+export type AppointmentItem = RouterOutput['v1']['authenticated']['dashboard']['getUpcomingAppointments']['appointments'][number];
 export type BranchType = RouterOutput['v1']['authenticated']['organization']['getBranches'][number];
 export type CalendarType =
 	RouterOutput['v1']['authenticated']['calendar']['getCalendar']['items'][number];

@@ -4,6 +4,24 @@
 		"hello": "Hallo {name}",
 		"appointment-trends": "Grafieken",
 		"customer-types": "Soort klanten",
+		"percentage-change": [
+			{
+				"declarations": [
+					"input percentage",
+					"input period",
+					"input trend"
+				],
+				"selectors": [
+					"trend"
+				],
+				"match": {
+					"trend=up": "{percentage}% meer dan vorige {period}",
+					"trend=down": "{percentage}% minder dan vorige {period}",
+					"trend=flat": "Gelijk aan vorige {period}",
+					"*": "{percentage}% verandering t.o.v. vorige {period}"
+				}
+			}
+		],
 		"summary": [
 			{
 				"declarations": [

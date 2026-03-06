@@ -7,13 +7,11 @@ import { DateTime } from 'luxon';
 export const router = createRouter({
 	getUpcomingAppointments: privateProcedure
 		.input(
-			z
-				.object({
-					organizationId: z.string().optional(),
-					startDate: z.string().optional(),
-					endDate: z.string().optional()
-				})
-				.optional()
+			z.object({
+				organizationId: z.string().optional(),
+				startDate: z.string().optional(),
+				endDate: z.string().optional()
+			})
 		)
 		.query(async ({ ctx, input }) => {
 			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;
@@ -24,7 +22,7 @@ export const router = createRouter({
 				include: {
 					members: {
 						include: {
-							user: true
+							user: true,
 						}
 					}
 				}
@@ -70,7 +68,8 @@ export const router = createRouter({
 					},
 					booking: {
 						include: {
-							customer: true
+							customer: true,
+							service: true
 						}
 					}
 				},
@@ -107,13 +106,11 @@ export const router = createRouter({
 
 	getDashboardStats: privateProcedure
 		.input(
-			z
-				.object({
-					organizationId: z.string().optional(),
-					startDate: z.string().optional(),
-					endDate: z.string().optional()
-				})
-				.optional()
+			z.object({
+				organizationId: z.string().optional(),
+				startDate: z.string().optional(),
+				endDate: z.string().optional()
+			})
 		)
 		.query(async ({ ctx, input }) => {
 			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;

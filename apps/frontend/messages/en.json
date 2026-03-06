@@ -4,6 +4,24 @@
 		"hello": "Hello {name}",
 		"appointment-trends": "Appointment trends",
 		"customer-types": "Customer types",
+		"percentage-change": [
+			{
+				"declarations": [
+					"input percentage",
+					"input period"
+				],
+				"selectors": [
+					"percentage",
+					"period"
+				],
+				"match": {
+					"percentage > 0": "{percentage}% more than previous {period}",
+					"percentage < 0": "{percentage}% less than previous {period}",
+					"percentage == 0": "Equal to previous {period}",
+					"*": "{percentage}% change compared to previous {period}"
+				}
+			}
+		],
 		"summary": "You have {appointments} appointments and {customers} customers during this period."
 	},
 	"general": {

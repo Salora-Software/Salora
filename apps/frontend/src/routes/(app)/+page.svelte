@@ -9,9 +9,6 @@
 
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index';
-	import * as Select from '$lib/components/ui/select';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { t } from '$lib/translation.js';
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	// Import DateValue and DateRange from bits-ui instead to ensure type compatibility
@@ -20,6 +17,7 @@
 	import type { DateRange } from 'bits-ui';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
+	import AppointmentOverview from '$lib/components/AppointmentOverview.svelte';
 
 	// Set default date range to last 30 days
 	const todayDate = today(getLocalTimeZone());
@@ -175,7 +173,17 @@
 			name: m['general.appointments'](),
 			title:
 				stats?.appointments?.current !== undefined ? String(stats.appointments.current) : '+00',
-			description: `${stats?.appointments?.change !== undefined ? (stats.appointments.change >= 0 ? '+' : '') + String(stats.appointments.change) : '+00'}% meer dan vorige maand`,
+			// description: `${stats?.appointments?.change !== undefined ? (stats.appointments.change >= 0 ? '+' : '') + String(stats.appointments.change) : '+00'}% meer dan vorige maand`,
+			description: m['dashboard.percentage-change']({
+				percentage: Number(stats?.appointments?.change ?? 0),
+				period: 'maand',
+				trend:
+					(stats?.appointments?.change ?? 0) === 0
+						? 'flat'
+						: (stats?.appointments?.change ?? 0) > 0
+							? 'up'
+							: 'down'
+			}),
 			icon: CalendarDays
 		},
 		{
@@ -184,21 +192,45 @@
 				stats?.revenue?.current !== undefined
 					? `€ ${Number(stats.revenue.current).toLocaleString('nl-NL')}`
 					: '€ 0.000',
-			description: `${stats?.revenue?.change !== undefined ? (stats?.revenue.change >= 0 ? '+' : '') + String(stats?.revenue.change) : '+00'}% meer dan vorige maand`,
-			icon: DollarSign
+			description: m['dashboard.percentage-change']({
+				percentage: Number(stats?.revenue?.change ?? 0),
+				period: 'maand',
+				trend:
+					(stats?.revenue?.change ?? 0) === 0
+						? 'flat'
+						: (stats?.revenue?.change ?? 0) > 0
+							? 'up'
+							: 'down'
+			})
 		},
 		{
 			name: m['general.customers'](),
 			title: stats?.customers?.current !== undefined ? String(stats?.customers.current) : '+00',
-			description: `${stats?.customers?.change !== undefined ? (stats?.customers.change >= 0 ? '+' : '') + String(stats?.customers.change) : '+00'}% meer dan vorige maand`,
-			icon: UsersRound
+			description: m['dashboard.percentage-change']({
+				percentage: Number(stats?.customers?.change ?? 0),
+				period: 'maand',
+				trend:
+					(stats?.customers?.change ?? 0) === 0
+						? 'flat'
+						: (stats?.customers?.change ?? 0) > 0
+							? 'up'
+							: 'down'
+			})
 		},
 		{
 			name: m['general.new-customers'](),
 			title:
 				stats?.newCustomers?.current !== undefined ? String(stats?.newCustomers.current) : '+00',
-			description: `${stats?.newCustomers?.change !== undefined ? (stats?.newCustomers.change >= 0 ? '+' : '') + String(stats?.newCustomers.change) : '+00'}% meer dan vorige maand`,
-			icon: UserRoundPlus
+			description: m['dashboard.percentage-change']({
+				percentage: Number(stats?.newCustomers?.change ?? 0),
+				period: 'maand',
+				trend:
+					(stats?.newCustomers?.change ?? 0) === 0
+						? 'flat'
+						: (stats?.newCustomers?.change ?? 0) > 0
+							? 'up'
+							: 'down'
+			})
 		}
 	]);
 
@@ -281,48 +313,6 @@
 			return nameA.localeCompare(nameB);
 		}) || []
 	);
-	let upcomingAppointments = $derived(
-		appointments.map((appointment) => ({
-			id: appointment.id, // Add the calendar item ID for updates
-			date: appointment.localStartTime
-				? new Date(appointment.localStartTime).toLocaleDateString('nl-NL', {
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric'
-					})
-				: 'Onbekende datum',
-			time: appointment.localStartTime
-				? new Date(appointment.localStartTime).toLocaleTimeString('nl-NL', {
-						hour: '2-digit',
-						minute: '2-digit'
-					})
-				: 'Onbekende tijd',
-			duration:
-				appointment.localEndTime && appointment.localStartTime
-					? `${Math.round((new Date(appointment.localEndTime).getTime() - new Date(appointment.localStartTime).getTime()) / (1000 * 60))} min`
-					: '30 min',
-			assigned: {
-				id: appointment.member?.id || '1',
-				name: appointment.member?.user?.name || 'Medewerker',
-				image: appointment.member?.user?.image || ''
-			},
-			type: appointment.title || 'Afspraak',
-			price: {
-				amount: 30, // Default price, could be enhanced later
-				currency: 'EUR'
-			},
-			status: appointment.booking?.status || 'PENDING',
-			value: appointment.booking?.status || 'PENDING',
-			customer: {
-				name: appointment.customer?.name || 'Onbekende klant',
-				email: appointment.customer?.email || 'Geen email'
-			},
-			// Store original appointment data for updates
-			originalAppointment: appointment,
-			// Loading state for individual appointments
-			isUpdating: false
-		}))
-	);
 
 	data.branchesState.onBranchChange(async (branch) => {
 		activeBranch = branch;
@@ -348,39 +338,34 @@
 		if (!activeBranch) return;
 
 		// Store original status for rollback
-		const originalStatus = appointmentItem.status;
+		const originalStatus = appointmentItem.booking?.status || 'PENDING';
 
 		// Set loading state for this specific appointment
 		appointmentItem.isUpdating = true;
 
 		try {
-			const originalAppointment = appointmentItem.originalAppointment;
-
 			// Update the calendar item with the new status
 			await upsertCalendarItem.mutateAsync({
 				id: appointmentItem.id,
 				type: 'BOOKING',
 				organizationId: activeBranch.id,
-				title: originalAppointment.title || 'Afspraak',
-				startTime: new Date(originalAppointment.startTime),
-				endTime: new Date(originalAppointment.endTime),
-				notes: originalAppointment.notes || '',
+				title: appointmentItem.title || 'Afspraak',
+				startTime: new Date(appointmentItem.startTime),
+				endTime: new Date(appointmentItem.endTime),
+				notes: appointmentItem.notes || '',
 				status: newStatus
 			});
 
-			// Update the local state
-			appointmentItem.status = newStatus;
-			appointmentItem.value = newStatus;
-
-			// Update the original appointment status for future reference
-			if (appointmentItem.originalAppointment.booking) {
-				appointmentItem.originalAppointment.booking.status = newStatus;
+			// Update the original appointment booking status for future reference
+			if (appointmentItem.booking) {
+				appointmentItem.booking.status = newStatus;
 			}
 		} catch (error) {
 			console.error('Failed to update appointment status:', error);
 			// Revert the status change in case of error
-			appointmentItem.status = originalStatus;
-			appointmentItem.value = originalStatus;
+			if (appointmentItem.booking) {
+				appointmentItem.booking.status = originalStatus;
+			}
 
 			// Show error message to user (you can implement a toast notification here)
 			alert('Er ging iets mis bij het bijwerken van de afspraak. Probeer het opnieuw.');
@@ -508,154 +493,11 @@
 		</Card.Root>
 	</div>
 </div>
-
-<Card.Root class="mt-8">
-	<Card.Header>
-		<Card.Title>
-			Afspraken
-			<span class="text-muted-foreground text-xs"> (Vandaag) </span>
-		</Card.Title>
-	</Card.Header>
-	<Card.Content>
-		{#if !upcomingAppointmentsQuery.isSuccess}
-			<!-- Skeleton loading for appointments -->
-			<div class="space-y-4">
-				{#each Array(3) as _, i}
-					<div class="flex items-stretch gap-2 py-2">
-						<Skeleton class="h-25 w-8 rounded-md" />
-						<div class="flex flex-1 items-stretch gap-2 py-2">
-							<div
-								class="flex min-h-full flex-col justify-between gap-4 xl:flex-row xl:items-center"
-							>
-								<div class="space-y-2">
-									<Skeleton class="h-6 w-30 rounded-md" />
-									<Skeleton class="h-4 w-20 rounded-md" />
-								</div>
-								<div class="space-y-2">
-									<Skeleton class="h-4 w-15 rounded-md" />
-									<Skeleton class="h-5 w-20 rounded-md" />
-								</div>
-							</div>
-							<div
-								class="ml-4 flex min-h-full flex-col justify-between gap-4 xl:flex-row xl:items-center"
-							>
-								<div class="space-y-2">
-									<Skeleton class="h-4 w-25 rounded-md" />
-									<Skeleton class="h-4 w-35 rounded-md" />
-								</div>
-								<div class="space-y-2">
-									<Skeleton class="h-4 w-10 rounded-md" />
-									<Skeleton class="h-5 w-15 rounded-md" />
-								</div>
-							</div>
-						</div>
-						<div
-							class="ml-auto flex min-h-full max-w-full flex-col justify-between gap-4 xl:flex-row xl:items-center"
-						>
-							<div class="space-y-2">
-								<Skeleton class="h-4 w-25 rounded-md" />
-								<Skeleton class="h-4 w-20 rounded-md" />
-							</div>
-							<div>
-								<Skeleton class="h-9 w-37.5 rounded-md" />
-							</div>
-						</div>
-					</div>
-					{#if i < 2}
-						<Separator />
-					{/if}
-				{/each}
-			</div>
-		{:else if upcomingAppointments.length > 0}
-			{#each upcomingAppointments as item, i}
-				<Separator />
-				<div
-					class="afspraak-card hover:bg-sidebar-accent border-muted flex flex-col items-stretch gap-2 overflow-x-auto rounded-lg border py-2 transition-colors sm:flex-row"
-				>
-					<div class="bg-secondary my-auto h-8 w-full shrink-0 rounded-md sm:h-30 sm:w-8"></div>
-					<div class="mobile-zigzag flex flex-1 flex-col items-stretch gap-2 py-2 sm:flex-row">
-						<div
-							class="mobile-zigzag-item flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-start sm:gap-4"
-						>
-							<div
-								class="bg-secondary text-secondary-foreground flex flex-wrap items-center gap-2 rounded-md px-2 font-semibold"
-							>
-								<p>{item.date}</p>
-								<p>{item.time}</p>
-							</div>
-							<div class="  font-semibold">
-								<p class="text-muted-foreground">Van:</p>
-								<p class="text-md">{item.duration}</p>
-							</div>
-						</div>
-						<div
-							class="mobile-zigzag-item flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-start sm:gap-4"
-						>
-							<div class="font-semibold">
-								<div class="flex items-center gap-1">
-									<p class="text-muted-foreground">Klant:</p>
-									<p class="text-foreground">{item.customer?.name || 'Onbekende klant'}</p>
-								</div>
-								<p class="text-muted-foreground text-sm">{item.customer?.email || 'Geen email'}</p>
-							</div>
-							<div class="font-semibold">
-								<p class="text-muted-foreground">Prijs:</p>
-								<p class="text-md">€ {item.price.amount}</p>
-							</div>
-						</div>
-						<div
-							class="right-bar mobile-zigzag-item flex w-full min-w-40 flex-col items-end justify-between gap-2 sm:ml-auto sm:w-auto"
-						>
-							<div class="w-full text-right font-semibold">
-								<p class="text-muted-foreground">Toegewezen aan:</p>
-								<p class="text-foreground">{item.assigned.name}</p>
-							</div>
-							<div class="w-full min-w-30">
-								<Select.Root
-									type="single"
-									disabled={item.isUpdating}
-									onValueChange={(value) => {
-										if (value && value !== item.status) {
-											updateAppointmentStatus(item, value);
-										}
-									}}
-								>
-									<Select.Trigger class="w-full min-w-25" disabled={item.isUpdating}>
-										<span class="text-foreground">
-											{item.isUpdating
-												? 'Bezig met bijwerken...'
-												: t.database.enums.bookingStatus[
-														item.status as keyof typeof t.database.enums.bookingStatus
-													]}
-										</span>
-									</Select.Trigger>
-									<Select.Content>
-										{#each statusTypes as status}
-											<Select.Item value={status}>
-												{t.database.enums.bookingStatus[
-													status as keyof typeof t.database.enums.bookingStatus
-												]}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
-							</div>
-						</div>
-					</div>
-				</div>
-			{/each}
-			<Separator />
-		{:else}
-			<div class="flex h-40 flex-col items-center justify-center">
-				<CalendarDays class="text-muted-foreground mb-4 h-12 w-12" />
-				<p class="text-foreground text-lg font-medium">Geen afspraken voor vandaag</p>
-				<p class="text-muted-foreground max-w-md text-center text-sm">
-					Er zijn momenteel geen afspraken gepland voor vandaag. Probeer het later opnieuw.
-				</p>
-			</div>
-		{/if}
-	</Card.Content>
-</Card.Root>
+<AppointmentOverview
+	{appointments}
+	isLoading={!upcomingAppointmentsQuery.isSuccess}
+	onStatusChange={updateAppointmentStatus}
+/>
 
 <style>
 	@keyframes wave {

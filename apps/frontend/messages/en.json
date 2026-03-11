@@ -6,19 +6,10 @@
 		"customer-types": "Customer types",
 		"percentage-change": [
 			{
-				"declarations": [
-					"input percentage",
-					"input period"
-				],
-				"selectors": [
-					"percentage",
-					"period"
-				],
+				"declarations": ["input percentage", "input period", "input trend"],
+				"selectors": ["percentage", "period"],
 				"match": {
-					"percentage > 0": "{percentage}% more than previous {period}",
-					"percentage < 0": "{percentage}% less than previous {period}",
-					"percentage == 0": "Equal to previous {period}",
-					"*": "{percentage}% change compared to previous {period}"
+					"percentage=*, period=*": "{percentage}% change compared to previous {period}"
 				}
 			}
 		],
@@ -28,6 +19,7 @@
 		"appointments": "Appointments",
 		"revenue": "Revenue",
 		"customers": "Customers",
-		"new-customers": "New customers"
+		"new-customers": "New customers",
+		"last_days": ""
 	}
 }

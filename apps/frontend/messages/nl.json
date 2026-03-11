@@ -6,37 +6,25 @@
 		"customer-types": "Soort klanten",
 		"percentage-change": [
 			{
-				"declarations": [
-					"input percentage",
-					"input period",
-					"input trend"
-				],
-				"selectors": [
-					"trend"
-				],
+				"declarations": ["input percentage", "input period", "input trend"],
+				"selectors": ["percentage", "period", "trend"],
 				"match": {
 					"trend=up": "{percentage}% meer dan vorige {period}",
 					"trend=down": "{percentage}% minder dan vorige {period}",
 					"trend=flat": "Gelijk aan vorige {period}",
-					"*": "{percentage}% verandering t.o.v. vorige {period}"
+					"percentage=*, period=*": "{percentage}% verandering t.o.v. vorige {period}"
 				}
 			}
 		],
 		"summary": [
 			{
-				"declarations": [
-					"input appointments",
-					"input customers"
-				],
-				"selectors": [
-					"appointments",
-					"customers"
-				],
+				"declarations": ["input appointments", "input customers"],
+				"selectors": ["appointments", "customers"],
 				"match": {
 					"appointments=1, customers=1": "Je hebt {appointments} afspraak en {customers} klant tijdens deze periode.",
 					"appointments=1": "Je hebt {appointments} afspraak en {customers} klanten tijdens deze periode.",
 					"customers=1": "Je hebt {appointments} afspraken en {customers} klant tijdens deze periode.",
-					"*": "Je hebt {appointments} afspraken en {customers} klanten tijdens deze periode."
+					"appointments=*, customers=*": "Je hebt {appointments} afspraken en {customers} klanten tijdens deze periode."
 				}
 			}
 		]
@@ -45,6 +33,10 @@
 		"appointments": "Afspraken",
 		"revenue": "Omzet",
 		"customers": "Klanten",
-		"new-customers": "Nieuwe klanten"
+		"new-customers": "Nieuwe klanten",
+		"last_days": "Laatste {days} dagen",
+		"last_months": "Laatste {months} maanden",
+		"last_years": "Laatste {years} jaar",
+		"all_time": "Alle tijd"
 	}
 }

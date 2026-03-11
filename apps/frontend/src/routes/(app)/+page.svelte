@@ -38,42 +38,42 @@
 	// Preset date ranges
 	const presetRanges = [
 		{
-			label: 'Laatste 7 dagen',
+			label: m['general.last_days']({ days: 7 }),
 			getValue: () => ({
 				start: todayDate.subtract({ days: 6 }),
 				end: todayDate
 			})
 		},
 		{
-			label: 'Laatste 30 dagen',
+			label: m['general.last_days']({ days: 30 }),
 			getValue: () => ({
 				start: todayDate.subtract({ days: 29 }),
 				end: todayDate
 			})
 		},
 		{
-			label: 'Laatste 3 maanden',
+			label: m['general.last_months']({ months: 3 }),
 			getValue: () => ({
 				start: todayDate.subtract({ months: 3 }),
 				end: todayDate
 			})
 		},
 		{
-			label: 'Laatste 6 maanden',
+			label: m['general.last_months']({ months: 6 }),
 			getValue: () => ({
 				start: todayDate.subtract({ months: 6 }),
 				end: todayDate
 			})
 		},
 		{
-			label: 'Laatste jaar',
+			label: m['general.last_years']({ years: 1 }),
 			getValue: () => ({
 				start: todayDate.subtract({ years: 1 }),
 				end: todayDate
 			})
 		},
 		{
-			label: 'Alle tijd',
+			label: m['general.all_time'](),
 			getValue: () => {
 				let startDate = todayDate.subtract({ years: 10 }); // Fallback
 

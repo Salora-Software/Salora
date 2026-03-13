@@ -54,17 +54,22 @@
 
 <BitsConfig defaultPortalTo={container}>
 	<div bind:this={container} class="salora-widget-root">
-		<Toaster position={'top-right'} richColors />
-		{#if loading}
-			<div>Laden...</div>
-		{:else}
-			<div class="w-4xl h-125 max-w-full">
+		<div class="w-4xl h-125 max-w-full">
+			<Toaster position={'top-right'} richColors />
+			{#if loading}
+				<div
+					class="bg-widget-content-bg flex h-full w-full flex-col items-center justify-center rounded-md p-4 shadow-sm"
+				>
+					<h1 class="text-widget-content-text text-2xl">Vestiging niet gevonden</h1>
+					<p class="text-widget-content-text-muted">Neem contact op met de eigenaar!</p>
+				</div>
+			{:else}
 				<Themer colorTheme={theme.current}>
 					{#if branchData}
 						<BookingWidget branch={branchData} />
 					{/if}
 				</Themer>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 </BitsConfig>

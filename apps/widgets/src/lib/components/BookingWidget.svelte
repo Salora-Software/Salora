@@ -1,11 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/';
 	import {
-		ChevronLeft,
-		ChevronRight,
 		Clock,
 		CreditCard,
 		LoaderCircle,
@@ -13,24 +10,15 @@
 		UserRound
 	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
-	import * as Select from '$lib/components/ui/select';
-	import { Calendar as CalendarPrimitive } from 'bits-ui';
 	import {
-		CalendarDate,
-		DateFormatter,
 		getLocalTimeZone,
 		today,
 		type DateValue
 	} from '@internationalized/date';
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import { cn } from '$lib/utils.js';
-	import { fly } from 'svelte/transition';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { toast } from 'svelte-sonner';
-	import { trpc } from '$lib/trpc.js';
 	import * as Avatar from '$lib/components/ui/avatar/';
-	import { DateTime, Interval } from 'luxon';
 	import { language } from '$lib/translation';
 	import BookingSidebar from './BookingSidebar.svelte';
 	import AppointmentStep from './steps/AppointmentStep.svelte';
@@ -50,6 +38,8 @@
 	import { tick } from 'svelte';
 	import type { RouterOutput } from '@salora/trpc-types';
 	import type { Prisma } from '@salora/database';
+	import { DateTime, type Interval } from 'luxon';
+	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
 
 	// Calendar value for binding
 	let calendarValue = $state<DateValue | undefined>(undefined);
@@ -380,7 +370,7 @@
 											</Avatar.Fallback>
 										</Avatar.Root>
 										<h1>
-											{employee.name}
+											{employee.user.name}
 										</h1>
 									</div>
 								{/each}

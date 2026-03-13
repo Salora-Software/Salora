@@ -1,45 +1,46 @@
 @import 'tailwindcss';
-
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+/* Scan de diepere componenten voor Tailwind classes */
+@source "../../src/**/*.{svelte,ts,js}";
+@source "../../src/lib/**/*.{svelte,ts,js}";
 
-:root {
+:host {
 	/* SIDEBAR VARIABLES */
 	--widget-sidebar-bg: oklch(0.98 0.01 220);
 	--widget-sidebar-text: oklch(0.35 0.03 220);
 	--widget-sidebar-text-muted: oklch(0.55 0.02 220);
 	--widget-sidebar-accent: oklch(0.67 0.08 220);
 	--widget-sidebar-border: oklch(0.92 0.02 220);
-	
+
 	/* CONTENT VARIABLES */
 	--widget-content-bg: oklch(0.995 0.005 220);
 	--widget-content-text: oklch(0.1 0.02 220);
 	--widget-content-text-muted: oklch(0.4 0.02 220);
-	
+
 	/* INPUT VARIABLES */
 	--widget-input-bg: oklch(0.99 0.008 220);
 	--widget-input-border: oklch(0.87 0.02 220);
-	
+
 	/* ACCENT VARIABLES */
 	--widget-accent: oklch(0.67 0.08 220);
 	--widget-accent-hover: oklch(0.62 0.1 220);
 	--widget-accent-rgb: 102, 153, 204; /* Approximate RGB for the accent color */
-	
+
 	/* STATE VARIABLES */
 	--widget-success: oklch(0.4 0.15 150);
 	--widget-error: oklch(0.55 0.2 15);
-	
+
 	/* CALENDAR VARIABLES */
 	--widget-calendar-bg: oklch(0.96 0.015 220);
 	--widget-calendar-available: oklch(0.9 0.02 220);
 	--widget-calendar-selected: oklch(0.67 0.08 220);
-	
+
 	/* TIME SLOT VARIABLES */
 	--widget-time-slot-bg: oklch(0.94 0.015 220);
 	--widget-time-slot-hover: oklch(0.88 0.025 220);
 	--widget-time-slot-selected: oklch(0.67 0.08 220);
-	
+
 	/* DESIGN SYSTEM VARIABLES */
 	--widget-font-family: 'Inter', system-ui, sans-serif;
 	--widget-border-radius: 8px;
@@ -62,35 +63,35 @@
 	--widget-sidebar-text-muted: oklch(0.7 0.02 220);
 	--widget-sidebar-accent: oklch(0.75 0.08 220);
 	--widget-sidebar-border: oklch(0.3 0.02 220);
-	
+
 	/* CONTENT VARIABLES */
 	--widget-content-bg: oklch(0.25 0.02 220);
 	--widget-content-text: oklch(0.9 0.02 220);
 	--widget-content-text-muted: oklch(0.7 0.02 220);
-	
+
 	/* INPUT VARIABLES */
 	--widget-input-bg: oklch(0.3 0.02 220);
 	--widget-input-border: oklch(0.4 0.03 220);
-	
+
 	/* ACCENT VARIABLES */
 	--widget-accent: oklch(0.75 0.08 220);
 	--widget-accent-hover: oklch(0.8 0.1 220);
 	--widget-accent-rgb: 115, 173, 230; /* Approximate RGB for the accent color in dark mode */
-	
+
 	/* STATE VARIABLES */
 	--widget-success: oklch(0.5 0.15 150);
 	--widget-error: oklch(0.6 0.2 15);
-	
+
 	/* CALENDAR VARIABLES */
 	--widget-calendar-bg: oklch(0.3 0.02 220);
 	--widget-calendar-available: oklch(0.4 0.03 220);
 	--widget-calendar-selected: oklch(0.75 0.08 220);
-	
+
 	/* TIME SLOT VARIABLES */
 	--widget-time-slot-bg: oklch(0.3 0.02 220);
 	--widget-time-slot-hover: oklch(0.35 0.03 220);
 	--widget-time-slot-selected: oklch(0.75 0.08 220);
-	
+
 	/* DESIGN SYSTEM VARIABLES */
 	--widget-font-family: 'Inter', system-ui, sans-serif;
 	--widget-border-radius: 8px;
@@ -113,24 +114,24 @@
 	--color-widget-sidebar-text-muted: var(--widget-sidebar-text-muted);
 	--color-widget-sidebar-accent: var(--widget-sidebar-accent);
 	--color-widget-sidebar-border: var(--widget-sidebar-border);
-	
+
 	--color-widget-content-bg: var(--widget-content-bg);
 	--color-widget-content-text: var(--widget-content-text);
 	--color-widget-content-text-muted: var(--widget-content-text-muted);
-	
+
 	--color-widget-input-bg: var(--widget-input-bg);
 	--color-widget-input-border: var(--widget-input-border);
-	
+
 	--color-widget-accent: var(--widget-accent);
 	--color-widget-accent-hover: var(--widget-accent-hover);
-	
+
 	--color-widget-success: var(--widget-success);
 	--color-widget-error: var(--widget-error);
-	
+
 	--color-widget-calendar-bg: var(--widget-calendar-bg);
 	--color-widget-calendar-available: var(--widget-calendar-available);
 	--color-widget-calendar-selected: var(--widget-calendar-selected);
-	
+
 	--color-widget-time-slot-bg: var(--widget-time-slot-bg);
 	--color-widget-time-slot-hover: var(--widget-time-slot-hover);
 	--color-widget-time-slot-selected: var(--widget-time-slot-selected);
@@ -151,16 +152,29 @@
 }
 
 @layer base {
-	* {
-		border-color: var(--widget-input-border);
+	*,
+	::before,
+	::after {
+		box-sizing: border-box;
+		border-width: 0;
+		border-style: solid; /* Dit vervangt de missende --tw-border-style */
+		border-color: var(--widget-input-border, currentColor);
 		outline-color: rgba(var(--widget-accent-rgb), 0.5);
 	}
-	body {
-		background-color: var(--widget-content-bg);
-		color: var(--widget-content-text);
-		font-family: var(--widget-font-family, 'Inter', system-ui, sans-serif);
-	}
 
+	/* Zorg ook dat knoppen en inputs hun standaard border-gedrag resetten */
+	button,
+	input,
+	optgroup,
+	select,
+	textarea {
+		font-family: inherit;
+		font-size: 100%;
+		margin: 0;
+		padding: 0;
+		line-height: inherit;
+		color: inherit;
+	}
 	/* Widget-specific base styles */
 	.widget-container {
 		font-family: var(--widget-font-family);
@@ -186,12 +200,12 @@
 	.widget-sidebar-accent {
 		color: var(--widget-sidebar-accent);
 	}
-	
+
 	.widget-sidebar-button {
 		background: var(--widget-sidebar-bg);
 		border-color: var(--widget-sidebar-border);
 	}
-	
+
 	.widget-sidebar-button:hover {
 		background: var(--widget-sidebar-border);
 	}
@@ -238,39 +252,52 @@
 		box-shadow: var(--widget-shadow);
 		padding: var(--widget-spacing-md);
 	}
-	
+
 	/* STATE STYLES */
 	.widget-error {
 		color: var(--widget-error);
 	}
-	
+
 	.widget-success {
 		color: var(--widget-success);
 	}
-	
+
 	/* CALENDAR STYLES */
 	.widget-calendar {
 		background: var(--widget-calendar-bg);
 	}
-	
+
 	.widget-calendar-available {
 		background: var(--widget-calendar-available);
 	}
-	
+
 	.widget-calendar-selected {
 		background: var(--widget-calendar-selected);
 	}
-	
+
 	/* TIME SLOT STYLES */
 	.widget-time-slot {
 		background: var(--widget-time-slot-bg);
 	}
-	
+
 	.widget-time-slot:hover {
 		background: var(--widget-time-slot-hover);
 	}
-	
+
 	.widget-time-slot-selected {
 		background: var(--widget-time-slot-selected);
 	}
+}
+
+* {
+	border-color: var(--widget-input-border);
+	outline-color: rgba(var(--widget-accent-rgb), 0.5);
+}
+
+/* Vervang 'body' door '#svelte-root' omdat body niet bestaat in Shadow DOM */
+#svelte-root {
+	all: unset;
+	background-color: var(--widget-content-bg);
+	color: var(--widget-content-text);
+	font-family: var(--widget-font-family, 'Inter', system-ui, sans-serif);
 }

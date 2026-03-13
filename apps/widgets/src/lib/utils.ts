@@ -1,28 +1,38 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import moment from 'moment-timezone';
-import {
-	type DateValue
-} from '@internationalized/date';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { DateTime } from 'luxon';
+import { type DateValue } from '@internationalized/date';
 
 export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZone: string): Date {
-	const value = new Date(
-		moment
-			.tz(`${dayOfWeek - 1} ${time}`, 'd HH:mm', organizationTimeZone)
-			.utc()
-			.toISOString()
-	);
-	return value;
+	const [hour, minute] = time.split(':').map(Number);
+
+	// Moment gebruikt 0 voor zondag, Luxon gebruikt 1 (maandag) t/m 7 (zondag).
+	// Deze mapping behoudt exact de logica van je eerdere `${dayOfWeek - 1}` implementatie.
+	const momentDay = dayOfWeek - 1;
+	const luxonWeekday = (momentDay === 0 ? 7 : momentDay) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+	return DateTime.now()
+		.setZone(organizationTimeZone)
+		.set({
+			weekday: luxonWeekday,
+			hour,
+			minute,
+			second: 0,
+			millisecond: 0
+		})
+		.toJSDate();
 }
+
 export function convertCalendarDateToDayOfWeek(date: DateValue): number {
 	const dayOfWeek = date.day;
-	const dayOfWeekAdjusted = (dayOfWeek + 6) % 7; // Adjust to start week on Monday
-	return dayOfWeekAdjusted + 1; // Adjust to 1-7 range
+	const dayOfWeekAdjusted = (dayOfWeek + 6) % 7;
+	return dayOfWeekAdjusted + 1;
 }
 
 export function convertToLocal(utcTime: Date, organizationTimeZone: string): string {
-	return moment(utcTime).tz(organizationTimeZone).format('HH:mm');
+	return DateTime.fromJSDate(utcTime).setZone(organizationTimeZone).toFormat('HH:mm');
 }
+
 export function convertToBase(date: Date, dayOfWeek: number): Date {
 	date.setFullYear(1970);
 	date.setMonth(0);
@@ -36,8 +46,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type WithoutChild<T> = T extends { child?: any } ? Omit<T, "child"> : T;
+export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, "children"> : T;
+export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };

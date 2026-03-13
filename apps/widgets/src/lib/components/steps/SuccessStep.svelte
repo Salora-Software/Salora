@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { DotLottieSvelte } from '@lottiefiles/dotlottie-svelte';
 	import { fly, scale } from 'svelte/transition';
 	import Confetti from 'svelte-confetti';
 	import { onMount } from 'svelte';
@@ -24,7 +23,6 @@
 	{/if}
 	<div class="flex h-max flex-col justify-center text-center">
 		<div class="h-[150px]">
-			<DotLottieSvelte src="/animations/successAnimation.lottie" autoplay />
 		</div>
 		<h1 class="widget-content-text mt-[-15px] text-2xl" in:scale={{ duration: 500, start: 0.7 }}>
 			Bedankt voor uw afspraak!

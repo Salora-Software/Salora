@@ -1,10 +1,8 @@
-
-import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { trpc } from '$lib/trpc';
 
 // Simple in-memory cache for branch queries
-const branchCache = new Map<string, { data: any, expires: number }>();
+const branchCache = new Map<string, { data: any; expires: number }>();
 
 export const load: LayoutServerLoad = async ({ params }) => {
 	const id = params.id;

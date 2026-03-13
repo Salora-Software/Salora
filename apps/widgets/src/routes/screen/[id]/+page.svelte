@@ -16,7 +16,6 @@
 		bind:this={widgetRef}
 		{branch}
 		bind:collapsed
-		branchId={page.params.id ?? ''}
 		onCollapsedChange={(newCollapsed) => (collapsed = newCollapsed)}
 	/>
 {:else}

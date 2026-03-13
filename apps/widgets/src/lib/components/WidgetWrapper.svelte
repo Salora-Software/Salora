@@ -8,6 +8,7 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
 	import Themer from '$lib/components/Themer.svelte';
+	import { LoaderCircle } from 'lucide-svelte';
 
 	let { variant = 'widget', branchId } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
@@ -60,13 +61,20 @@
 				<div
 					class="bg-widget-content-bg flex h-full w-full flex-col items-center justify-center rounded-md p-4 shadow-sm"
 				>
-					<h1 class="text-widget-content-text text-2xl">Vestiging niet gevonden</h1>
-					<p class="text-widget-content-text-muted">Neem contact op met de eigenaar!</p>
+					<h1 class="text-widget-content-text text-2xl">Gegevens aan het ophalen...</h1>
+					<LoaderCircle class="animate-spin text-widget-content-text-muted mt-4" size={32} />
 				</div>
 			{:else}
 				<Themer colorTheme={theme.current}>
 					{#if branchData}
 						<BookingWidget branch={branchData} />
+					{:else}
+						<div
+							class="bg-widget-content-bg flex h-full w-full flex-col items-center justify-center rounded-md p-4 shadow-sm"
+						>
+							<h1 class="text-widget-content-text text-2xl">Vestiging niet gevonden</h1>
+							<p class="text-widget-content-text-muted">Neem contact op met de eigenaar!</p>
+						</div>
 					{/if}
 				</Themer>
 			{/if}

@@ -1,10 +1,5 @@
 <script lang="ts">
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { onMount } from 'svelte';
-	import { cn } from '$lib/utils.js';
-	import { page } from '$app/state';
 	import BookingWidget from '$lib/components/BookingWidget.svelte';
-	let open = $state(true);
 	let { data } = $props();
 	let branch = $derived(data.branch);
 	let collapsed = $state(false);

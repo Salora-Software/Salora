@@ -153,19 +153,11 @@
 }
 
 @layer base {
-	*,
-	::before,
-	::after {
-		box-sizing: border-box;
-		border-width: 0;
-		border-style: solid;
-		border-color: var(--widget-input-border, #e5e7eb);
+	* {
+		border-color: var(--widget-input-border);
 		outline-color: rgba(var(--widget-accent-rgb), 0.5);
 	}
-
-	/* Vervang 'body' door '#svelte-root' omdat body niet bestaat in Shadow DOM */
 	#svelte-root {
-		all: unset;
 		background-color: var(--widget-content-bg);
 		color: var(--widget-content-text);
 		font-family: var(--widget-font-family, 'Inter', system-ui, sans-serif);

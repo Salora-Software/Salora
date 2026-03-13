@@ -2,19 +2,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/';
-	import {
-		Clock,
-		CreditCard,
-		LoaderCircle,
-		ShoppingBag,
-		UserRound
-	} from 'lucide-svelte';
+	import { Clock, CreditCard, LoaderCircle, ShoppingBag, UserRound } from 'lucide-svelte';
 	import { onMount } from 'svelte';
-	import {
-		getLocalTimeZone,
-		today,
-		type DateValue
-	} from '@internationalized/date';
+	import { getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import { cn } from '$lib/utils.js';
 	import { toast } from 'svelte-sonner';
@@ -59,22 +49,12 @@
 	});
 
 	interface Props {
-		branch: Prisma.OrganizationGetPayload<{
-			include: {
-				services: true;
-				members: {
-					include: {
-						user: true;
-					};
-				}
-			};
-		}>;
-		collapsed: boolean;
-		onCollapsedChange: (collapsed: boolean) => void;
-		branchId: string;
+		branch: RouterOutput['v1']['getBranch'];
+		collapsed?: boolean;
+		onCollapsedChange?: (collapsed: boolean) => void;
 	}
 
-	let { branch, collapsed = $bindable(), branchId }: Props = $props();
+	let { branch, collapsed = $bindable(false) }: Props = $props();
 
 	const monthOptions = [
 		'Januari',
@@ -154,7 +134,7 @@
 					new Date().getFullYear(),
 					new Date().getMonth() + 1,
 					bookingState.appointment.value,
-					branchId,
+					branch?.id,
 					branch?.timeZone || getLocalTimeZone()
 				);
 				return true;
@@ -192,9 +172,7 @@
 			days: (branch?.minimumBookingTime % 24) - 1
 		})
 	);
-	let maxSelectableDate = $derived(
-		today(getLocalTimeZone()).add({ days: branch.bookingPeriod })
-	);
+	let maxSelectableDate = $derived(today(getLocalTimeZone()).add({ days: branch.bookingPeriod }));
 	let occupancyData = $state<RouterOutput['appointment']['getOccupancy'] | undefined>(undefined);
 	let availabilityData = $state<RouterOutput['appointment']['getAvailability'] | undefined>(
 		undefined
@@ -314,7 +292,6 @@
 			isMobile ? '!w-[100%]' : ''
 		)}
 	>
-
 		{#if bookingSteps.find((step) => step.selected)}
 			{@const selectedStep = bookingSteps.find((step) => step.selected)}
 			{@const index = selectedStep ? bookingSteps.indexOf(selectedStep) : -1}
@@ -393,9 +370,7 @@
 									type="single"
 									{isDateDisabled}
 									locale={language}
-									notAvailable={!occupancyData?.days.some(
-										(d) => d.available
-									)}
+									notAvailable={!occupancyData?.days.some((d) => d.available)}
 									minValue={minSelectableDate}
 									maxValue={maxSelectableDate}
 									captionLayout="dropdown"
@@ -413,7 +388,7 @@
 										availabilityData = await loadDayAvailability(
 											luxonDate,
 											bookingState.appointment.value,
-											branchId
+											branch?.id
 										);
 										bookingState.date.loading = false;
 
@@ -442,7 +417,7 @@
 											year,
 											month,
 											bookingState.appointment.value,
-											branchId,
+											branch?.id,
 											branch?.timeZone || 'utc'
 										);
 										bookingState.date.loading = false;
@@ -473,9 +448,7 @@
 												}}
 												class="border-widget-input-border text-widget-content-text bg-widget-time-slot-bg hover:bg-widget-time-slot-hover h-10 w-full rounded-md border transition-all duration-100 disabled:cursor-not-allowed disabled:border-none disabled:!bg-transparent disabled:hover:bg-transparent"
 											>
-												{slot.start
-													?.setZone(branch?.timeZone || 'utc')
-													.toFormat('HH:mm')} - {slot.end
+												{slot.start?.setZone(branch?.timeZone || 'utc').toFormat('HH:mm')} - {slot.end
 													?.setZone(branch?.timeZone || 'utc')
 													.toFormat('HH:mm')}
 											</button>

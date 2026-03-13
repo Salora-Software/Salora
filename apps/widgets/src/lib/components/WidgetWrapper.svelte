@@ -4,18 +4,17 @@
 	import BookingWidget from './BookingWidget.svelte';
 	import type { Prisma } from '@salora/database';
 	import { BitsConfig } from 'bits-ui';
+	import type { RouterOutput } from '@salora/trpc-types';
+	import { Toaster } from '$lib/components/ui/sonner/index.js';
+	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
+	import Themer from '$lib/components/Themer.svelte';
+
 	let { variant = 'widget', branchId } = $props();
-	let branchData: Prisma.OrganizationGetPayload<{
-		include: {
-			services: true;
-			members: {
-				include: {
-					user: true;
-				};
-			};
-		};
-	}> | null = $state(null);
+	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
+
+	const mode = 'light';
+	setMode(mode);
 
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
@@ -23,35 +22,48 @@
 	onMount(async () => {
 		try {
 			// Gebruik v1.getBranch zoals in de originele layout.server.ts
-			branchData = (await trpc.v1.getBranch.query({
+			branchData = await trpc.v1.getBranch.query({
 				id: branchId
-			})) as unknown as Prisma.OrganizationGetPayload<{
-				include: {
-					services: true;
-					members: {
-						include: {
-							user: true;
-						};
-					};
-				};
-			}>;
+			});
 		} catch (e) {
 			console.error('Error fetching branch:', e);
 		} finally {
 			loading = false;
 		}
+
+		// Luister naar berichten voor mode/theme updates (vanuit de embed script omgeving)
+		window.addEventListener('message', (event) => {
+			if (event.data.type === 'updateMode' && typeof event.data.modeType === 'string') {
+				setMode(event.data.modeType);
+			}
+			if (event.data.type === 'updateTheme' && typeof event.data.color === 'string') {
+				setTheme(event.data.color);
+			}
+		});
 	});
 
 	let container = $state<HTMLElement | undefined>(undefined);
 </script>
 
+<ModeWatcher
+	track={false}
+	defaultMode={mode}
+	modeStorageKey={`salora-mode-${branchId}`}
+	themeStorageKey={`salora-theme-${branchId}`}
+/>
+
 <BitsConfig defaultPortalTo={container}>
 	<div bind:this={container} class="salora-widget-root">
+		<Toaster position={'top-right'} richColors />
 		{#if loading}
 			<div>Laden...</div>
 		{:else}
 			<div class="w-4xl h-125 max-w-full">
-				<BookingWidget branch={branchData} />
+				<Themer colorTheme={theme.current}>
+					{#if branchData}
+						<BookingWidget branch={branchData} />
+					{/if}
+				</Themer>
 			</div>
 		{/if}
 	</div>

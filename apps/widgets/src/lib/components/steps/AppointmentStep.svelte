@@ -3,14 +3,11 @@
 	import * as Select from '$lib/components/ui/select';
 	import type { BookingValues } from '$lib/booking-utils.js';
 	import type { Prisma } from '@salora/database';
+	import type { RouterOutput } from '@salora/trpc-types';
 
 	interface Props {
 		bookingState: BookingValues;
-		branch: Prisma.OrganizationGetPayload<{
-			include: {
-				services: true;
-			};
-		}>;
+		branch: RouterOutput['v1']['getBranch'];
 		onServiceChange?: (serviceId: string) => void;
 	}
 
@@ -41,9 +38,7 @@
 						{service.name}
 					</p>
 					<p class="widget-accent-text">
-						{service.duration} min
-						-
-						€ {service.price.toFixed(2)}
+						{service.duration} min - € {service.price.toFixed(2)}
 					</p>
 				</div>
 			</Select.Item>

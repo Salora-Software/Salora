@@ -2,15 +2,31 @@ import { mount } from 'svelte';
 import WidgetWrapper from '$lib/components/WidgetWrapper.svelte';
 import widgetStyles from './app.css?inline';
 
+// --- TAILWIND V4 SHADOW DOM FIX START ---
+let processedCss = widgetStyles.replace(/:root\b/g, ':host');
+
+const propertyRules: string[] = [];
+const shadowCss = processedCss.replace(/@property\s+[^{]+\{[^}]*\}/g, (match) => {
+	propertyRules.push(match);
+	return '';
+});
+
+if (propertyRules.length > 0 && !document.getElementById('salora-tw-properties')) {
+	const propStyle = document.createElement('style');
+	propStyle.id = 'salora-tw-properties';
+	propStyle.textContent = propertyRules.join('\n');
+	document.head.appendChild(propStyle);
+}
+// --- TAILWIND V4 SHADOW DOM FIX END ---
+
 const script = document.currentScript;
 const container = document.createElement('div');
 container.id = 'salora-widget-container';
 
 const shadow = container.attachShadow({ mode: 'open' });
 
-// Injecteer CSS direct als style tag
 const styleTag = document.createElement('style');
-styleTag.textContent = widgetStyles;
+styleTag.textContent = shadowCss;
 shadow.appendChild(styleTag);
 
 const targetDiv = document.createElement('div');

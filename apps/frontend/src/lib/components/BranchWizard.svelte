@@ -302,7 +302,7 @@
 					if (
 						wizardInputs.company[0].value &&
 						typeof wizardInputs.company[0].value === 'string' &&
-						!wizardInputs.company[0].value.includes(env.env.PUBLIC_CDN_URL)
+						!wizardInputs.company[0].value.includes(env.PUBLIC_CDN_URL)
 					) {
 						// upload new logo
 
@@ -357,7 +357,7 @@
 								});
 								//update the branch url
 								let reference = data.branchesState.getActiveBranch();
-								if (reference) reference.logo = env.env.PUBLIC_CDN_URL + logoPath;
+								if (reference) reference.logo = env.PUBLIC_CDN_URL + logoPath;
 							} catch (error) {
 								console.error('Error uploading logo:', error);
 								toast.error('Logo upload mislukt');

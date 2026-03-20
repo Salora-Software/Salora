@@ -6,9 +6,6 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
-	"site": {
-		"bucket": ".svelte-kit/cloudflare"
-	},
 	"d1_databases": [
 		{
 			"binding": "DB",

@@ -1,0 +1,32 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "salora-frontend",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-03-20",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"site": {
+		"bucket": ".svelte-kit/cloudflare"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "salora-frontend",
+			"database_id": "443838fa-0f02-48c5-af98-f288a83e570a"
+		}
+	],
+	"vars": {
+		"DEPLOY_TARGET": "worker",
+		"SKIP_DEPENDENCY_INSTALL": "true",
+		"PUBLIC_BACKEND_URL": "http://localhost:5173",
+		"PUBLIC_CDN_URL": "https://cdn.salora.app",
+		"MAIL_FALLBACK_SERVER": "example.smtp.com",
+		"MAIL_FALLBACK_PORT": "587",
+		"MAIL_FALLBACK_USERNAME": "usernam",
+		"MAIL_FALLBACK_PASSWORD": "password",
+		"MAIL_EMAIL_SENDER": "noreply@example.com",
+		"TRUSTED_IPS": "",
+		"PUBLIC_FRONTEND_URL": "http://localhost:5173"
+	}
+}

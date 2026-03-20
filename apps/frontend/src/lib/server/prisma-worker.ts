@@ -1,21 +1,30 @@
 import type { PrismaClient } from '@salora/database';
-import { createClient as createNodeClient } from '@salora/database/node';
-import type { WorkerDatabaseBinding } from '@salora/database/worker';
-import { env } from '$env/dynamic/private';
+import {
+	createWorkerClient,
+	type WorkerDatabaseBinding
+} from '@salora/database/worker';
 
-const nodePrisma = createNodeClient(env?.DATABASE_URL);
+let workerPrisma: PrismaClient | null = null;
 
 export const initializeWorkerPrisma = (database?: WorkerDatabaseBinding) => {
-	// No-op in Node environment
-	// We import type only so it doesn't try to bundle worker deps
+	if (!database || workerPrisma) return;
+	workerPrisma = createWorkerClient(database) as unknown as PrismaClient;
+};
+
+const getPrismaClient = (): PrismaClient => {
+    if (!workerPrisma) {
+        throw new Error('Workers runtime missing DATABASE binding initialization');
+    }
+    return workerPrisma;
 };
 
 export const prisma = new Proxy({} as PrismaClient, {
 	get(_target: any, prop: PropertyKey, receiver: any) {
-		const value = Reflect.get(nodePrisma as any, prop, receiver);
+		const client = getPrismaClient();
+		const value = Reflect.get(client as any, prop, receiver);
 
 		if (typeof value === 'function') {
-			return (value as Function).bind(nodePrisma);
+			return (value as Function).bind(client);
 		}
 
 		return value;
@@ -119,4 +128,3 @@ export async function getCommunications(organizationId: string) {
 		};
 	});
 }
-

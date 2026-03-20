@@ -1,6 +1,10 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
+
+const deployTarget = process.env.DEPLOY_TARGET;
+const isWorker = deployTarget === 'worker';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
@@ -12,7 +16,11 @@ export default defineConfig({
 		}
 	},
 	resolve: {
-		alias: {}
+		alias: {
+			'$lib/server/prisma': path.resolve(
+				isWorker ? './src/lib/server/prisma-worker.ts' : './src/lib/server/prisma-node.ts'
+			)
+		}
 	},
 	optimizeDeps: {
 		exclude: ['fingerprint'] // exclude your package from optimization

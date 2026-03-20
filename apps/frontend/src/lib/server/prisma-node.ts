@@ -7,7 +7,7 @@ const nodePrisma = createNodeClient(env?.DATABASE_URL);
 
 export const initializeWorkerPrisma = (database?: WorkerDatabaseBinding) => {
 	// No-op in Node environment
-	// We import type only so it doesn't try to bundle worker deps
+    // We import type only so it doesn't try to bundle worker deps
 };
 
 export const prisma = new Proxy({} as PrismaClient, {
@@ -119,4 +119,3 @@ export async function getCommunications(organizationId: string) {
 		};
 	});
 }
-

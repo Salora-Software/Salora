@@ -156,6 +156,7 @@
         "typescript": "^5.8.3",
         "vaul-svelte": "next",
         "vite": "^6.3.5",
+        "wrangler": "^4.76.0",
       },
     },
     "apps/widgets": {

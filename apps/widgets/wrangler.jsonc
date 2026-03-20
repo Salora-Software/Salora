@@ -1,0 +1,13 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "salora-widgets",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-03-20",
+	"compatibility_flags": ["nodejs_compat"],
+	"site": {
+		"bucket": ".svelte-kit/cloudflare"
+	},
+	"vars": {
+		"DEPLOY_TARGET": "worker"
+	}
+}

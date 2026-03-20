@@ -5,8 +5,9 @@ import {
 	GetObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import sharp from 'sharp';
 import { ACCESS_KEY_ID, ACCOUNT_ID, S3_BUCKET, SECRET_ACCESS_KEY } from '$env/static/private';
+
+const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
 
 const S3 = new S3Client({
 	region: 'auto',
@@ -82,6 +83,20 @@ export async function validateUploadedFileSize(
 }
 
 export async function uploadImage(imageBlob: Blob, key: string) {
+	if (isWorkerTarget) {
+		const command = new PutObjectCommand({
+			Bucket: bucket,
+			Key: key,
+			Body: new Uint8Array(await imageBlob.arrayBuffer()),
+			ContentType: imageBlob.type || 'application/octet-stream'
+		});
+
+		await S3.send(command);
+		return;
+	}
+
+	const { default: sharp } = await import('sharp');
+
 	// Convert Blob to Buffer
 	const inputBuffer = Buffer.from(await imageBlob.arrayBuffer());
 	// Process the image with Sharp

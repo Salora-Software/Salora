@@ -4,6 +4,11 @@
 	"main": "./index.ts",
 	"types": "./index.ts",
 	"type": "module",
+	"exports": {
+		".": "./index.ts",
+		"./node": "./src/node.ts",
+		"./worker": "./src/worker.ts"
+	},
 	"scripts": {
 		"db:push": "bun run prisma db push",
 		"db:studio": "bun run prisma studio",
@@ -15,6 +20,7 @@
 		"migrate": "bun run prisma migrate dev"
 	},
 	"dependencies": {
+		"@prisma/adapter-d1": "^7.5.0",
 		"@prisma/adapter-pg": "^7.3.0",
 		"@prisma/client": "7"
 	},

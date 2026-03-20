@@ -1,5 +1,8 @@
-import { RedisClient } from "bun";
 import nodemailer from "nodemailer";
+
+export interface RedisQueueClient {
+  lpush: (key: string, value: string) => Promise<unknown>;
+}
 
 export interface MailCredential {
   provider_name: string;
@@ -24,7 +27,7 @@ export const QUEUE_NAME = "emailQueue";
 
 export class Emailer {
   constructor(
-    private redis: RedisClient | null = null,
+    private redis: RedisQueueClient | null = null,
     private credentials: MailCredential[],
   ) {}
 
@@ -60,7 +63,7 @@ export class Emailer {
 
 export async function sendEmailWithFailover(
   jobData: EmailJobData,
-  redis: RedisClient,
+  redis: RedisQueueClient,
 ) {
   const {
     senderName,

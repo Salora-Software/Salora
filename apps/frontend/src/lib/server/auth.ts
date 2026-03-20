@@ -3,11 +3,13 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from '$lib/server/prisma';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
-import { NODE_ENV } from '$env/static/private';
+
+const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+const nodeEnv = process.env.NODE_ENV || 'production';
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
-		provider: 'postgresql' // or "mysql", "postgresql", ...etc
+		provider: isWorkerTarget ? 'sqlite' : 'postgresql'
 	}),
 	emailAndPassword: {
 		enabled: true

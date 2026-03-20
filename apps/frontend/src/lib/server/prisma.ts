@@ -1,7 +1,47 @@
-import { createClient } from '@salora/database';
+import type { PrismaClient } from '@salora/database';
+import { createClient as createNodeClient } from '@salora/database/node';
+import {
+	createWorkerClient,
+	type WorkerDatabaseBinding
+} from '@salora/database/worker';
 import { DATABASE_URL } from '$env/static/private';
 
-export const prisma = createClient(DATABASE_URL);
+const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+const nodePrisma = isWorkerTarget ? null : createNodeClient(DATABASE_URL);
+let workerPrisma: PrismaClient | null = null;
+
+export const initializeWorkerPrisma = (database?: WorkerDatabaseBinding) => {
+	if (!database || workerPrisma) return;
+	workerPrisma = createWorkerClient(database) as unknown as PrismaClient;
+};
+
+const getPrismaClient = (): PrismaClient => {
+	if (isWorkerTarget) {
+		if (!workerPrisma) {
+			throw new Error('Workers runtime missing DATABASE binding initialization');
+		}
+		return workerPrisma;
+	}
+
+	if (!nodePrisma) {
+		throw new Error('DATABASE_URL must be set for non-worker runtime');
+	}
+
+	return nodePrisma as unknown as PrismaClient;
+};
+
+export const prisma = new Proxy({} as PrismaClient, {
+	get(_target: any, prop: PropertyKey, receiver: any) {
+		const client = getPrismaClient();
+		const value = Reflect.get(client as any, prop, receiver);
+
+		if (typeof value === 'function') {
+			return (value as Function).bind(client);
+		}
+
+		return value;
+	}
+}) as any as PrismaClient;
 
 export async function upsertCustomer(
 	name: string,

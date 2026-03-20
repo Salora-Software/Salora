@@ -10,14 +10,14 @@ import {
 import type { getOrganization } from './general';
 import type { $Enums } from '@salora/database';
 import redis from '$lib/server/redis';
+import type { QueueRedisClient } from '$lib/server/redis';
 
 import { prisma as prismaInstance } from './prisma';
-import type { RedisClient } from 'bun';
 
 class NotificationService {
 	constructor(
 		private prisma: typeof prismaInstance,
-		private redis: RedisClient | null = null
+		private redis: QueueRedisClient | null = null
 	) {}
 
 	async sendEmailNotification({

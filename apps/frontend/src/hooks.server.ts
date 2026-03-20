@@ -1,7 +1,14 @@
 import { auth } from '$lib/server/auth'; // Path to your auth file
+import { initializeWorkerPrisma } from '$lib/server/prisma';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
+const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+
 export async function handle({ event, resolve }) {
+	if (isWorkerTarget) {
+		initializeWorkerPrisma(event.platform?.env?.DATABASE);
+	}
+
 	// Handle CORS preflight requests
 	if (event.request.method === 'OPTIONS') {
 		return new Response(null, {

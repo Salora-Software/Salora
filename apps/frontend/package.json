@@ -6,7 +6,10 @@
 	"scripts": {
 		"dev": "bunx --bun vite dev --host",
 		"start": "PORT=5173 node ./build",
+		"start:docker": "PORT=5173 node ./build",
 		"build": "bunx --bun vite build",
+		"build:docker": "DEPLOY_TARGET=docker bunx --bun vite build",
+		"build:worker": "DEPLOY_TARGET=worker bunx --bun vite build",
 		"buildWidget": "vite build --config vite.widget.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -25,6 +28,7 @@
 	"devDependencies": {
 		"@lucide/svelte": "^0.482.0",
 		"@salora/eslint-config": "workspace:*",
+		"@sveltejs/adapter-cloudflare-workers": "^2.8.0",
 		"@sveltejs/adapter-node": "^5.2.13",
 		"@sveltejs/kit": "^2.26.1",
 		"@sveltejs/vite-plugin-svelte": "^5.1.1",

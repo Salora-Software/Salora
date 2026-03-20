@@ -11,14 +11,46 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
 	});
 	return cookies;
 }
-import { createTrpcRedisLimiter, defaultFingerPrint } from '@trpc-limiter/redis';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
-import redis from '../redis';
 import { TRUSTED_IPS } from '$env/static/private';
 import { auth } from '../auth';
 import { prisma } from '../prisma';
+
+const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+
+// Lazily load redis dependencies to avoid bundling for Workers
+let redisLimiter: any = null;
+
+(async () => {
+	if (!isWorkerTarget) {
+		try {
+			const { createTrpcRedisLimiter, defaultFingerPrint } = await import('@trpc-limiter/redis');
+			const redisModule = await import('../redis');
+			const redisClient = redisModule.default;
+			
+			if (redisClient) {
+				redisLimiter = createTrpcRedisLimiter({
+					fingerprint: (ctx: any) => defaultFingerPrint(ctx.req),
+					message: () => `too_many_requests`,
+					max: 300,
+					windowMs: 10_000,
+					redisClient
+				});
+			}
+		} catch (e) {
+			console.warn('Redis limiter initialization failed, continuing without rate limiting');
+		}
+	}
+})();
+
+// Fix type to infer correct context
+const t = initTRPC
+	.context<typeof createSvelteKitContext extends (...args: any) => infer R ? R : never>()
+	.create({
+		transformer: SuperJSON
+	});
 
 export const createSvelteKitContext =
 	(locals: App.Locals) => (opts: FetchCreateContextFnOptions) => {
@@ -46,28 +78,18 @@ export const createSvelteKitContext =
 			cacheSeconds
 		};
 	};
-// Rate limiter (15 requests per 10 seconds)
-const rateLimiter = createTrpcRedisLimiter<typeof t>({
-	fingerprint: (ctx) => defaultFingerPrint(ctx.req),
-	message: (hitInfo) => `too_many_requests`,
-	max: 300,
-	windowMs: 10_000,
-	redisClient: redis
-});
-
-// Fix type to infer correct context
-const t = initTRPC
-	.context<typeof createSvelteKitContext extends (...args: any) => infer R ? R : never>()
-	.create({
-		transformer: SuperJSON
-	});
-
+// Rate limiter will be initialized asynchronously above
 export const router = t.router;
 export const publicProcedure = t.procedure.use(async (opts) => {
 	if (!opts.ctx.ip || TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
 		return opts.next();
 	}
-	return rateLimiter(opts);
+
+	if (!redisLimiter) {
+		return opts.next();
+	}
+
+	return redisLimiter(opts);
 });
 
 export const privateProcedure = publicProcedure

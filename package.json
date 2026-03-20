@@ -20,6 +20,7 @@
 	"scripts": {
 		"build": "bun run --env-file=.env turbo run build",
 		"build:frontend": "bun run --env-file=.env turbo run build --filter=frontend",
+		"deploy:frontend": "cd apps/frontend && wrangler publish",
 		"dev": "bun run --env-file=.env turbo dev",
 		"deploy": "bun run --env-file=.env.landing turbo run deploy --filter=landing",
 		"db:generate": "bun run --env-file=.env turbo run generate",

@@ -29,7 +29,6 @@
 	import { env } from '$env/dynamic/public';
 	import { Separator } from './ui/separator/';
 	import ComingSoon from './ComingSoon.svelte';
-	import { env } from '$lib/server/env';
 	import { cn } from '$lib/utils';
 	let {
 		employees,

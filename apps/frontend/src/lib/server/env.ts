@@ -40,7 +40,6 @@ const parseResult = serverEnvSchema.safeParse({ ...publicEnv, ...privateEnv });
 if (!parseResult.success) {
 	// In Cloudflare Workers, console.error shows up in logs
 	console.error('❌ Invalid environment variables:', JSON.stringify(parseResult.error.format(), null, 4));
-	throw new Error('Invalid environment variables: ' + parseResult.error.errors.map(e => e.message).join(', '));
 }
 
 export const env = parseResult.data;

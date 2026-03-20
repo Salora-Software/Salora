@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
-const salt = process.env.AUTH_SECRET || crypto.randomBytes(16).toString('hex');
-const iterations = parseInt(process.env.AUTH_ITERATIONS || '5000');
+const salt = process.env?.AUTH_SECRET || crypto.randomBytes(16).toString('hex');
+const iterations = parseInt(process.env?.AUTH_ITERATIONS || '5000');
 
 export function hashPassword(password: string) {
 	let keylen = 64;

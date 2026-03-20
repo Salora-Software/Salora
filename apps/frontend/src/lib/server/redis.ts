@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import { env } from '$lib/server/env';
 
-const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
 
 export type QueueRedisClient = {
 	lpush: (key: string, value: string) => Promise<unknown>;
@@ -27,9 +27,9 @@ class WorkerRedisStub implements QueueRedisClient {
 let redis: QueueRedisClient | null = null;
 
 if (!isWorkerTarget) {
-	const url = env.REDIS_PASSWORD
-		? `redis://${env.REDIS_USERNAME}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`
-		: `redis://${env.REDIS_HOST}:${env.REDIS_PORT}`;
+	const url = env?.REDIS_PASSWORD
+		? `redis://${env?.REDIS_USERNAME}:${env?.REDIS_PASSWORD}@${env?.REDIS_HOST}:${env?.REDIS_PORT}`
+		: `redis://${env?.REDIS_HOST}:${env?.REDIS_PORT}`;
 
 	redis = new Redis(url, {
 		lazyConnect: true,

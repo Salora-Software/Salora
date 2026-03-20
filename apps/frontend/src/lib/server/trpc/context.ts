@@ -18,7 +18,7 @@ import { env } from '$lib/server/env';
 import { auth } from '../auth';
 import { prisma } from '../prisma';
 
-const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
+const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
 
 // Lazily load redis dependencies to avoid bundling for Workers
 let redisLimiter: any = null;
@@ -81,7 +81,7 @@ export const createSvelteKitContext =
 // Rate limiter will be initialized asynchronously above
 export const router = t.router;
 export const publicProcedure = t.procedure.use(async (opts) => {
-	if (!opts.ctx.ip || env.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
+	if (!opts.ctx.ip || env?.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
 		return opts.next();
 	}
 

@@ -12,7 +12,7 @@ const rateLimiter = createTrpcRedisLimiter({
 	redisClient: redis
 });
 const protectedProcedure = publicProcedure.use(async (opts) => {
-	if (!opts.ctx.ip || env.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
+	if (!opts.ctx.ip || env?.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
 		return opts.next();
 	}
 	return rateLimiter(opts);

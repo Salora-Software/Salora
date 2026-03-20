@@ -4,8 +4,8 @@ import { prisma } from '$lib/server/prisma';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { env } from '$lib/server/env';
 
-const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
-const nodeEnv = process.env.NODE_ENV || 'production';
+const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
+const nodeEnv = process.env?.NODE_ENV || 'production';
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
@@ -21,11 +21,11 @@ export const auth = betterAuth({
 	},
 	trustedOrigins: [
 		'http://localhost:5173',
-		process.env.NODE_ENV === 'development' ? 'http://dev.salora.app' : 'https://dev.salora.app',
-		process.env.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app',
-		env.PUBLIC_FRONTEND_URL.startsWith('https://') && process.env.NODE_ENV === 'development'
-			? env.PUBLIC_FRONTEND_URL.replace(/^https:\/\//, 'http://')
-			: env.PUBLIC_FRONTEND_URL
+		process.env?.NODE_ENV === 'development' ? 'http://dev.salora.app' : 'https://dev.salora.app',
+		process.env?.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app',
+		env?.PUBLIC_FRONTEND_URL.startsWith('https://') && process.env?.NODE_ENV === 'development'
+			? env?.PUBLIC_FRONTEND_URL.replace(/^https:\/\//, 'http://')
+			: env?.PUBLIC_FRONTEND_URL
 	],
 	rateLimit: {
 		enabled: true

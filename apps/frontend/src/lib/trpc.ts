@@ -54,7 +54,7 @@ export const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		customLink,
 		httpBatchLink({
-			url: env.PUBLIC_BACKEND_URL  + '/api/trpc',
+			url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
 			transformer: SuperJSON
 		})
 	]
@@ -65,7 +65,7 @@ export const trpcQuery = createTrpcQueryProxy<AppRouter>(trpc);
 export const trpcS = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: env.PUBLIC_BACKEND_URL  + '/api/trpc',
+			url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
 			transformer: SuperJSON
 		})
 	]
@@ -75,7 +75,7 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 		links: [
 			customLink,
 			httpBatchLink({
-				url: env.PUBLIC_BACKEND_URL  + '/api/trpc',
+				url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
 				transformer: SuperJSON
 			})
 		]

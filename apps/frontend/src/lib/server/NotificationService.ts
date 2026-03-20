@@ -67,10 +67,10 @@ class NotificationService {
 			{
 				provider_name: 'EMAIL FALLBACK',
 				priority: 100,
-				smtp_host: env.MAIL_FALLBACK_SERVER,
-				smtp_port: env.MAIL_FALLBACK_PORT,
-				username: env.MAIL_FALLBACK_USERNAME,
-				password: env.MAIL_FALLBACK_PASSWORD
+				smtp_host: env?.MAIL_FALLBACK_SERVER,
+				smtp_port: env?.MAIL_FALLBACK_PORT,
+				username: env?.MAIL_FALLBACK_USERNAME,
+				password: env?.MAIL_FALLBACK_PASSWORD
 			},
 			...(formatted ? [formatted] : [])
 		]);
@@ -110,8 +110,8 @@ class NotificationService {
 			const subject = replaceVariables(template.subject ?? '', defaultVariables);
 			const body = replaceVariables(template.body ?? '', defaultVariables);
 			const from = communication?.settings
-				? (communication.settings as { smtpEmail?: string })?.smtpEmail || env.MAIL_EMAIL_SENDER
-				: env.MAIL_EMAIL_SENDER;
+				? (communication.settings as { smtpEmail?: string })?.smtpEmail || env?.MAIL_EMAIL_SENDER
+				: env?.MAIL_EMAIL_SENDER;
 			// if no target send to both
 			if (!tgt) {
 				await emailer.sendEmail(subject, from, to, subject, body);

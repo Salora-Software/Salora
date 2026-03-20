@@ -59,7 +59,7 @@ export const router = createRouter({
 				headers,
 				body: {
 					email,
-					callbackURL: `${env.PUBLIC_FRONTEND_URL}/app/appointments/${branchId}?email=${email}`
+					callbackURL: `${env?.PUBLIC_FRONTEND_URL}/app/appointments/${branchId}?email=${email}`
 				}
 			});
 
@@ -114,7 +114,7 @@ export const router = createRouter({
 			}
 			// Send magic link email using custom template
 			const encode = encodeURIComponent;
-			const url = `${env.PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
+			const url = `${env?.PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
 			await notificationService.sendEmailNotification({
 				to: email,
 				branch: organization,

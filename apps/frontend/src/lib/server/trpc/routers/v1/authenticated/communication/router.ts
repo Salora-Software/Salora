@@ -144,10 +144,10 @@ export const router = createRouter({
 				{
 					provider_name: 'EMAIL FALLBACK',
 					priority: 100,
-					smtp_host: env.MAIL_FALLBACK_SERVER,
-					smtp_port: env.MAIL_FALLBACK_PORT,
-					username: env.MAIL_FALLBACK_USERNAME,
-					password: env.MAIL_FALLBACK_PASSWORD
+					smtp_host: env?.MAIL_FALLBACK_SERVER,
+					smtp_port: env?.MAIL_FALLBACK_PORT,
+					username: env?.MAIL_FALLBACK_USERNAME,
+					password: env?.MAIL_FALLBACK_PASSWORD
 				},
 				formattedEmailCommunication
 			]);

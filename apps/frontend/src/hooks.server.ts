@@ -3,7 +3,7 @@ import { initializeWorkerPrisma } from '$lib/server/prisma';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { env } from '$lib/server/env';
 
-const isWorkerTarget = env.DEPLOY_TARGET === 'worker';
+const isWorkerTarget = env?.DEPLOY_TARGET === 'worker';
 
 export async function handle({ event, resolve }) {
 	if (isWorkerTarget) {

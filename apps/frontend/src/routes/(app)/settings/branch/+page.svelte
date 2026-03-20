@@ -19,7 +19,7 @@
 	import { organization } from '$lib/auth-client';
 	import { tick } from 'svelte';
 	import { trpc } from '$lib/trpc';
-	import { env } from '$lib/server/env';
+	import { env } from '$env/dynamic/public';
 	import { compressImage } from '$lib/utils';
 	let { data } = $props();
 	let loading = $state({

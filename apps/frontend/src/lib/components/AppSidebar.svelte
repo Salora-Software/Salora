@@ -44,7 +44,7 @@
 	import { page } from '$app/state';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { cn } from '$lib/utils';
-	import { env } from '$lib/server/env';
+	import { env } from '$env/dynamic/public';
 	let accountSettings = $state(false);
 	let {
 		open = $bindable(false),

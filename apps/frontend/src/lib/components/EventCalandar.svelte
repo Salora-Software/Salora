@@ -12,7 +12,7 @@
 	// Import date utilities
 	import { DateFormatter, fromDate, type DateValue } from '@internationalized/date';
 	import { fly } from 'svelte/transition';
-	import { env } from '$lib/server/env';
+	import { env } from '$env/dynamic/public';
 	import * as Avatar from './ui/avatar';
 	import moment from 'moment-timezone';
 	import { DateTime, Interval } from 'luxon';

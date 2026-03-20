@@ -1,4 +1,4 @@
-import { env } from '$lib/server/env';
+import { env } from '$env/dynamic/public';
 import { magicLinkClient, organizationClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/svelte';
 

@@ -26,6 +26,7 @@
 	import * as Select from './ui/select';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import Checkbox from './ui/checkbox/checkbox.svelte';
+	import { env } from '$env/dynamic/public';
 	import { Separator } from './ui/separator/';
 	import ComingSoon from './ComingSoon.svelte';
 	import { env } from '$lib/server/env';

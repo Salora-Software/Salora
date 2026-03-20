@@ -4,7 +4,7 @@ import { createTRPCProxyClient, httpBatchLink, type TRPCLink } from '@trpc/clien
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
 import type { AppRouter } from '$lib/server/trpc/router';
 import SuperJSON from '$lib/superjson';
-import { env } from '$lib/server/env';
+import { env } from '$env/dynamic/public';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
 import { getErrorMessage, t } from './translation';

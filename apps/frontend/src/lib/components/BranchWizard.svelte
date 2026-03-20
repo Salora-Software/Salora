@@ -23,7 +23,7 @@
 		BranchesState
 	} from '$lib/runes.svelte';
 	import type { QueryClient } from '@tanstack/svelte-query';
-	import { env } from '$lib/server/env';
+	import { env } from '$env/dynamic/public';
 	import { organization } from '$lib/auth-client';
 	import { Input } from '$lib/components/ui/input/index';
 	import Label from './ui/label/label.svelte';

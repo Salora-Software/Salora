@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USERNAME } from '$env/static/private';
+import { env } from '$lib/server/env';
 
 const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
 
@@ -27,9 +27,9 @@ class WorkerRedisStub implements QueueRedisClient {
 let redis: QueueRedisClient | null = null;
 
 if (!isWorkerTarget) {
-	const url = REDIS_PASSWORD
-		? `redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}`
-		: `redis://${REDIS_HOST}:${REDIS_PORT}`;
+	const url = env.REDIS_PASSWORD
+		? `redis://${env.REDIS_USERNAME}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`
+		: `redis://${env.REDIS_HOST}:${env.REDIS_PORT}`;
 
 	redis = new Redis(url, {
 		lazyConnect: true,

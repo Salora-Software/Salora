@@ -18,6 +18,11 @@ const privateSchema = z.object({
 	MAIL_FALLBACK_USERNAME: z.string().min(1, 'MAIL_FALLBACK_USERNAME is required'),
 	MAIL_FALLBACK_PASSWORD: z.string().min(1, 'MAIL_FALLBACK_PASSWORD is required'),
 	MAIL_EMAIL_SENDER: z.string().email().optional(),
+	// S3 Configuration
+	ACCOUNT_ID: z.string().min(1, 'ACCOUNT_ID is required'),
+	ACCESS_KEY_ID: z.string().min(1, 'ACCESS_KEY_ID is required'),
+	SECRET_ACCESS_KEY: z.string().min(1, 'SECRET_ACCESS_KEY is required'),
+	S3_BUCKET: z.string().min(1, 'S3_BUCKET is required'),
 	
 	// Security
 	TRUSTED_IPS: z.string().default('127.0.0.1,::1').transform((val) => val.split(',').map(ip => ip.trim())),

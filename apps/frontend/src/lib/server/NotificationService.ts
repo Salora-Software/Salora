@@ -1,12 +1,6 @@
 import { replaceVariables } from '$lib/templateReplacer';
 import { Emailer } from '@salora/mailer';
-import {
-	MAIL_FALLBACK_SERVER,
-	MAIL_FALLBACK_PORT,
-	MAIL_FALLBACK_USERNAME,
-	MAIL_FALLBACK_PASSWORD,
-	MAIL_EMAIL_SENDER
-} from '$env/static/private';
+import { env } from '$lib/server/env';
 import type { getOrganization } from './general';
 import type { $Enums } from '@salora/database';
 import redis from '$lib/server/redis';
@@ -73,10 +67,10 @@ class NotificationService {
 			{
 				provider_name: 'EMAIL FALLBACK',
 				priority: 100,
-				smtp_host: MAIL_FALLBACK_SERVER,
-				smtp_port: parseInt(MAIL_FALLBACK_PORT, 10),
-				username: MAIL_FALLBACK_USERNAME,
-				password: MAIL_FALLBACK_PASSWORD
+				smtp_host: env.MAIL_FALLBACK_SERVER,
+				smtp_port: env.MAIL_FALLBACK_PORT,
+				username: env.MAIL_FALLBACK_USERNAME,
+				password: env.MAIL_FALLBACK_PASSWORD
 			},
 			...(formatted ? [formatted] : [])
 		]);
@@ -116,8 +110,8 @@ class NotificationService {
 			const subject = replaceVariables(template.subject ?? '', defaultVariables);
 			const body = replaceVariables(template.body ?? '', defaultVariables);
 			const from = communication?.settings
-				? (communication.settings as { smtpEmail?: string })?.smtpEmail || MAIL_EMAIL_SENDER
-				: MAIL_EMAIL_SENDER;
+				? (communication.settings as { smtpEmail?: string })?.smtpEmail || env.MAIL_EMAIL_SENDER
+				: env.MAIL_EMAIL_SENDER;
 			// if no target send to both
 			if (!tgt) {
 				await emailer.sendEmail(subject, from, to, subject, body);

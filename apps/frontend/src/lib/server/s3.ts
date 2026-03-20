@@ -5,19 +5,19 @@ import {
 	GetObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ACCESS_KEY_ID, ACCOUNT_ID, S3_BUCKET, SECRET_ACCESS_KEY } from '$env/static/private';
+import {env } from '$lib/server/env';
 
 const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
 
 const S3 = new S3Client({
 	region: 'auto',
-	endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,
+	endpoint: `https://${env.ACCOUNT_ID}.r2.cloudflarestorage.com`,
 	credentials: {
-		accessKeyId: ACCESS_KEY_ID,
-		secretAccessKey: SECRET_ACCESS_KEY
+		accessKeyId: env.ACCESS_KEY_ID,
+		secretAccessKey: env.SECRET_ACCESS_KEY
 	}
 });
-const bucket = S3_BUCKET;
+const bucket = env.S3_BUCKET;
 
 export async function generateAccessToken(fileId: string) {
 	const token = await getSignedUrl(

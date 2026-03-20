@@ -14,7 +14,7 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
-import { TRUSTED_IPS } from '$env/static/private';
+import { env } from '$lib/server/env';
 import { auth } from '../auth';
 import { prisma } from '../prisma';
 
@@ -81,7 +81,7 @@ export const createSvelteKitContext =
 // Rate limiter will be initialized asynchronously above
 export const router = t.router;
 export const publicProcedure = t.procedure.use(async (opts) => {
-	if (!opts.ctx.ip || TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
+	if (!opts.ctx.ip || env.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
 		return opts.next();
 	}
 

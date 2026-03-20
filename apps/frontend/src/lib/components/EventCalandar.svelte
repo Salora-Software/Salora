@@ -12,7 +12,7 @@
 	// Import date utilities
 	import { DateFormatter, fromDate, type DateValue } from '@internationalized/date';
 	import { fly } from 'svelte/transition';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$lib/server/env';
 	import * as Avatar from './ui/avatar';
 	import moment from 'moment-timezone';
 	import { DateTime, Interval } from 'luxon';
@@ -421,7 +421,7 @@
 					>
 						<Avatar.Root class="h-16 w-16 rounded-md">
 							<Avatar.Image
-								src={person.avatar ? PUBLIC_CDN_URL + person.avatar : ''}
+								src={person.avatar ? env.PUBLIC_CDN_URL + person.avatar : ''}
 								alt="@shadcn"
 							/>
 							<Avatar.Fallback>

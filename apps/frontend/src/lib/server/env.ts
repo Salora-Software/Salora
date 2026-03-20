@@ -4,8 +4,8 @@ import { env as publicEnv } from '$env/dynamic/public';
 
 // Define the schema for public environment variables
 const publicSchema = z.object({
-	PUBLIC_BACKEND_URL: z.string().url().optional(),
-	PUBLIC_CDN_URL: z.string().url().default('https://cdn.salora.app'),
+	PUBLIC_BACKEND_URL : z.string().url().optional(),
+	PUBLIC_CDN_URL : z.string().url().default('https://cdn.salora.app'),
 	PUBLIC_FRONTEND_URL: z.string().url().default('http://localhost:5173'),
 });
 

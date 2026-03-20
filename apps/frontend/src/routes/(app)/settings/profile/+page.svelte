@@ -10,7 +10,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$lib/server/env';
 	import { compressImage } from '$lib/utils';
 	let { data } = $props();
 	let loading = $state({

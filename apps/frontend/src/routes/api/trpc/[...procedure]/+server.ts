@@ -7,7 +7,7 @@ const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
 async function workersStub(event: any) {
 	return new Response(
 		JSON.stringify({
-			error: 'tRPC backend is not available on this Workers deployment. Please configure PUBLIC_BACKEND_URL to point to your Node.js backend API.'
+			error: 'tRPC backend is not available on this Workers deployment. Please configure env.PUBLIC_BACKEND_URL  to point to your Node.js backend API.'
 		}),
 		{
 			status: 503,

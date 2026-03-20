@@ -12,7 +12,7 @@ import type { PortalProcedureContext } from '../../context';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
 import { auth } from '$lib/server/auth';
-import { PUBLIC_BACKEND_URL, PUBLIC_FRONTEND_URL } from '$env/static/public';
+import { env } from '$lib/server/env';
 import { notificationService } from '$lib/server/NotificationService';
 
 type CreateBookingOpts = {
@@ -150,7 +150,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 			headers: ctx.headers,
 			body: {
 				email: contact.email,
-				callbackURL: `${PUBLIC_BACKEND_URL}/appointments/${organization.id}`
+				callbackURL: `${env.PUBLIC_BACKEND_URL }/appointments/${organization.id}`
 			}
 		})
 		.catch((e) => {
@@ -209,8 +209,8 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 	// 8. Notificatie (Originele logica)
 	const encode = encodeURIComponent;
 	const panel = {
-		url: `${PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
-		cancel: `${PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
+		url: `${env.PUBLIC_BACKEND_URL }/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
+		cancel: `${env.PUBLIC_BACKEND_URL }/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
 	};
 
 	// Haal user email van employee op via de meegeleverde include in fetchBookingData (als je die daar hebt, anders extra query nodig)

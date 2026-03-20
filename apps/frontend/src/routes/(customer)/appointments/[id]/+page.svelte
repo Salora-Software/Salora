@@ -13,7 +13,7 @@
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$lib/server/env';
 	import { onMount } from 'svelte';
 	import { trpc } from '$lib/trpc.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -421,7 +421,7 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={PUBLIC_CDN_URL + branch.logo}
+											src={env.PUBLIC_CDN_URL + branch.logo}
 											alt={branch.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>
@@ -482,7 +482,7 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={PUBLIC_CDN_URL + branch.logo}
+											src={env.PUBLIC_CDN_URL + branch.logo}
 											alt={branch.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>
@@ -544,7 +544,7 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={PUBLIC_CDN_URL + branch.logo}
+											src={env.PUBLIC_CDN_URL + branch.logo}
 											alt={branch.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>

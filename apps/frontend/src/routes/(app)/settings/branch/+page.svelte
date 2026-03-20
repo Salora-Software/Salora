@@ -19,7 +19,7 @@
 	import { organization } from '$lib/auth-client';
 	import { tick } from 'svelte';
 	import { trpc } from '$lib/trpc';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$lib/server/env';
 	import { compressImage } from '$lib/utils';
 	let { data } = $props();
 	let loading = $state({
@@ -250,7 +250,7 @@
 				</span>
 			</div>
 			<Avatar.Image
-				src={PUBLIC_CDN_URL + data.branchesState.getActiveBranch()?.logo}
+				src={env.PUBLIC_CDN_URL + data.branchesState.getActiveBranch()?.logo}
 				alt="@shadcn"
 			/>
 			<Avatar.Fallback>

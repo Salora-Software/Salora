@@ -17,6 +17,15 @@
 		}
 	],
 	"vars": {
-		"DEPLOY_TARGET": "worker"
+		"DEPLOY_TARGET": "worker",
+		"PUBLIC_BACKEND_URL": "http://localhost:5173",
+		"PUBLIC_CDN_URL": "https://cdn.salora.app",
+		"MAIL_FALLBACK_SERVER": "example.smtp.com",
+		"MAIL_FALLBACK_PORT": "587",
+		"MAIL_FALLBACK_USERNAME": "usernam",
+		"MAIL_FALLBACK_PASSWORD": "password",
+		"MAIL_EMAIL_SENDER": "noreply@example.com",
+		"TRUSTED_IPS": "",
+		"PUBLIC_FRONTEND_URL": "http://localhost:5173"
 	}
 }

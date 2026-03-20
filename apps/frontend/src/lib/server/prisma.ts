@@ -4,10 +4,10 @@ import {
 	createWorkerClient,
 	type WorkerDatabaseBinding
 } from '@salora/database/worker';
-import { DATABASE_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
-const nodePrisma = isWorkerTarget ? null : createNodeClient(DATABASE_URL);
+const nodePrisma = isWorkerTarget ? null : createNodeClient(env.DATABASE_URL);
 let workerPrisma: PrismaClient | null = null;
 
 export const initializeWorkerPrisma = (database?: WorkerDatabaseBinding) => {

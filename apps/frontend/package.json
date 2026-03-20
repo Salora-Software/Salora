@@ -28,6 +28,7 @@
 	"devDependencies": {
 		"@lucide/svelte": "^0.482.0",
 		"@salora/eslint-config": "workspace:*",
+		"@sveltejs/adapter-cloudflare": "^7.2.8",
 		"@sveltejs/adapter-cloudflare-workers": "^2.8.0",
 		"@sveltejs/adapter-node": "^5.2.13",
 		"@sveltejs/kit": "^2.26.1",

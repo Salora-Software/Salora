@@ -48,11 +48,26 @@
 		"db:generate": {
 			"cache": false
 		},
+		"generate:worker": {
+			"cache": false
+		},
 		"db:push": {
 			"cache": false
 		},
 		"services:up": {
 			"cache": false
+		},
+		"build:worker": {
+			"cache": false,
+			"dependsOn": [
+				"^generate:worker",
+				"^build:worker"
+			],
+			"outputs": [
+				"dist/**",
+				".svelte-kit/**",
+				"build/**"
+			]
 		},
 		"build:embed": {
 			"cache": false,

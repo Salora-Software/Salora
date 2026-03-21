@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
+import { eq, and } from 'drizzle-orm';
 import { convertToLocal, convertToUtc } from '$lib/utils';
+import { randomUUID } from 'node:crypto';
 
 export const router = createRouter({
 	createService: privateProcedure
@@ -32,29 +34,32 @@ export const router = createRouter({
 				input: { organizationId, name, employees, duration, price, visible, sortingIndex }
 			}) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: true
 					}
 				});
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-				const service = await prisma.service.create({
-					data: {
+
+				const [service] = await db
+					.insert(schema.service)
+					.values({
+						id: randomUUID(),
 						name,
 						organizationId,
 						duration,
 						price,
 						visible,
 						sortingIndex: sortingIndex || 0
-					}
-				});
+					})
+					.returning();
+
 				if (employees) {
 					for (let employee of employees) {
 						if (!organization.members.find((member) => member.id === employee))
@@ -62,16 +67,15 @@ export const router = createRouter({
 								code: 'BAD_REQUEST',
 								message: 'employee_not_found'
 							});
-						await prisma.employeeService.create({
-							data: {
-								serviceId: service.id,
-								memberId: employee
-							}
+						await db.insert(schema.employeeService).values({
+							id: randomUUID(), // employeeService needs ID too?
+							serviceId: service.id,
+							memberId: employee
 						});
 					}
 				}
 
-				return service;
+				return { ...service, employees: employees || [] };
 			}
 		),
 
@@ -96,15 +100,13 @@ export const router = createRouter({
 			)
 		)
 		.query(async ({ input: { organizationId } }) => {
-			const services = await prisma.service.findMany({
-				where: {
-					organizationId
-				},
-				include: {
-					employees: {
-						include: {
+			const services = await db.query.service.findMany({
+				where: eq(schema.service.organizationId, organizationId),
+				with: {
+					employeeServices: {
+						with: {
 							member: {
-								include: {
+								with: {
 									user: true
 								}
 							}
@@ -112,12 +114,13 @@ export const router = createRouter({
 					}
 				}
 			});
+
 			return services.map((service) => {
 				return {
 					...service,
-					employees: service.employees.map((employee) => ({
-						id: employee.member.id,
-						name: employee.member.user.name
+					employees: service.employeeServices.map((es) => ({
+						id: es.member.id,
+						name: es.member.user.name
 					}))
 				};
 			});
@@ -164,69 +167,68 @@ export const router = createRouter({
 				}
 			}) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: true
 					}
 				});
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
+
 				if (!organization.members.find((member) => member.userId === user.id))
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_member_not_found'
 					});
 
-				const service = await prisma.service.findFirst({
-					where: {
-						id: serviceId
-					}
+				const service = await db.query.service.findFirst({
+					where: eq(schema.service.id, serviceId)
 				});
+
 				if (!service)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'service_not_found'
 					});
-				await prisma.service.update({
-					where: {
-						id: serviceId
-					},
-					data: {
-						name,
-						duration,
-						price,
-						visible,
-						sortingIndex: sortingIndex || 0
-					}
-				});
+
+				const updateData: any = {};
+				if (name !== undefined) updateData.name = name;
+				if (duration !== undefined) updateData.duration = duration;
+				if (price !== undefined) updateData.price = price;
+				if (visible !== undefined) updateData.visible = visible;
+				if (sortingIndex !== undefined) updateData.sortingIndex = sortingIndex;
+
+				const [updatedService] = await db
+					.update(schema.service)
+					.set(updateData)
+					.where(eq(schema.service.id, serviceId))
+					.returning();
+
 				if (employees) {
-					await prisma.employeeService.deleteMany({
-						where: {
-							serviceId
-						}
-					});
+					await db
+						.delete(schema.employeeService)
+						.where(eq(schema.employeeService.serviceId, serviceId));
+
 					for (let employee of employees) {
 						if (!organization.members.find((member) => member.id === employee))
 							throw new TRPCError({
 								code: 'BAD_REQUEST',
 								message: 'employee_not_found'
 							});
-						await prisma.employeeService.create({
-							data: {
-								serviceId,
-								memberId: employee
-							}
+						await db.insert(schema.employeeService).values({
+							id: randomUUID(),
+							serviceId: serviceId,
+							memberId: employee
 						});
 					}
 				}
 
-				return service;
+				return { ...updatedService, employees: employees };
 			}
 		),
 
@@ -240,44 +242,42 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				// Check if user is a member of the organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId,
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: {
-							some: {
-								userId: user.id
-							}
-						}
-					},
-					include: {
-						members: {
-							include: {
+							with: {
 								user: true
 							}
 						}
 					}
 				});
+				
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-				const service = await prisma.service.findFirst({
-					where: {
-						id: serviceId
-					}
+					
+				const isMember = organization.members.some(m => m.userId === user.id);
+				if (!isMember) {
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'organization_not_found'
+					});
+				}
+
+				const service = await db.query.service.findFirst({
+					where: eq(schema.service.id, serviceId)
 				});
+
 				if (!service)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'service_not_found'
 					});
-				await prisma.service.delete({
-					where: {
-						id: serviceId
-					}
-				});
+
+				await db.delete(schema.service).where(eq(schema.service.id, serviceId));
 				return true;
 			}
 		),
@@ -298,6 +298,7 @@ export const router = createRouter({
 				id: z.string(),
 				name: z.string(),
 				organizationId: z.string(),
+				services: z.array(z.string()).optional(),
 				price: z.number(),
 				sortingIndex: z.number()
 			})
@@ -305,28 +306,33 @@ export const router = createRouter({
 		.mutation(
 			async ({ input: { organizationId, name, services, price, visible, sortingIndex } }) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						services: true
 					}
 				});
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-				const packageItem = await prisma.package.create({
-					data: {
+
+				const [packageItem] = await db
+					.insert(schema.packageItem)
+					.values({
+						id: randomUUID(),
 						name,
 						organizationId,
 						price,
 						visible,
-						sortingIndex: sortingIndex || 0
-					}
-				});
+						sortingIndex: sortingIndex || 0,
+						updatedAt: new Date().toISOString(),
+						createdAt: new Date().toISOString() // Safely add createdAt too if missing default logic
+					})
+					.returning();
+
 				if (services) {
 					for (let serviceId of services) {
 						const serviceExists = organization.services.find((service) => service.id === serviceId);
@@ -335,16 +341,15 @@ export const router = createRouter({
 								code: 'BAD_REQUEST',
 								message: 'service_not_found'
 							});
-						await prisma.packageService.create({
-							data: {
-								packageId: packageItem.id,
-								serviceId: serviceId
-							}
+						await db.insert(schema.packageService).values({
+							id: randomUUID(),
+							packageId: packageItem.id,
+							serviceId: serviceId
 						});
 					}
 				}
 
-				return packageItem;
+				return { ...packageItem, services };
 			}
 		),
 
@@ -368,13 +373,11 @@ export const router = createRouter({
 			)
 		)
 		.query(async ({ input: { organizationId } }) => {
-			const packages = await prisma.package.findMany({
-				where: {
-					organizationId
-				},
-				include: {
-					services: {
-						include: {
+			const packages = await db.query.packageItem.findMany({
+				where: eq(schema.packageItem.organizationId, organizationId),
+				with: {
+					packageServices: {
+						with: {
 							service: true
 						}
 					}
@@ -384,9 +387,9 @@ export const router = createRouter({
 			return packages.map((packageItem) => {
 				return {
 					...packageItem,
-					services: packageItem.services.map((packageService) => ({
-						id: packageService.service.id,
-						name: packageService.service.name
+					services: packageItem.packageServices.map((ps) => ({
+						id: ps.service.id,
+						name: ps.service.name
 					}))
 				};
 			});
@@ -422,53 +425,56 @@ export const router = createRouter({
 				}
 			}) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: true,
 						services: true
 					}
 				});
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
+
 				if (!organization.members.find((member) => member.userId === user.id))
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_member_not_found'
 					});
 
-				const packageItem = await prisma.package.findFirst({
-					where: {
-						id: packageId
-					}
+				const packageItem = await db.query.packageItem.findFirst({
+					where: eq(schema.packageItem.id, packageId)
 				});
+
 				if (!packageItem)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'package_not_found'
 					});
-				await prisma.package.update({
-					where: {
-						id: packageId
-					},
-					data: {
-						name,
-						price,
-						visible,
-						sortingIndex: sortingIndex || 0
-					}
-				});
+
+				const updateData: any = {};
+				if (name !== undefined) updateData.name = name;
+				if (price !== undefined) updateData.price = price;
+				if (visible !== undefined) updateData.visible = visible;
+				if (sortingIndex !== undefined) updateData.sortingIndex = sortingIndex;
+
+				const [updatedPackage] = await db
+					.update(schema.packageItem)
+					.set({
+						...updateData,
+						updatedAt: new Date().toISOString()
+					})
+					.where(eq(schema.packageItem.id, packageId))
+					.returning();
+
 				if (services) {
-					await prisma.packageService.deleteMany({
-						where: {
-							packageId
-						}
-					});
+					await db
+						.delete(schema.packageService)
+						.where(eq(schema.packageService.packageId, packageId));
+
 					for (let serviceId of services) {
 						const serviceExists = organization.services.find((service) => service.id === serviceId);
 						if (!serviceExists)
@@ -476,16 +482,15 @@ export const router = createRouter({
 								code: 'BAD_REQUEST',
 								message: 'service_not_found'
 							});
-						await prisma.packageService.create({
-							data: {
-								packageId,
-								serviceId: serviceId
-							}
+						await db.insert(schema.packageService).values({
+							id: randomUUID(),
+							packageId,
+							serviceId: serviceId
 						});
 					}
 				}
 
-				return packageItem;
+				return { ...updatedPackage, services };
 			}
 		),
 
@@ -499,44 +504,42 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				// Check if user is a member of the organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId,
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: {
-							some: {
-								userId: user.id
-							}
-						}
-					},
-					include: {
-						members: {
-							include: {
-								user: true
+							with: {
+								user: true // Check userId logic
 							}
 						}
 					}
 				});
+				
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-				const packageItem = await prisma.package.findFirst({
-					where: {
-						id: packageId
-					}
+				
+				const isMember = organization.members.some(m => m.userId === user.id);
+				if (!isMember) {
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'organization_not_found'
+					});
+				}
+
+				const packageItem = await db.query.packageItem.findFirst({
+					where: eq(schema.packageItem.id, packageId)
 				});
+
 				if (!packageItem)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'package_not_found'
 					});
-				await prisma.package.delete({
-					where: {
-						id: packageId
-					}
-				});
+
+				await db.delete(schema.packageItem).where(eq(schema.packageItem.id, packageId));
 				return true;
 			}
 		)

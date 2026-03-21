@@ -24,3 +24,5 @@ export const createClient = (connectionString: string) => {
 export const prisma = process.env.DATABASE_URL
   ? createClient(process.env.DATABASE_URL)
   : (undefined as unknown as PrismaClient);
+export * from "./src/client";
+export * as schema from "./src/schema";

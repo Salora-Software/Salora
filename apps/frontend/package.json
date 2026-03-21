@@ -83,6 +83,7 @@
 		"d3-array": "^3.2.4",
 		"d3-scale": "^4.0.2",
 		"d3-shape": "^3.2.0",
+		"drizzle-orm": "^0.45.1",
 		"i": "^0.3.7",
 		"ioredis": "^5.6.1",
 		"layerchart": "2.0.0-next.43",

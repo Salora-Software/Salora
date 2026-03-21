@@ -415,10 +415,7 @@
 				{:else if pieChartData.length > 0}
 					<div class="w-full">
 						{#if ServicesBreakdownChartWrapper}
-							<ServicesBreakdownChartWrapper
-								data={pieChartData}
-								config={pieChartConfig}
-							/>
+							<ServicesBreakdownChartWrapper data={pieChartData} config={pieChartConfig} />
 						{:else}
 							<Skeleton class="mx-auto aspect-square max-h-62.5 rounded-full" />
 						{/if}

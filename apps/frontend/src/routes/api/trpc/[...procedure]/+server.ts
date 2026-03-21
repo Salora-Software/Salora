@@ -65,19 +65,16 @@ async function getNodeHandler() {
 }
 
 export const OPTIONS: RequestHandler = async (event) => {
-	if (isWorkerTarget) return workersStub(event);
 	const handler = await getNodeHandler();
 	return handler.OPTIONS(event);
 };
 
 export const GET: RequestHandler = async (event) => {
-	if (isWorkerTarget) return workersStub(event);
 	const handler = await getNodeHandler();
 	return handler.GET(event);
 };
 
 export const POST: RequestHandler = async (event) => {
-	if (isWorkerTarget) return workersStub(event);
 	const handler = await getNodeHandler();
 	return handler.POST(event);
 };

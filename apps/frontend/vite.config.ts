@@ -10,12 +10,6 @@ const isWorker = deployTarget === 'worker';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(
 	),
-		visualizer({
-			filename: "./bundle-analysis.html",
-			open: true,
-			gzipSize: true,
-			brotliSize: true,
-		})
 	],
 	assetsInclude: ['/packages/fingerprint/src/client.ts'],
 	server: {
@@ -26,7 +20,7 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'$lib/server/prisma': path.resolve(
+			'$prisma': path.resolve(
 				isWorker ? './src/lib/server/prisma-worker.ts' : './src/lib/server/prisma-node.ts'
 			)
 		}

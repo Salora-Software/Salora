@@ -2,7 +2,6 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Select from '$lib/components/ui/select';
 	import type { BookingValues } from '$lib/booking-utils.js';
-	import type { Prisma } from '@salora/database';
 	import type { RouterOutput } from '@salora/trpc-types';
 
 	interface Props {

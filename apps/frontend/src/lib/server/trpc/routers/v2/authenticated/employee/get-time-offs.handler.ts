@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { prisma } from '$prisma';
 import type { GetTimeOffsInput } from './get-time-offs.schema';
 
 export const getTimeOffsHandler = async ({

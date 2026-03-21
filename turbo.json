@@ -60,7 +60,7 @@
 		"build:worker": {
 			"cache": false,
 			"dependsOn": [
-				"^db:generate",
+				"^generate:worker",
 				"^build:worker"
 			],
 			"outputs": [

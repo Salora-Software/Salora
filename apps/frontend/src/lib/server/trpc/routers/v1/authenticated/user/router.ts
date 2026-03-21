@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { prisma } from '$prisma';
 import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
 import { deleteImage, uploadImage } from '$lib/server/s3';

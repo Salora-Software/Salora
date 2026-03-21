@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, portalProcedure } from '../../context';
-import { prisma } from '$lib/server/prisma';
+import { prisma } from '$prisma';
 import { TRPCError } from '@trpc/server';
 import { getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';

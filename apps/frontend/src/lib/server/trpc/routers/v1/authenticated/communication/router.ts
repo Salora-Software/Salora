@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router as createRouter, privateProcedure, publicProcedure } from '../../../../context';
 import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
-import { getCommunications, prisma } from '$lib/server/prisma';
+import { getCommunications, prisma } from '$prisma';
 import { env } from '$lib/server/env';
 import { replaceVariables } from '$lib/templateReplacer';
 import { Emailer } from '@salora/mailer';

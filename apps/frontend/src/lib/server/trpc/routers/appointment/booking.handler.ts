@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { prisma } from '$lib/server/prisma';
+import { prisma } from '$prisma';
 import { AvailabilityEngine } from '@salora/scheduler';
 import {
 	fetchBookingData,

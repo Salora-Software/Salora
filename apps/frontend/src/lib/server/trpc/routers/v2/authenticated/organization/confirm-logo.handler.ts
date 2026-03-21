@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { prisma } from '$prisma';
 import { deleteImage, validateUploadedFileSize } from '$lib/server/s3';
 import type { ConfirmLogoUploadInput } from './confirm-logo.schema';
 

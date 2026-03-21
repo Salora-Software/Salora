@@ -8,7 +8,6 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
 	import { trpcQuery } from '$lib/trpc.js';
-	import moment from 'moment-timezone';
 	import { language, t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
 	import type { BranchType } from '$lib/runes.svelte.js';
@@ -37,16 +36,16 @@
 			{
 				organizationId: activeBranch?.id || '',
 				startDate: selectedDate
-					? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
-							.tz(activeBranch?.timeZone || 'UTC')
+					? DateTime.fromJSDate(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
+							.setZone(activeBranch?.timeZone || 'UTC')
 							.startOf('day')
-							.toDate()
+							.toJSDate()
 					: undefined,
 				endDate: selectedDate
-					? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
-							.tz(activeBranch?.timeZone || 'UTC')
+					? DateTime.fromJSDate(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
+							.setZone(activeBranch?.timeZone || 'UTC')
 							.endOf('day')
-							.toDate()
+							.toJSDate()
 					: undefined
 			},
 			{

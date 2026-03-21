@@ -14,7 +14,6 @@
 	import { fly } from 'svelte/transition';
 	import { env } from '$env/dynamic/public';
 	import * as Avatar from './ui/avatar';
-	import moment from 'moment-timezone';
 	import { DateTime, Interval } from 'luxon';
 	import { language, t } from '$lib/translation';
 	import { trpc, type MemberType, type ServiceType } from '$lib/trpc';
@@ -87,6 +86,8 @@
 		onUpsertItem?: (item: (typeof calendarItems)[number] | undefined) => Promise<void>;
 	} = $props();
 	let edited: Record<string, boolean> = $state({});
+
+	let moment: any = $state();
 
 	// Generate formatted hours for display – creates an array [00:00 ... 23:00]
 	let formattedHours = Array.from({ length: 24 }, (_, i) => {
@@ -282,6 +283,10 @@
 	}
 
 	onMount(() => {
+		(async () => {
+			const module = await import('moment-timezone');
+			moment = module.default;
+		})();
 		// Initialize time updates and calendar refresh interval.
 		updateCurrentHourAndMinute();
 		const interval = setInterval(() => {
@@ -457,7 +462,7 @@
 						syncScroll(e);
 					}}
 				>
-					{#if !loading}
+					{#if !loading && moment}
 						<div class="p-6">
 							<div class="sameGrid relative ml-14 grid h-[100%] grid-cols-1 grid-rows-1">
 								<div class="mt-5">

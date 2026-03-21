@@ -1,13 +1,21 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from "rollup-plugin-visualizer"
 import path from 'path';
 
 const deployTarget = process.env.DEPLOY_TARGET;
 const isWorker = deployTarget === 'worker';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [tailwindcss(), sveltekit(),
+		visualizer({
+			filename: "./bundle-analysis.html",
+			open: true,
+			gzipSize: true,
+			brotliSize: true,
+		})
+	],
 	assetsInclude: ['/packages/fingerprint/src/client.ts'],
 	server: {
 		allowedHosts: ['salora.hexidev.nl', 'dev.salora.app'],

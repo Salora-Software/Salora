@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
@@ -38,50 +38,37 @@ export const router = createRouter({
 				}
 			}) => {
 				// Build the where clause for search
-				const whereClause = {
-					organizationId,
+				const whereClause = [
+					schema.customer.organizationId.eq(organizationId),
 					...(search && search.trim() !== ''
-						? {
-								OR: [
-									{
-										name: {
-											contains: search,
-											mode: 'insensitive' as const
-										}
-									},
-									{
-										email: {
-											contains: search,
-											mode: 'insensitive' as const
-										}
-									}
-								]
-							}
-						: {})
-				};
+						? [
+							(db.or(
+								schema.customer.name.ilike(`%${search}%`),
+								schema.customer.email.ilike(`%${search}%`)
+							))
+						]
+						: [])
+				];
 
 				const [customers, totalCount] = await Promise.all([
-					prisma.customer.findMany({
-						where: whereClause,
+					db.query.customer.findMany({
+						where: db.and(...whereClause),
+						orderBy: [schema.customer.createdAt.desc()],
 						skip,
 						take,
-						orderBy: {
-							createdAt: 'desc'
-						},
-						include: {
+						with: {
 							bookings: {
-								select: {
+								columns: {
 									createdAt: true
 								},
-								orderBy: {
-									createdAt: 'desc'
-								}
+								orderBy: [schema.booking.createdAt.desc()]
 							}
 						}
 					}),
-					prisma.customer.count({
-						where: whereClause
-					})
+					db.select({ count: db.count() })
+						.from(schema.customer)
+						.where(db.and(...whereClause))
+						.then((rows) => rows[0]?.count ?? 0)
 				]);
 
 				// Transform customers to include booking count and last booking date
@@ -146,23 +133,16 @@ export const router = createRouter({
 				}
 			}) => {
 				// Get customer with bookings
-				const customer = await prisma.customer.findFirst({
-					where: {
-						id,
-						organizationId
-					},
-					include: {
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(id),
+						schema.customer.organizationId.eq(organizationId)
+					),
+					with: {
 						bookings: {
-							include: {
-								service: {
-									select: {
-										name: true,
-										price: true
-									}
-								}
-							},
-							orderBy: {
-								createdAt: 'desc'
+							orderBy: [schema.booking.createdAt.desc()],
+							with: {
+								service: true
 							}
 						}
 					}
@@ -264,11 +244,11 @@ export const router = createRouter({
 				}
 			}) => {
 				// Check if customer exists and belongs to organization
-				const existingCustomer = await prisma.customer.findFirst({
-					where: {
-						id,
-						organizationId
-					}
+				const existingCustomer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(id),
+						schema.customer.organizationId.eq(organizationId)
+					)
 				});
 
 				if (!existingCustomer) {
@@ -279,17 +259,11 @@ export const router = createRouter({
 				}
 
 				// Update customer details
-				const updatedCustomer = await prisma.customer.update({
-					where: {
-						id
-					},
-					data: {
-						name,
-						email,
-						phone,
-						address
-					}
-				});
+				const [updatedCustomer] = await db
+					.update(schema.customer)
+					.set({ name, email, phone, address })
+					.where(schema.customer.id.eq(id))
+					.returning();
 
 				return {
 					customer: {
@@ -357,10 +331,8 @@ export const router = createRouter({
 				}
 			}) => {
 				// Get organization for timezone
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					}
+				const organization = await db.query.organization.findFirst({
+					where: schema.organization.id.eq(organizationId)
 				});
 
 				if (!organization) {
@@ -389,29 +361,20 @@ export const router = createRouter({
 				const endOfPeriodUTC = endOfPeriod.toJSDate();
 
 				// Check if customer exists and belongs to organization
-				const customer = await prisma.customer.findFirst({
-					where: {
-						id,
-						organizationId
-					},
-					include: {
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(id),
+						schema.customer.organizationId.eq(organizationId)
+					),
+					with: {
 						bookings: {
-							include: {
-								service: {
-									select: {
-										name: true,
-										price: true
-									}
-								}
-							},
-							where: {
-								createdAt: {
-									gte: startOfPeriodUTC,
-									lte: endOfPeriodUTC
-								}
-							},
-							orderBy: {
-								createdAt: 'desc'
+							where: db.and(
+								schema.booking.createdAt.gte(startOfPeriodUTC),
+								schema.booking.createdAt.lte(endOfPeriodUTC)
+							),
+							orderBy: [schema.booking.createdAt.desc()],
+							with: {
+								service: true
 							}
 						}
 					}
@@ -676,11 +639,11 @@ export const router = createRouter({
 				}
 			}) => {
 				// Verify customer belongs to organization
-				const customer = await prisma.customer.findFirst({
-					where: {
-						id: customerId,
-						organizationId
-					}
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(customerId),
+						schema.customer.organizationId.eq(organizationId)
+					)
 				});
 
 				if (!customer) {
@@ -729,36 +692,28 @@ export const router = createRouter({
 				};
 
 				const [bookings, totalCount] = await Promise.all([
-					prisma.booking.findMany({
-						where: whereClause,
+					db.query.booking.findMany({
+						where: db.and(
+							...Object.entries(whereClause).map(([k, v]) => v)
+						),
+						orderBy: [schema.booking.createdAt.desc()],
 						skip,
 						take,
-						orderBy: {
-							createdAt: 'desc'
-						},
-						include: {
-							service: {
-								select: {
-									id: true,
-									name: true,
-									price: true
-								}
-							},
+						with: {
+							service: true,
 							employee: {
-								select: {
-									id: true,
-									user: {
-										select: {
-											name: true
-										}
-									}
+								with: {
+									user: true
 								}
 							}
 						}
 					}),
-					prisma.booking.count({
-						where: whereClause
-					})
+					db.select({ count: db.count() })
+						.from(schema.booking)
+						.where(db.and(
+							...Object.entries(whereClause).map(([k, v]) => v)
+						))
+						.then((rows) => rows[0]?.count ?? 0)
 				]);
 
 				// Transform bookings for output
@@ -802,12 +757,12 @@ export const router = createRouter({
 			const { customerId, organizationId, skip, take, search } = input;
 
 			// Verify customer belongs to organization
-			const customer = await prisma.customer.findFirst({
-				where: {
-					id: customerId,
-					organizationId
-				}
-			});
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(customerId),
+						schema.customer.organizationId.eq(organizationId)
+					)
+				});
 
 			if (!customer) {
 				throw new TRPCError({
@@ -826,34 +781,31 @@ export const router = createRouter({
 					}
 				: {};
 
-			const [notes, totalCount] = await Promise.all([
-				prisma.note.findMany({
-					where: {
-						customerId,
-						...searchFilter
-					},
-					include: {
-						author: {
-							select: {
-								id: true,
-								name: true,
-								email: true
-							}
+				const [notes, totalCount] = await Promise.all([
+					db.query.note.findMany({
+						where: db.and(
+							schema.note.customerId.eq(customerId),
+							...(search
+								? [schema.note.content.ilike(`%${search}%`)]
+								: [])
+						),
+						orderBy: [schema.note.createdAt.desc()],
+						skip,
+						take,
+						with: {
+							author: true
 						}
-					},
-					orderBy: {
-						createdAt: 'desc'
-					},
-					skip,
-					take
-				}),
-				prisma.note.count({
-					where: {
-						customerId,
-						...searchFilter
-					}
-				})
-			]);
+					}),
+					db.select({ count: db.count() })
+						.from(schema.note)
+						.where(db.and(
+							schema.note.customerId.eq(customerId),
+							...(search
+								? [schema.note.content.ilike(`%${search}%`)]
+								: [])
+						))
+						.then((rows) => rows[0]?.count ?? 0)
+				]);
 
 			return {
 				notes,
@@ -873,12 +825,12 @@ export const router = createRouter({
 			const { customerId, organizationId, content } = input;
 
 			// Verify customer belongs to organization
-			const customer = await prisma.customer.findFirst({
-				where: {
-					id: customerId,
-					organizationId
-				}
-			});
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(customerId),
+						schema.customer.organizationId.eq(organizationId)
+					)
+				});
 
 			if (!customer) {
 				throw new TRPCError({
@@ -887,22 +839,17 @@ export const router = createRouter({
 				});
 			}
 
-			const note = await prisma.note.create({
-				data: {
-					content,
-					customerId,
-					authorId: ctx.session.user.id
-				},
-				include: {
-					author: {
-						select: {
-							id: true,
-							name: true,
-							email: true
-						}
-					}
-				}
-			});
+				const [note] = await db
+					.insert(schema.note)
+					.values({
+						content,
+						customerId,
+						authorId: ctx.session.user.id
+					})
+					.returning();
+
+				// Fetch author for output
+				note.author = await db.query.user.findFirst({ where: schema.user.id.eq(note.authorId) });
 
 			return note;
 		}),
@@ -919,12 +866,12 @@ export const router = createRouter({
 			const { noteId, customerId, organizationId } = input;
 
 			// Verify customer belongs to organization
-			const customer = await prisma.customer.findFirst({
-				where: {
-					id: customerId,
-					organizationId
-				}
-			});
+				const customer = await db.query.customer.findFirst({
+					where: db.and(
+						schema.customer.id.eq(customerId),
+						schema.customer.organizationId.eq(organizationId)
+					)
+				});
 
 			if (!customer) {
 				throw new TRPCError({
@@ -934,12 +881,12 @@ export const router = createRouter({
 			}
 
 			// Verify note belongs to customer and user has permission
-			const note = await prisma.note.findFirst({
-				where: {
-					id: noteId,
-					customerId
-				}
-			});
+				const note = await db.query.note.findFirst({
+					where: db.and(
+						schema.note.id.eq(noteId),
+						schema.note.customerId.eq(customerId)
+					)
+				});
 
 			if (!note) {
 				throw new TRPCError({
@@ -951,14 +898,15 @@ export const router = createRouter({
 			// Only allow deletion by the author or organization admin
 			if (note.authorId !== ctx.session.user.id) {
 				// Check if user is admin/owner of organization
-				const member = await prisma.member.findFirst({
-					where: {
-						userId: ctx.session.user.id,
-						organizationId,
-						role: {
-							in: ['admin', 'owner']
-						}
-					}
+				const member = await db.query.member.findFirst({
+					where: db.and(
+						schema.member.userId.eq(ctx.session.user.id),
+						schema.member.organizationId.eq(organizationId),
+						db.or(
+							schema.member.role.eq('admin'),
+							schema.member.role.eq('owner')
+						)
+					)
 				});
 
 				if (!member) {
@@ -969,11 +917,7 @@ export const router = createRouter({
 				}
 			}
 
-			await prisma.note.delete({
-				where: {
-					id: noteId
-				}
-			});
+				await db.delete(schema.note).where(schema.note.id.eq(noteId));
 
 			return { success: true };
 		})

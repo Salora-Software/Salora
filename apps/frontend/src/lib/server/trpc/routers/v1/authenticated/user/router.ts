@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
+import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
 import { deleteImage, uploadImage } from '$lib/server/s3';
@@ -26,14 +27,9 @@ export const router = createRouter({
 				const imageurl = await uploadImage(imageBlob, `users/${user.id}/profile_${imageId}.png`);
 
 				//save the image in the database
-				await prisma.user.update({
-					where: {
-						id: user.id
-					},
-					data: {
-						image: `/users/${user.id}/profile_${imageId}.png`
-					}
-				});
+				await db.update(schema.user)
+					.set({ image: `/users/${user.id}/profile_${imageId}.png` })
+					.where(eq(schema.user.id, user.id));
 				return `/users/${user.id}/profile_${imageId}.png`;
 			}
 		),
@@ -52,13 +48,9 @@ export const router = createRouter({
 			const newPasswordHash = await ctxAuth.password.hash(newPassword);
 
 			// Check if the user exists and the password is correct
-			const account = await prisma.account.findFirst({
-				where: {
-					userId: ctx.session.user.id
-				},
-				select: {
-					password: true
-				}
+			const account = await db.query.account.findFirst({
+				where: eq(schema.account.userId, ctx.session.user.id),
+				columns: { password: true }
 			});
 			if (!account) {
 				throw new TRPCError({
@@ -97,14 +89,9 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				await prisma.user.update({
-					where: {
-						id: user.id
-					},
-					data: {
-						name
-					}
-				});
+				await db.update(schema.user)
+					.set({ name })
+					.where(eq(schema.user.id, user.id));
 				return true;
 			}
 		),
@@ -123,15 +110,9 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				await prisma.user.update({
-					where: {
-						id: user.id
-					},
-					data: {
-						email,
-						emailVerified: false
-					}
-				});
+				await db.update(schema.user)
+					.set({ email, emailVerified: false })
+					.where(eq(schema.user.id, user.id));
 				return true;
 			}
 		)

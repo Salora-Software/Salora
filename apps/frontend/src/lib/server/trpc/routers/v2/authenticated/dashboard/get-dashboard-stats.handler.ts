@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
+import { schema } from '$lib/server/db';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';
 
@@ -11,11 +12,9 @@ export const getDashboardStatsHandler = async ({
 	ctx: any;
 }) => {
 	const organizationId = input.organizationId || session.session.activeOrganizationId;
-	const branch = await prisma.organization.findFirst({
-		where: {
-			id: organizationId!
-		}
-	});
+		       const branch = await db.query.organization.findFirst({
+			       where: (org, { eq }) => eq(org.id, organizationId!)
+		       });
 
 	if (!branch) {
 		throw new TRPCError({
@@ -50,130 +49,117 @@ export const getDashboardStatsHandler = async ({
 	const startOfLastPeriodUTC = startOfLastPeriod.toJSDate();
 	const endOfLastPeriodUTC = endOfLastPeriod.toJSDate();
 
-	const [
-		currentPeriodBookings,
-		lastPeriodBookings,
-		newCustomersThisPeriod,
-		newCustomersLastPeriod,
-		returningCustomers
-	] = await Promise.all([
-		prisma.booking.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfPeriodUTC,
-					lte: endOfPeriodUTC
-				}
-			},
-			select: {
-				id: true,
-				createdAt: true,
-				customerId: true,
-				status: true,
-				service: {
-					select: {
-						price: true
-					}
-				}
-			},
-			take: 5000
-		}),
-		prisma.booking.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfLastPeriodUTC,
-					lte: endOfLastPeriodUTC
-				}
-			},
-			select: {
-				id: true,
-				status: true,
-				service: {
-					select: {
-						price: true
-					}
-				}
-			},
-			take: 5000
-		}),
-		prisma.customer.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfPeriodUTC,
-					lte: endOfPeriodUTC
-				}
-			},
-			select: {
-				id: true,
-				createdAt: true
-			}
-		}),
-		prisma.customer.count({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfLastPeriodUTC,
-					lte: endOfLastPeriodUTC
-				}
-			}
-		}),
-		prisma.customer.count({
-			where: {
-				organizationId: organizationId!,
-				bookings: {
-					some: {
-						createdAt: {
-							lt: startOfPeriodUTC
-						}
-					}
-				}
-			}
-		})
-	]);
+	       const [
+		       currentPeriodBookings,
+		       lastPeriodBookings,
+		       newCustomersThisPeriod,
+		       newCustomersLastPeriod,
+		       returningCustomers
+	       ] = await Promise.all([
+		       db.query.booking.findMany({
+			       where: (booking, { and, eq, gte, lte }) => and(
+				       eq(booking.organizationId, organizationId!),
+				       gte(booking.createdAt, startOfPeriodUTC),
+				       lte(booking.createdAt, endOfPeriodUTC)
+			       ),
+			       columns: {
+				       id: true,
+				       createdAt: true,
+				       customerId: true,
+				       status: true
+			       },
+			       with: {
+				       service: {
+					       columns: {
+						       price: true
+					       }
+				       }
+			       },
+			       limit: 5000
+		       }),
+		       db.query.booking.findMany({
+			       where: (booking, { and, eq, gte, lte }) => and(
+				       eq(booking.organizationId, organizationId!),
+				       gte(booking.createdAt, startOfLastPeriodUTC),
+				       lte(booking.createdAt, endOfLastPeriodUTC)
+			       ),
+			       columns: {
+				       id: true,
+				       createdAt: true,
+				       customerId: true,
+				       status: true
+			       },
+			       with: {
+				       service: {
+					       columns: {
+						       price: true
+					       }
+				       }
+			       },
+			       limit: 5000
+		       }),
+		       db.query.customer.findMany({
+			       where: (customer, { and, eq, gte, lte }) => and(
+				       eq(customer.organizationId, organizationId!),
+				       gte(customer.createdAt, startOfPeriodUTC),
+				       lte(customer.createdAt, endOfPeriodUTC)
+			       ),
+			       columns: {
+				       id: true,
+				       createdAt: true
+			       }
+		       }),
+		       db.select({ count: db.count() })
+			       .from(schema.customer)
+			       .where((customer, { and, eq, gte, lte }) => and(
+				       eq(customer.organizationId, organizationId!),
+				       gte(customer.createdAt, startOfLastPeriodUTC),
+				       lte(customer.createdAt, endOfLastPeriodUTC)
+			       ))
+			       .then((rows) => rows[0]?.count ?? 0),
+		       db.select({ count: db.count() })
+			       .from(schema.customer)
+			       .where((customer, { eq }) => eq(customer.organizationId, organizationId!))
+			       .where((customer) => db.exists(
+				       db.select().from(schema.booking)
+					       .where((booking, { eq, lt }) => and(
+						       eq(booking.customerId, customer.id),
+						       lt(booking.createdAt, startOfPeriodUTC)
+					       ))
+			       ))
+			       .then((rows) => rows[0]?.count ?? 0)
+	       ]);
 
-	const uniqueCustomerIds = new Set(currentPeriodBookings.map((booking) => booking.customerId));
-	const totalCustomersThisPeriod = uniqueCustomerIds.size;
+	       const uniqueCustomerIds = new Set(currentPeriodBookings.map((booking) => booking.customerId));
+	       const totalCustomersThisPeriod = uniqueCustomerIds.size;
 
-	const lastPeriodUniqueCustomers = await prisma.booking.findMany({
-		where: {
-			organizationId: organizationId!,
-			createdAt: {
-				gte: startOfLastPeriodUTC,
-				lte: endOfLastPeriodUTC
-			}
-		},
-		select: {
-			customerId: true
-		},
-		distinct: ['customerId']
-	});
-	const totalCustomersLastPeriod = lastPeriodUniqueCustomers.length;
+	       // Drizzle: get unique customerIds for last period
+	       const lastPeriodUniqueCustomers = Array.from(new Set(lastPeriodBookings.map((booking) => booking.customerId)));
+	       const totalCustomersLastPeriod = lastPeriodUniqueCustomers.length;
 
-	const currentPeriodRevenue = currentPeriodBookings
-		.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-		.reduce((sum, booking) => sum + booking.service.price, 0);
-	const lastPeriodRevenue = lastPeriodBookings
-		.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-		.reduce((sum, booking) => sum + booking.service.price, 0);
+	       const currentPeriodRevenue = currentPeriodBookings
+		       .filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
+		       .reduce((sum, booking) => sum + (booking.service?.price ?? 0), 0);
+	       const lastPeriodRevenue = lastPeriodBookings
+		       .filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
+		       .reduce((sum, booking) => sum + (booking.service?.price ?? 0), 0);
 
-	const appointmentChange =
-		lastPeriodBookings.length > 0
-			? ((currentPeriodBookings.length - lastPeriodBookings.length) / lastPeriodBookings.length) * 100
-			: 100;
-	const revenueChange =
-		lastPeriodRevenue > 0
-			? ((currentPeriodRevenue - lastPeriodRevenue) / lastPeriodRevenue) * 100
-			: 100;
-	const customerChange =
-		totalCustomersLastPeriod > 0
-			? ((totalCustomersThisPeriod - totalCustomersLastPeriod) / totalCustomersLastPeriod) * 100
-			: 100;
-	const newCustomerChange =
-		newCustomersLastPeriod > 0
-			? ((newCustomersThisPeriod.length - newCustomersLastPeriod) / newCustomersLastPeriod) * 100
-			: 100;
+	       const appointmentChange =
+		       lastPeriodBookings.length > 0
+			       ? ((currentPeriodBookings.length - lastPeriodBookings.length) / lastPeriodBookings.length) * 100
+			       : 100;
+	       const revenueChange =
+		       lastPeriodRevenue > 0
+			       ? ((currentPeriodRevenue - lastPeriodRevenue) / lastPeriodRevenue) * 100
+			       : 100;
+	       const customerChange =
+		       totalCustomersLastPeriod > 0
+			       ? ((totalCustomersThisPeriod - totalCustomersLastPeriod) / totalCustomersLastPeriod) * 100
+			       : 100;
+	       const newCustomerChange =
+		       newCustomersLastPeriod > 0
+			       ? ((newCustomersThisPeriod.length - newCustomersLastPeriod) / newCustomersLastPeriod) * 100
+			       : 100;
 
 	const totalDays = Math.ceil(endOfPeriod.diff(startOfPeriod, 'days').days) + 1;
 	let groupingStrategy: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -242,29 +228,29 @@ export const getDashboardStatsHandler = async ({
 		}
 	};
 
-	for (const booking of currentPeriodBookings) {
-		const bookingDate = DateTime.fromJSDate(booking.createdAt).setZone(branch.timeZone);
-		const periodIndex = getPeriodIndex(bookingDate);
+	       for (const booking of currentPeriodBookings) {
+		       const bookingDate = DateTime.fromJSDate(booking.createdAt).setZone(branch.timeZone);
+		       const periodIndex = getPeriodIndex(bookingDate);
 
-		if (periodIndex >= 0 && periodIndex < periodCount) {
-			bookingsByPeriod[periodIndex]++;
-			if (booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') {
-				revenueByPeriod[periodIndex] += booking.service.price;
-			}
-			if (booking.customerId) {
-				periodCustomers[periodIndex].add(booking.customerId);
-			}
-		}
-	}
+		       if (periodIndex >= 0 && periodIndex < periodCount) {
+			       bookingsByPeriod[periodIndex]++;
+			       if (booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') {
+				       revenueByPeriod[periodIndex] += booking.service?.price ?? 0;
+			       }
+			       if (booking.customerId) {
+				       periodCustomers[periodIndex].add(booking.customerId);
+			       }
+		       }
+	       }
 
-	for (const customer of newCustomersThisPeriod) {
-		const customerDate = DateTime.fromJSDate(customer.createdAt).setZone(branch.timeZone);
-		const periodIndex = getPeriodIndex(customerDate);
+	       for (const customer of newCustomersThisPeriod) {
+		       const customerDate = DateTime.fromJSDate(customer.createdAt).setZone(branch.timeZone);
+		       const periodIndex = getPeriodIndex(customerDate);
 
-		if (periodIndex >= 0 && periodIndex < periodCount) {
-			newCustomersByPeriod[periodIndex]++;
-		}
-	}
+		       if (periodIndex >= 0 && periodIndex < periodCount) {
+			       newCustomersByPeriod[periodIndex]++;
+		       }
+	       }
 
 	for (let i = 0; i < periodCount; i++) {
 		const periodStart = getPeriodStartDate(i);
@@ -280,39 +266,39 @@ export const getDashboardStatsHandler = async ({
 		newCustomers: newCustomersByPeriod[i] || 0
 	}));
 
-	return {
-		organizationId,
-		timeZone: branch.timeZone,
-		currentLocalTime: now.toISO(),
-		dateRange: {
-			start: startOfPeriod.toISO(),
-			end: endOfPeriod.toISO()
-		},
-		stats: {
-			appointments: {
-				current: currentPeriodBookings.length,
-				change: Math.round(appointmentChange)
-			},
-			revenue: {
-				current: currentPeriodRevenue,
-				change: Math.round(revenueChange)
-			},
-			customers: {
-				current: totalCustomersThisPeriod,
-				change: Math.round(customerChange)
-			},
-			newCustomers: {
-				current: newCustomersThisPeriod.length,
-				change: Math.round(newCustomerChange)
-			}
-		},
-		chartData: {
-			points,
-			customerTypes: {
-				new: newCustomersThisPeriod.length,
-				returning: returningCustomers
-			},
-			groupingStrategy
-		}
-	};
+	       return {
+		       organizationId,
+		       timeZone: branch.timeZone,
+		       currentLocalTime: now.toISO(),
+		       dateRange: {
+			       start: startOfPeriod.toISO(),
+			       end: endOfPeriod.toISO()
+		       },
+		       stats: {
+			       appointments: {
+				       current: currentPeriodBookings.length,
+				       change: Math.round(appointmentChange)
+			       },
+			       revenue: {
+				       current: currentPeriodRevenue,
+				       change: Math.round(revenueChange)
+			       },
+			       customers: {
+				       current: totalCustomersThisPeriod,
+				       change: Math.round(customerChange)
+			       },
+			       newCustomers: {
+				       current: newCustomersThisPeriod.length,
+				       change: Math.round(newCustomerChange)
+			       }
+		       },
+		       chartData: {
+			       points,
+			       customerTypes: {
+				       new: newCustomersThisPeriod.length,
+				       returning: returningCustomers
+			       },
+			       groupingStrategy
+		       }
+	       };
 };

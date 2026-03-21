@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
+import { schema } from '$lib/server/db';
 import type { AddTimeOffInput } from './add-time-off.schema';
 import { CalendarItemType } from '@salora/database';
 
@@ -13,21 +14,21 @@ export const addTimeOffHandler = async ({
 	const { organizationId, memberId, startTime, endTime, reason, type } = input;
 
 	// Verify permissions: check if user is admin of the organization or is the member themselves
-	const member = await prisma.member.findFirst({
-		where: {
-			id: memberId,
-			organizationId: organizationId
-		},
-		include: {
-			organization: {
-				include: {
-					members: {
-						where: { userId: session.user.id as string }
-					}
-				}
-			}
-		}
-	});
+	       const member = await db.query.member.findFirst({
+		       where: (member, { and, eq }) => and(
+			       eq(member.id, memberId),
+			       eq(member.organizationId, organizationId)
+		       ),
+		       with: {
+			       organization: {
+				       with: {
+					       members: {
+						       where: (m, { eq }) => eq(m.userId, session.user.id as string)
+					       }
+				       }
+			       }
+		       }
+	       });
 
 	if (!member) {
 		throw new TRPCError({
@@ -50,28 +51,24 @@ export const addTimeOffHandler = async ({
 	const timeOffId = crypto.randomUUID();
 
 	// Create TimeOff and CalendarItem in a transaction
-	return await prisma.$transaction(async (tx) => {
-		const timeOff = await tx.timeOff.create({
-			data: {
-				id: timeOffId,
-				memberId: memberId,
-				reason: reason,
-				type: type
-			}
-		});
+	       return await db.transaction(async (tx) => {
+		       const timeOff = await tx.insert(schema.timeOff).values({
+			       id: timeOffId,
+			       memberId: memberId,
+			       reason: reason,
+			       type: type
+		       }).returning().then(r => r[0]);
 
-		await tx.calendarItem.create({
-			data: {
-				organizationId: organizationId,
-				memberId: memberId,
-				startTime: startTime,
-				endTime: endTime,
-				type: CalendarItemType.TIME_OFF,
-				timeOffId: timeOffId,
-				notes: reason
-			}
-		});
+		       await tx.insert(schema.calendarItem).values({
+			       organizationId: organizationId,
+			       memberId: memberId,
+			       startTime: startTime,
+			       endTime: endTime,
+			       type: CalendarItemType.TIME_OFF,
+			       timeOffId: timeOffId,
+			       notes: reason
+		       });
 
-		return timeOff;
-	});
+		       return timeOff;
+	       });
 };

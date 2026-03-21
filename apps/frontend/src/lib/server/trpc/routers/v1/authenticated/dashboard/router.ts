@@ -1,29 +1,25 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
 export const router = createRouter({
 	getUpcomingAppointments: privateProcedure
 		.input(
-			z
-				.object({
-					organizationId: z.string().optional(),
-					startDate: z.string().optional(),
-					endDate: z.string().optional()
-				})
-				.optional()
+			z.object({
+				organizationId: z.string().optional(),
+				startDate: z.string().optional(),
+				endDate: z.string().optional()
+			})
 		)
 		.query(async ({ ctx, input }) => {
 			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;
-			let branch = await prisma.organization.findFirst({
-				where: {
-					id: organizationId!
-				},
-				include: {
+			let branch = await db.query.organization.findFirst({
+				where: (org, { eq }) => eq(org.id, organizationId!),
+				with: {
 					members: {
-						include: {
+						with: {
 							user: true
 						}
 					}
@@ -50,40 +46,37 @@ export const router = createRouter({
 			}
 
 			// Convert to UTC for database query
-			const startTimeUTC = startTime.toJSDate();
-			const endTimeUTC = endTime.toJSDate();
+			const startTimeUTC = startTime.toISO()!;
+			const endTimeUTC = endTime.toISO()!;
 
 			// Query appointments for the selected date range
-			const appointments = await prisma.calendarItem.findMany({
-				where: {
-					organizationId: organizationId!,
-					startTime: {
-						gte: startTimeUTC,
-						lte: endTimeUTC
-					}
-				},
-				include: {
+			const appointments = await db.query.calendarItem.findMany({
+				where: (calendarItem, { and, eq, gte, lte }) =>
+					and(
+						eq(calendarItem.organizationId, organizationId!),
+						gte(calendarItem.startTime, startTimeUTC),
+						lte(calendarItem.startTime, endTimeUTC)
+					),
+				with: {
 					member: {
-						include: {
+						with: {
 							user: true
 						}
 					},
 					booking: {
-						include: {
+						with: {
 							customer: true
 						}
 					}
 				},
-				orderBy: {
-					startTime: 'asc'
-				},
-				take: 1000 // Limit to 1000 appointments to prevent performance issues
+				orderBy: (calendarItem, { asc }) => [asc(calendarItem.startTime)],
+				limit: 1000 // Limit to 1000 appointments to prevent performance issues
 			});
 
 			// Transform appointments to include customer info at the top level
 			const appointmentsWithCustomer = appointments.map((appointment) => {
-				const localStartTime = DateTime.fromJSDate(appointment.startTime).setZone(branch.timeZone);
-				const localEndTime = DateTime.fromJSDate(appointment.endTime).setZone(branch.timeZone);
+				const localStartTime = DateTime.fromISO(appointment.startTime).setZone(branch.timeZone);
+				const localEndTime = DateTime.fromISO(appointment.endTime).setZone(branch.timeZone);
 
 				return {
 					...appointment,
@@ -107,20 +100,16 @@ export const router = createRouter({
 
 	getDashboardStats: privateProcedure
 		.input(
-			z
-				.object({
-					organizationId: z.string().optional(),
-					startDate: z.string().optional(),
-					endDate: z.string().optional()
-				})
-				.optional()
+			z.object({
+				organizationId: z.string().optional(),
+				startDate: z.string().optional(),
+				endDate: z.string().optional()
+			})
 		)
 		.query(async ({ ctx, input }) => {
 			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;
-			let branch = await prisma.organization.findFirst({
-				where: {
-					id: organizationId!
-				}
+			let branch = await db.query.organization.findFirst({
+				where: (org, { eq }) => eq(org.id, organizationId!)
 			});
 			if (!branch) {
 				throw new TRPCError({
@@ -150,10 +139,10 @@ export const router = createRouter({
 			}
 
 			// Convert to UTC for database queries
-			const startOfPeriodUTC = startOfPeriod.toJSDate();
-			const endOfPeriodUTC = endOfPeriod.toJSDate();
-			const startOfLastPeriodUTC = startOfLastPeriod.toJSDate();
-			const endOfLastPeriodUTC = endOfLastPeriod.toJSDate();
+			const startOfPeriodUTC = startOfPeriod.toISO()!;
+			const endOfPeriodUTC = endOfPeriod.toISO()!;
+			const startOfLastPeriodUTC = startOfLastPeriod.toISO()!;
+			const endOfLastPeriodUTC = endOfLastPeriod.toISO()!;
 
 			// Execute all database queries in parallel for better performance
 			const [
@@ -161,120 +150,126 @@ export const router = createRouter({
 				lastPeriodBookings,
 				newCustomersThisPeriod,
 				newCustomersLastPeriod,
-				returningCustomers
+				priorBookings
 			] = await Promise.all([
-				// Get current period bookings with minimal data
-				prisma.booking.findMany({
-					where: {
-						organizationId: organizationId!,
-						createdAt: {
-							gte: startOfPeriodUTC,
-							lte: endOfPeriodUTC
-						}
+				db.query.booking.findMany({
+					where: (booking, { and, eq, gte, lte }) =>
+						and(
+							eq(booking.organizationId, organizationId!),
+							gte(booking.createdAt, startOfPeriodUTC),
+							lte(booking.createdAt, endOfPeriodUTC)
+						),
+					with: {
+						service: true
 					},
-					select: {
+					columns: {
 						id: true,
 						createdAt: true,
 						customerId: true,
-						status: true,
-						service: {
-							select: {
-								price: true
-							}
-						}
+						status: true
 					},
-					take: 5000
+					limit: 5000
 				}),
-
-				// Get last period bookings with minimal data
-				prisma.booking.findMany({
-					where: {
-						organizationId: organizationId!,
-						createdAt: {
-							gte: startOfLastPeriodUTC,
-							lte: endOfLastPeriodUTC
-						}
+				db.query.booking.findMany({
+					where: (booking, { and, eq, gte, lte }) =>
+						and(
+							eq(booking.organizationId, organizationId!),
+							gte(booking.createdAt, startOfLastPeriodUTC),
+							lte(booking.createdAt, endOfLastPeriodUTC)
+						),
+					with: {
+						service: true
 					},
-					select: {
+					columns: {
 						id: true,
-						status: true,
-						service: {
-							select: {
-								price: true
-							}
-						}
+						customerId: true,
+						createdAt: true,
+						status: true
 					},
-					take: 5000
+					limit: 5000
 				}),
-
-				// Get new customers this period
-				prisma.customer.findMany({
-					where: {
-						organizationId: organizationId!,
-						createdAt: {
-							gte: startOfPeriodUTC,
-							lte: endOfPeriodUTC
-						}
-					},
-					select: {
+				db.query.customer.findMany({
+					where: (customer, { and, eq, gte, lte }) =>
+						and(
+							eq(customer.organizationId, organizationId!),
+							gte(customer.createdAt, startOfPeriodUTC),
+							lte(customer.createdAt, endOfPeriodUTC)
+						),
+					columns: {
 						id: true,
 						createdAt: true
 					}
 				}),
-
-				// Get new customers last period
-				prisma.customer.count({
-					where: {
-						organizationId: organizationId!,
-						createdAt: {
-							gte: startOfLastPeriodUTC,
-							lte: endOfLastPeriodUTC
-						}
+				db.query.customer.findMany({
+					where: (customer, { and, eq, gte, lte }) =>
+						and(
+							eq(customer.organizationId, organizationId!),
+							gte(customer.createdAt, startOfLastPeriodUTC),
+							lte(customer.createdAt, endOfLastPeriodUTC)
+						),
+					columns: {
+						id: true
 					}
 				}),
-
-				// Get returning customers count
-				prisma.customer.count({
-					where: {
-						organizationId: organizationId!,
-						bookings: {
-							some: {
-								createdAt: {
-									lt: startOfPeriodUTC
-								}
-							}
-						}
-					}
+				db.query.booking.findMany({
+					where: (booking, { and, eq, lt }) =>
+						and(eq(booking.organizationId, organizationId!), lt(booking.createdAt, startOfPeriodUTC)),
+					columns: {
+						customerId: true
+					},
+					limit: 5000
 				})
 			]);
 
 			// Calculate unique customers this period efficiently
-			const uniqueCustomerIds = new Set(currentPeriodBookings.map((booking) => booking.customerId));
+			const uniqueCustomerIds = new Set(
+				currentPeriodBookings.map((booking: { customerId: string | null }) => booking.customerId)
+			);
 			const totalCustomersThisPeriod = uniqueCustomerIds.size;
+			const priorCustomerIds = new Set(
+				priorBookings.map((booking: { customerId: string | null }) => booking.customerId)
+			);
+			const returningCustomers = Array.from(uniqueCustomerIds).filter((id) => priorCustomerIds.has(id))
+				.length;
 
 			// Calculate unique customers last period efficiently
-			const lastPeriodUniqueCustomers = await prisma.booking.findMany({
-				where: {
-					organizationId: organizationId!,
-					createdAt: {
-						gte: startOfLastPeriodUTC,
-						lte: endOfLastPeriodUTC
-					}
-				},
-				select: {
+			const lastPeriodUniqueCustomers = await db.query.booking.findMany({
+				where: (booking, { and, eq, gte, lte }) =>
+					and(
+						eq(booking.organizationId, organizationId!),
+						gte(booking.createdAt, startOfLastPeriodUTC),
+						lte(booking.createdAt, endOfLastPeriodUTC)
+					),
+				columns: {
 					customerId: true
 				},
-				distinct: ['customerId']
+				// Drizzle does not support distinct directly, so use Set below
 			});
-			const totalCustomersLastPeriod = lastPeriodUniqueCustomers.length;
+			const totalCustomersLastPeriod = Array.from(
+				new Set(lastPeriodUniqueCustomers.map((b) => b.customerId))
+			).length;
 
 			// Calculate revenue efficiently - only include CONFIRMED and COMPLETED bookings
 			const currentPeriodRevenue = currentPeriodBookings
-				.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-				.reduce((sum, booking) => sum + booking.service.price, 0);
+				.filter(
+					(booking: { status: string }) =>
+						booking.status === 'CONFIRMED' || booking.status === 'COMPLETED'
+				)
+				.reduce(
+					(sum: number, booking: { service: { price: number } | null }) =>
+						sum + (booking.service?.price ?? 0),
+					0
+				);
 			const lastPeriodRevenue = lastPeriodBookings
-				.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-				.reduce((sum, booking) => sum + booking.service.price, 0);
+				.filter(
+					(booking: { status: string }) =>
+						booking.status === 'CONFIRMED' || booking.status === 'COMPLETED'
+				)
+				.reduce(
+					(sum: number, booking: { service: { price: number } | null }) =>
+						sum + (booking.service?.price ?? 0),
+					0
+				);
 
 			// Calculate percentage changes
 			const appointmentChange =
@@ -292,8 +287,9 @@ export const router = createRouter({
 					? ((totalCustomersThisPeriod - totalCustomersLastPeriod) / totalCustomersLastPeriod) * 100
 					: 100;
 			const newCustomerChange =
-				newCustomersLastPeriod > 0
-					? ((newCustomersThisPeriod.length - newCustomersLastPeriod) / newCustomersLastPeriod) *
+				newCustomersLastPeriod.length > 0
+					? ((newCustomersThisPeriod.length - newCustomersLastPeriod.length) /
+							newCustomersLastPeriod.length) *
 						100
 					: 100; // Determine grouping strategy based on date range
 			const totalDays = Math.ceil(endOfPeriod.diff(startOfPeriod, 'days').days) + 1;
@@ -377,7 +373,7 @@ export const router = createRouter({
 
 			// Group current period bookings by the chosen strategy
 			for (const booking of currentPeriodBookings) {
-				const bookingDate = DateTime.fromJSDate(booking.createdAt).setZone(branch.timeZone);
+				const bookingDate = DateTime.fromISO(booking.createdAt).setZone(branch.timeZone);
 				const periodIndex = getPeriodIndex(bookingDate);
 
 				if (periodIndex >= 0 && periodIndex < periodCount) {
@@ -392,7 +388,7 @@ export const router = createRouter({
 
 			// Group new customers by the chosen strategy
 			for (const customer of newCustomersThisPeriod) {
-				const customerDate = DateTime.fromJSDate(customer.createdAt).setZone(branch.timeZone);
+				const customerDate = DateTime.fromISO(customer.createdAt).setZone(branch.timeZone);
 				const periodIndex = getPeriodIndex(customerDate);
 
 				if (periodIndex >= 0 && periodIndex < periodCount) {

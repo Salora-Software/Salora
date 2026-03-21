@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
+import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { BookingStatus } from '@salora/database';
 
@@ -17,9 +18,9 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { organizationId } }) => {
-			const organization = await prisma.organization.findUnique({
-				where: { id: organizationId },
-				select: {
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				columns: {
 					appointmentStatus: true,
 					minimumBookingTime: true,
 					bookingPeriod: true,
@@ -62,17 +63,17 @@ export const router = createRouter({
 					timeZone
 				}
 			}) => {
-				const organization = await prisma.organization.update({
-					where: { id: organizationId },
-					data: {
+				const result = await db.update(schema.organization)
+					.set({
 						appointmentStatus,
 						minimumBookingTime,
 						bookingPeriod,
 						autoShiftTimeSlot,
 						timeZone
-					}
-				});
-				if (!organization) {
+					})
+					.where(eq(schema.organization.id, organizationId))
+					.returning({ id: schema.organization.id });
+				if (result.length === 0) {
 					throw new TRPCError({ code: 'BAD_REQUEST', message: 'organization_not_found' });
 				}
 				return true;

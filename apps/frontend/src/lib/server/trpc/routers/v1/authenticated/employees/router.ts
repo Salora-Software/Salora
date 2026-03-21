@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/drizzle';
+import * as schema from '$lib/server/drizzle/schema';
 import { TRPCError } from '@trpc/server';
 import { convertToLocal, convertToUtc } from '$lib/utils';
 import { env } from '$env/dynamic/private';
@@ -27,18 +28,16 @@ export const router = createRouter({
 		)
 		.mutation(async ({ input: { organizationId, name, email, role, sendInvitation } }) => {
 			// get organization
-			const organization = await prisma.organization.findFirst({
-				where: {
-					id: organizationId
-				},
-				include: {
-					members: {
-						include: {
-							user: true
-						}
-					}
-				}
-			});
+			   const [organization] = await db.query.organizations.findMany({
+				   where: (organizations, { eq }) => eq(organizations.id, organizationId),
+				   with: {
+					   members: {
+						   with: {
+							   user: true
+						   }
+					   }
+				   }
+			   });
 			if (!organization)
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
@@ -54,30 +53,29 @@ export const router = createRouter({
 					code: 'BAD_REQUEST',
 					message: 'employee_already_exists'
 				});
-			const user = await prisma.user.upsert({
-				where: {
-					email
-				},
-				update: {},
-				create: {
-					id: crypto.randomUUID(),
-					name,
-					email,
-					emailVerified: false,
-					createdAt: new Date(),
-					updatedAt: new Date()
-				}
-			});
-			const member = await prisma.member.create({
-				data: {
-					id: crypto.randomUUID(),
-					createdAt: new Date(),
-					userId: user.id,
-					organizationId,
-					role,
-					invitationStatus: sendInvitation ? 'PENDING' : 'ACTIVE'
-				}
-			});
+			   // Upsert user: try to find, else insert
+			   let [user] = await db.query.users.findMany({
+				   where: (users, { eq }) => eq(users.email, email)
+			   });
+			   if (!user) {
+				   const [inserted] = await db.insert(schema.users).values({
+					   id: crypto.randomUUID(),
+					   name,
+					   email,
+					   emailVerified: false,
+					   createdAt: new Date(),
+					   updatedAt: new Date()
+				   }).returning();
+				   user = inserted;
+			   }
+			   const [member] = await db.insert(schema.members).values({
+				   id: crypto.randomUUID(),
+				   createdAt: new Date(),
+				   userId: user.id,
+				   organizationId,
+				   role,
+				   invitationStatus: sendInvitation ? 'PENDING' : 'ACTIVE'
+			   }).returning();
 
 			// Send invitation email if requested
 			if (sendInvitation) {
@@ -106,35 +104,26 @@ export const router = createRouter({
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId } }) => {
 			// get organization
-			const organization = await prisma.organization.findFirst({
-				where: {
-					id: organizationId
-				},
-				include: {
-					members: true
-				}
-			});
+			   const [organization] = await db.query.organizations.findMany({
+				   where: (organizations, { eq }) => eq(organizations.id, organizationId),
+				   with: {
+					   members: true
+				   }
+			   });
 			if (!organization)
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'organization_not_found'
 				});
-			const member = await prisma.member.findFirst({
-				where: {
-					id: employeeId,
-					organizationId
-				}
-			});
+			   const [member] = await db.query.members.findMany({
+				   where: (members, { eq, and }) => and(eq(members.id, employeeId), eq(members.organizationId, organizationId))
+			   });
 			if (!member)
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'employee_not_found'
 				});
-			await prisma.member.delete({
-				where: {
-					id: employeeId
-				}
-			});
+			   await db.delete(schema.members).where((members, { eq }) => eq(members.id, employeeId));
 			return true;
 		}),
 
@@ -200,14 +189,12 @@ export const router = createRouter({
 				}
 			}) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
-						members: true
-					}
-				});
+				   const [organization] = await db.query.organizations.findMany({
+					   where: (organizations, { eq }) => eq(organizations.id, organizationId),
+					   with: {
+						   members: true
+					   }
+				   });
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
@@ -219,47 +206,31 @@ export const router = createRouter({
 						code: 'BAD_REQUEST',
 						message: 'employee_not_found'
 					});
-				await prisma.member.update({
-					where: {
-						id: employeeId
-					},
-					data: {
-						role
-					}
-				});
+				   await db.update(schema.members)
+					   .set({ role })
+					   .where((members, { eq }) => eq(members.id, employeeId));
 				//assign services to the employee
-				if (assignedServices) {
-					//remove all services
-					await prisma.employeeService.deleteMany({
-						where: {
-							memberId: employeeId
-						}
-					});
-					//add the new services
-					for (let service of assignedServices) {
-						const serviceExists = await prisma.service.findFirst({
-							where: {
-								id: service
-							}
-						});
-						if (serviceExists) {
-							const employeeService = await prisma.employeeService.findFirst({
-								where: {
-									serviceId: service,
-									memberId: employeeId
-								}
-							});
-							if (!employeeService) {
-								await prisma.employeeService.create({
-									data: {
-										serviceId: service,
-										memberId: employeeId
-									}
-								});
-							}
-						}
-					}
-				}
+				   if (assignedServices) {
+					   // Remove all services
+					   await db.delete(schema.employeeServices).where((es, { eq }) => eq(es.memberId, employeeId));
+					   // Add the new services
+					   for (let service of assignedServices) {
+						   const [serviceExists] = await db.query.services.findMany({
+							   where: (services, { eq }) => eq(services.id, service)
+						   });
+						   if (serviceExists) {
+							   const [employeeService] = await db.query.employeeServices.findMany({
+								   where: (es, { eq, and }) => and(eq(es.serviceId, service), eq(es.memberId, employeeId))
+							   });
+							   if (!employeeService) {
+								   await db.insert(schema.employeeServices).values({
+									   serviceId: service,
+									   memberId: employeeId
+								   });
+							   }
+						   }
+					   }
+				   }
 				// update the availability
 				const updatedTimes = availability.map((time) => ({
 					id: time.id,
@@ -275,77 +246,65 @@ export const router = createRouter({
 							message: 'start_time_must_be_before_end_time'
 						});
 				}
-				await prisma.$transaction(async (tx) => {
-					// Delete outdated availability (only if removeItems has values)
-					if (removeItems && removeItems.length > 0) {
-						await tx.availability.deleteMany({
-							where: { id: { in: removeItems } }
-						});
-					}
+				   await db.transaction(async (tx) => {
+					   // Delete outdated availability (only if removeItems has values)
+					   if (removeItems && removeItems.length > 0) {
+						   await tx.delete(schema.availability).where((a, { inArray }) => inArray(a.id, removeItems));
+					   }
 
-					// Handle availability updates/creates separately
-					for (const time of updatedTimes) {
-						if (time.id) {
-							// Update existing availability
-							await tx.availability.update({
-								where: { id: time.id },
-								data: {
-									dayOfWeek: time.dayOfWeek,
-									startTimeUtc: time.startTimeUtc,
-									endTimeUtc: time.endTimeUtc
-								}
-							});
-						} else {
-							// Create new availability
-							await tx.availability.create({
-								data: {
-									id: crypto.randomUUID(),
-									dayOfWeek: time.dayOfWeek,
-									startTimeUtc: time.startTimeUtc,
-									endTimeUtc: time.endTimeUtc,
-									memberId: employeeId
-								}
-							});
-						}
-					}
-				});
+					   // Handle availability updates/creates separately
+					   for (const time of updatedTimes) {
+						   if (time.id) {
+							   // Update existing availability
+							   await tx.update(schema.availability)
+								   .set({
+									   dayOfWeek: time.dayOfWeek,
+									   startTimeUtc: time.startTimeUtc,
+									   endTimeUtc: time.endTimeUtc
+								   })
+								   .where((a, { eq }) => eq(a.id, time.id));
+						   } else {
+							   // Create new availability
+							   await tx.insert(schema.availability).values({
+								   id: crypto.randomUUID(),
+								   dayOfWeek: time.dayOfWeek,
+								   startTimeUtc: time.startTimeUtc,
+								   endTimeUtc: time.endTimeUtc,
+								   memberId: employeeId
+							   });
+						   }
+					   }
+				   });
 
 				// also update the user
-				const user = await prisma.user.update({
-					where: {
-						id: member.userId
-					},
-					data: {
-						name,
-						email
-					}
-				});
-				const fetchedMember = await prisma.member.findFirst({
-					where: {
-						id: employeeId
-					},
-					include: {
-						services: true,
-						timeOffs: true,
-						availability: true,
-						user: true
-					}
-				});
-				if (!fetchedMember)
-					throw new TRPCError({
-						code: 'BAD_REQUEST',
-						message: 'employee_not_found'
-					});
-				return {
-					...user,
-					...fetchedMember,
-					services: fetchedMember.services.map((service) => service.serviceId),
-					availability: fetchedMember.availability.map((time) => ({
-						...time,
-						startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
-						endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
-					}))
-				};
+				   const [user] = await db.update(schema.users)
+					   .set({ name, email })
+					   .where((users, { eq }) => eq(users.id, member.userId))
+					   .returning();
+				   const [fetchedMember] = await db.query.members.findMany({
+					   where: (members, { eq }) => eq(members.id, employeeId),
+					   with: {
+						   services: true,
+						   timeOffs: true,
+						   availability: true,
+						   user: true
+					   }
+				   });
+				   if (!fetchedMember)
+					   throw new TRPCError({
+						   code: 'BAD_REQUEST',
+						   message: 'employee_not_found'
+					   });
+				   return {
+					   ...user,
+					   ...fetchedMember,
+					   services: fetchedMember.services.map((service) => service.serviceId),
+					   availability: fetchedMember.availability.map((time) => ({
+						   ...time,
+						   startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
+						   endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
+					   }))
+				   };
 			}
 		),
 
@@ -359,32 +318,37 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId, status } }) => {
-			const organization = await prisma.organization.findFirst({
-				where: { id: organizationId },
-				include: { members: { include: { user: true } } }
-			});
+			   const [organization] = await db.query.organizations.findMany({
+				   where: (organizations, { eq }) => eq(organizations.id, organizationId),
+				   with: {
+					   members: {
+						   with: {
+							   user: true
+						   }
+					   }
+				   }
+			   });
 
-			if (!organization) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'organization_not_found'
-				});
-			}
+			   if (!organization) {
+				   throw new TRPCError({
+					   code: 'BAD_REQUEST',
+					   message: 'organization_not_found'
+				   });
+			   }
 
-			const member = organization.members.find((m) => m.id === employeeId);
-			if (!member) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'employee_not_found'
-				});
-			}
+			   const member = organization.members.find((m) => m.id === employeeId);
+			   if (!member) {
+				   throw new TRPCError({
+					   code: 'BAD_REQUEST',
+					   message: 'employee_not_found'
+				   });
+			   }
 
-			await prisma.member.update({
-				where: { id: employeeId },
-				data: { invitationStatus: status }
-			});
+			   await db.update(schema.members)
+				   .set({ invitationStatus: status })
+				   .where((members, { eq }) => eq(members.id, employeeId));
 
-			return true;
+			   return true;
 		}),
 
 	resendInvitation: privateProcedure
@@ -396,44 +360,49 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId } }) => {
-			const organization = await prisma.organization.findFirst({
-				where: { id: organizationId },
-				include: { members: { include: { user: true } } }
-			});
+			   const [organization] = await db.query.organizations.findMany({
+				   where: (organizations, { eq }) => eq(organizations.id, organizationId),
+				   with: {
+					   members: {
+						   with: {
+							   user: true
+						   }
+					   }
+				   }
+			   });
 
-			if (!organization) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'organization_not_found'
-				});
-			}
+			   if (!organization) {
+				   throw new TRPCError({
+					   code: 'BAD_REQUEST',
+					   message: 'organization_not_found'
+				   });
+			   }
 
-			const member = organization.members.find((m) => m.id === employeeId);
-			if (!member) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'employee_not_found'
-				});
-			}
+			   const member = organization.members.find((m) => m.id === employeeId);
+			   if (!member) {
+				   throw new TRPCError({
+					   code: 'BAD_REQUEST',
+					   message: 'employee_not_found'
+				   });
+			   }
 
-			// Update status to pending
-			await prisma.member.update({
-				where: { id: employeeId },
-				data: { invitationStatus: 'PENDING' }
-			});
+			   // Update status to pending
+			   await db.update(schema.members)
+				   .set({ invitationStatus: 'PENDING' })
+				   .where((members, { eq }) => eq(members.id, employeeId));
 
-			// Send invitation email
-			try {
-				await sendInvitationEmail(organization, member.user, member.role);
-			} catch (error) {
-				console.error('Failed to resend invitation email:', error);
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'failed_to_send_email'
-				});
-			}
+			   // Send invitation email
+			   try {
+				   await sendInvitationEmail(organization, member.user, member.role);
+			   } catch (error) {
+				   console.error('Failed to resend invitation email:', error);
+				   throw new TRPCError({
+					   code: 'INTERNAL_SERVER_ERROR',
+					   message: 'failed_to_send_email'
+				   });
+			   }
 
-			return true;
+			   return true;
 		})
 });
 

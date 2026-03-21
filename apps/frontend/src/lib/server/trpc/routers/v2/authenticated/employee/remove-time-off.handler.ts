@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
+import { schema } from '$lib/server/db';
 import type { RemoveTimeOffInput } from './remove-time-off.schema';
 
 export const removeTimeOffHandler = async ({
@@ -12,22 +13,22 @@ export const removeTimeOffHandler = async ({
 	const { organizationId, timeOffId } = input;
 
 	// Check if timeOff exists and user has permission (admin/owner or own timeOff)
-	const timeOff = await prisma.timeOff.findUnique({
-		where: { id: timeOffId },
-		include: {
-			member: {
-				include: {
-					organization: {
-						include: {
-							members: {
-								where: { userId: session.user.id }
-							}
-						}
-					}
-				}
-			}
-		}
-	});
+	       const timeOff = await db.query.timeOff.findFirst({
+		       where: (to, { eq }) => eq(to.id, timeOffId),
+		       with: {
+			       member: {
+				       with: {
+					       organization: {
+						       with: {
+							       members: {
+								       where: (m, { eq }) => eq(m.userId, session.user.id)
+							       }
+						       }
+					       }
+				       }
+			       }
+		       }
+	       });
 
 	if (!timeOff || timeOff.member.organizationId !== organizationId) {
 		throw new TRPCError({
@@ -48,17 +49,10 @@ export const removeTimeOffHandler = async ({
 	}
 
 	// Delete both TimeOff and associated CalendarItem
-	return await prisma.$transaction(async (tx) => {
-		// calendarItem is deleted automatically if defined with onDelete: Cascade in schema, 
-		// but let's be explicit if needed. 
-		// Looking at schema: calendarItem has timeOffId and calendarItem is optional on TimeOff.
-
-		await tx.calendarItem.deleteMany({
-			where: { timeOffId: timeOffId }
-		});
-
-		return await tx.timeOff.delete({
-			where: { id: timeOffId }
-		});
-	});
+	       return await db.transaction(async (tx) => {
+		       // calendarItem is deleted automatically if defined with onDelete: Cascade in schema, 
+		       // but let's be explicit if needed. 
+		       await tx.delete(schema.calendarItem).where((ci, { eq }) => eq(ci.timeOffId, timeOffId));
+		       return await tx.delete(schema.timeOff).where((to, { eq }) => eq(to.id, timeOffId)).returning().then(r => r[0]);
+	       });
 };

@@ -10,7 +10,7 @@
 		"build": "bunx --bun vite build",
 		"build:docker": "DEPLOY_TARGET=docker bunx --bun vite build",
 		"build:worker": "DEPLOY_TARGET=worker bunx --bun vite build",
-		"deploy": "wrangler deploy",
+		"deploy": "wrangler pages deploy",
 		"buildWidget": "vite build --config vite.widget.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 import type { AddTimeOffInput } from './add-time-off.schema';
 import { CalendarItemType } from '@salora/database';
 

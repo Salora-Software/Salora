@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router as createRouter, publicProcedure } from '../../context';
 import { router as authenticatedRouter } from './authenticated/router';
 import { router as protectedRouter } from './protected/router';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 import { TRPCError } from '@trpc/server';
 import { CalendarDate } from '@internationalized/date';
 import { convertToLocal, generateTimeSlots } from '$lib/utils';

@@ -7,7 +7,7 @@
 	"exports": {
 		".": "./index.ts",
 		"./node": "./src/node.ts",
-		"./worker": "./src/worker.ts"
+		"./worker": "./index.worker.ts"
 	},
 	"scripts": {
 		"db:push": "bun run prisma db push",

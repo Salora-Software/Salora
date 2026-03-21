@@ -20,10 +20,14 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'$prisma': path.resolve(
-				isWorker ? './src/lib/server/prisma-worker.ts' : './src/lib/server/prisma-node.ts'
+			'@salora/database': path.resolve(
+				__dirname,
+				isWorker ? '../../packages/database/index.worker.ts' : '../../packages/database/index.ts'
 			)
 		}
+	},
+	define: {
+		'import.meta.env.IS_WORKER': JSON.stringify(isWorker)
 	},
 	optimizeDeps: {
 		exclude: ['fingerprint'] // exclude your package from optimization

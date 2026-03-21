@@ -6,7 +6,7 @@ import type { $Enums } from '@salora/database';
 import redis from '$lib/server/redis';
 import type { QueueRedisClient } from '$lib/server/redis';
 
-import { prisma as prismaInstance } from '$prisma';
+import { prisma as prismaInstance } from '$lib/server/prisma';
 
 class NotificationService {
 	constructor(

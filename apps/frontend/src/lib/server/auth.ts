@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { env } from '$lib/server/env';
 

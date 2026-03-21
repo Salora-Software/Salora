@@ -16,7 +16,7 @@ import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
 import { env } from '$lib/server/env';
 import { auth } from '../auth';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 
 const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
 

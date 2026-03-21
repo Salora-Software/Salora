@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';
 

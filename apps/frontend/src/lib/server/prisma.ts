@@ -1,35 +1,56 @@
-import type { PrismaClient } from '@salora/database';
-import {
-	createWorkerClient,
-	type WorkerDatabaseBinding
-} from '@salora/database/worker';
+import { createClient, type WorkerDatabaseBinding, type PrismaClient } from '@salora/database';
+import { env } from '$env/dynamic/private';
 
-let workerPrisma: PrismaClient | null = null;
+// Define the shape of our expected environment variables injected by Vite
+interface ImportMetaEnv {
+	IS_WORKER: boolean;
+}
+
+const isWorker = (import.meta.env as unknown as ImportMetaEnv).IS_WORKER;
+
+let prismaInstance: PrismaClient | null = null;
 
 export const initializeWorkerPrisma = (database?: WorkerDatabaseBinding) => {
-	if (!database || workerPrisma) return;
-	workerPrisma = createWorkerClient(database) as unknown as PrismaClient;
+	if (prismaInstance) return;
+
+	// Only initialize if we are in a worker environment and have the database binding
+	if (isWorker && database) {
+		// In the worker build, createClient is aliased to createWorkerClient
+		// which accepts the database binding object.
+		// We cast to any to suppress TS errors since the IDE sees the Node definition.
+		prismaInstance = (createClient as any)(database);
+	}
 };
 
-const getPrismaClient = (): PrismaClient => {
-    if (!workerPrisma) {
-        throw new Error('Workers runtime missing DATABASE binding initialization');
-    }
-    return workerPrisma;
-};
+// Verify/Initialize for Node environment
+if (!isWorker) {
+	// In the Node build, createClient is the standard Prisma constructor wrapper
+	// which accepts a connection string.
+	if (env?.DATABASE_URL) {
+		prismaInstance = (createClient as any)(env.DATABASE_URL);
+	}
+}
 
 export const prisma = new Proxy({} as PrismaClient, {
 	get(_target: any, prop: PropertyKey, receiver: any) {
-		const client = getPrismaClient();
-		const value = Reflect.get(client as any, prop, receiver);
+		if (!prismaInstance) {
+			throw new Error(
+				isWorker 
+					? 'Prisma Client not initialized. Worker database binding missing.' 
+					: 'Prisma Client not initialized. DATABASE_URL environment variable missing.'
+			);
+		}
+		const value = Reflect.get(prismaInstance as any, prop, receiver);
 
 		if (typeof value === 'function') {
-			return (value as Function).bind(client);
+			return (value as Function).bind(prismaInstance);
 		}
 
 		return value;
 	}
 }) as any as PrismaClient;
+
+// Helper functions (formerly duplicated in prisma-node.ts and prisma-worker.ts)
 
 export async function upsertCustomer(
 	name: string,

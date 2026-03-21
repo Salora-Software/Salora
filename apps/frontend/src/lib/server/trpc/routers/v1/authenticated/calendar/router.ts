@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$prisma';
+import { prisma } from '$lib/server/prisma';
 import { TRPCError } from '@trpc/server';
 import { BookingStatus, CalendarItemType } from '@salora/database';
 import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general';

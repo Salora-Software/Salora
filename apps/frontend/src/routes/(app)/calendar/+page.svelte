@@ -8,18 +8,13 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
 	import { trpcQuery } from '$lib/trpc.js';
-	import { onMount } from 'svelte';
+	import moment from 'moment-timezone';
 	import { language, t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
 	import type { BranchType } from '$lib/runes.svelte.js';
 	let { data } = $props();
 	let activeBranch: BranchType | null = $state(data.branchesState.getActiveBranch());
 	const queryClient = data.queryClient;
-	let moment: any = $state();
-	onMount(async () => {
-		const module = await import('moment-timezone');
-		moment = module.default;
-	});
 
 	// Calendar queries and mutations using trpcQuery (TanStack Query)
 
@@ -41,24 +36,22 @@
 		trpcQuery.v1.authenticated.calendar.getCalendar.createQuery(
 			{
 				organizationId: activeBranch?.id || '',
-				startDate:
-					selectedDate && moment
-						? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
-								.tz(activeBranch?.timeZone || 'UTC')
-								.startOf('day')
-								.toDate()
-						: undefined,
-				endDate:
-					selectedDate && moment
-						? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
-								.tz(activeBranch?.timeZone || 'UTC')
-								.endOf('day')
-								.toDate()
-						: undefined
+				startDate: selectedDate
+					? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
+							.tz(activeBranch?.timeZone || 'UTC')
+							.startOf('day')
+							.toDate()
+					: undefined,
+				endDate: selectedDate
+					? moment(selectedDate.toDate(activeBranch?.timeZone || 'UTC'))
+							.tz(activeBranch?.timeZone || 'UTC')
+							.endOf('day')
+							.toDate()
+					: undefined
 			},
 			{
 				queryKey: ['getCalendar', activeBranch?.id || '', selectedDate?.toString() || ''],
-				enabled: !!activeBranch && !!selectedDate && !!moment,
+				enabled: !!activeBranch && !!selectedDate,
 				refetchInterval: cancelRefetching ? false : 5000 // Disable refetching if cancelRefetching is true
 			}
 		)
@@ -253,8 +246,7 @@
 				class={cn(
 					buttonVariants({
 						variant: 'outline',
-						class:
-							'w-content w-full max-w-full justify-start text-left font-normal sm:min-w-53.75'
+						class: 'w-content w-full max-w-full justify-start text-left font-normal sm:min-w-53.75'
 					})
 				)}
 			>

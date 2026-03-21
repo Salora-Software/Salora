@@ -8,7 +8,8 @@ const deployTarget = process.env.DEPLOY_TARGET;
 const isWorker = deployTarget === 'worker';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit(),
+	plugins: [tailwindcss(), sveltekit(
+	),
 		visualizer({
 			filename: "./bundle-analysis.html",
 			open: true,
@@ -32,5 +33,5 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		exclude: ['fingerprint'] // exclude your package from optimization
-	}
+	},
 }); //

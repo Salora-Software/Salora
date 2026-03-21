@@ -1,6 +1,6 @@
 generator client {
     provider = "prisma-client"
-    runtime  = "workerd"
+    runtime  = "bun"
     output   = "./generated/prisma-worker"
 }
 

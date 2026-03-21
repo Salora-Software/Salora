@@ -16,7 +16,8 @@
 		"services:up": "docker compose -f ../../docker-compose.yml up -d",
 		"services:stop": "docker compose -f ../../docker-compose.yml stop",
 		"services:down": "docker compose -f ../../docker-compose.yml down",
-		"generate": "bun run prisma generate",
+		"generate": "bun run prisma generate && bun run generate:worker",
+		"generate:worker": "bun run prisma generate --schema=./prisma/schema.worker.prisma",
 		"migrate": "bun run prisma migrate dev"
 	},
 	"dependencies": {

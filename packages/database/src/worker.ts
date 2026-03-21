@@ -1,5 +1,5 @@
 import { PrismaD1 } from "@prisma/adapter-d1";
-import { PrismaClient } from "../prisma/generated/prisma/client";
+import { PrismaClient } from "../prisma/generated/prisma-worker/client";
 
 export interface WorkerDatabaseBinding {
   prepare: (...args: any[]) => any;

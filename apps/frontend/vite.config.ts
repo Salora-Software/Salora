@@ -11,7 +11,7 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(
 	),
 	],
-	assetsInclude: ['/packages/fingerprint/src/client.ts'],
+	assetsInclude: ['/packages/fingerprint/src/client.ts', '**/*.wasm?module'],
 	server: {
 		allowedHosts: ['salora.hexidev.nl', 'dev.salora.app'],
 		fs: {

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from './prisma';
+import { prisma } from '$prisma';
 import { convertToLocal, generateTimeSlots } from '$lib/utils';
 import type { OpeningTime, TimeSlot, TimeSlotV2 } from '$lib/types';
 import { CalendarDate } from '@internationalized/date';

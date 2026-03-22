@@ -1,10 +1,13 @@
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-	schema: './src/schema.ts',
+	dialect: 'sqlite',
+	driver: "d1-http",
+	schema: './src/db/schema.ts',
 	out: './drizzle',
-	dialect: 'postgresql',
 	dbCredentials: {
-		url: process.env.DATABASE_URL!,
+		accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+		databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
+		token: process.env.CLOUDFLARE_API_TOKEN!,		
 	},
 });

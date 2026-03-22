@@ -1,13 +1,13 @@
 import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { prisma } from '$lib/server/prisma';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
-import { NODE_ENV } from '$env/static/private';
+import { db } from '@salora/database';
 
 export const auth = betterAuth({
-	database: prismaAdapter(prisma, {
-		provider: 'postgresql' // or "mysql", "postgresql", ...etc
+	database: drizzleAdapter(db, {
+		provider: 'sqlite' // or "mysql", "postgresql", ...etc
 	}),
 	emailAndPassword: {
 		enabled: true

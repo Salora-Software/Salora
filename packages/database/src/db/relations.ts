@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, organization, openingTime, member, customer, invitation, employeeService, service, calendarItem, booking, timeOff, availability, packageItem, packageService, note, template, session, communicationSetting, fingerprint, fingerprintToUser } from "./schema";
+import { user, account, organization, openingTime, member, customer, invitation, employeeService, service, calendarItem, booking, timeOff, availability, packageItem, packageService, note, template, session, communicationSetting } from "./schema";
 
 export const accountRelations = relations(account, ({one}) => ({
 	user: one(user, {
@@ -16,7 +16,6 @@ export const userRelations = relations(user, ({many}) => ({
 	bookings: many(booking),
 	notes: many(note),
 	sessions: many(session),
-	fingerprintToUsers: many(fingerprintToUser),
 }));
 
 export const openingTimeRelations = relations(openingTime, ({one}) => ({
@@ -209,17 +208,3 @@ export const communicationSettingRelations = relations(communicationSetting, ({o
 	}),
 }));
 
-export const fingerprintToUserRelations = relations(fingerprintToUser, ({one}) => ({
-	fingerprint: one(fingerprint, {
-		fields: [fingerprintToUser.a],
-		references: [fingerprint.id]
-	}),
-	user: one(user, {
-		fields: [fingerprintToUser.b],
-		references: [user.id]
-	}),
-}));
-
-export const fingerprintRelations = relations(fingerprint, ({many}) => ({
-	fingerprintToUsers: many(fingerprintToUser),
-}));

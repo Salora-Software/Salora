@@ -1,16 +1,8 @@
-import { pgTable, foreignKey, text, timestamp, uniqueIndex, integer, doublePrecision, boolean, jsonb, index, primaryKey, pgEnum } from "drizzle-orm/pg-core"
+import { sqliteTable, foreignKey, text, int, real, integer, blob, index, primaryKey } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm"
 
-export const bookingStatus = pgEnum("BookingStatus", ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'])
-export const calendarItemType = pgEnum("CalendarItemType", ['AVAILABILITY', 'TIME_OFF', 'BOOKING', 'NOTE'])
-export const communicationType = pgEnum("CommunicationType", ['EMAIL', 'SMS'])
-export const invitationStatus = pgEnum("InvitationStatus", ['PENDING', 'ACCEPTED', 'DECLINED', 'ACTIVE'])
-export const templateTarget = pgEnum("TemplateTarget", ['CUSTOMER', 'EMPLOYEE'])
-export const templateType = pgEnum("TemplateType", ['EMAIL_APPROVED', 'EMAIL_DENIED', 'EMAIL_CANCELED', 'EMAIL_CREATED', 'SMS_APPROVED', 'SMS_DENIED', 'SMS_CANCELED'])
-export const timeOffType = pgEnum("TimeOffType", ['LEAVE', 'SPECIAL'])
 
-
-export const account = pgTable("account", {
+export const account = sqliteTable("account", {
 	id: text().primaryKey().notNull(),
 	accountId: text().notNull(),
 	providerId: text().notNull(),
@@ -18,12 +10,12 @@ export const account = pgTable("account", {
 	accessToken: text(),
 	refreshToken: text(),
 	idToken: text(),
-	accessTokenExpiresAt: timestamp({ precision: 3, mode: 'string' }),
-	refreshTokenExpiresAt: timestamp({ precision: 3, mode: 'string' }),
+	accessTokenExpiresAt: text(),
+	refreshTokenExpiresAt: text(),
 	scope: text(),
 	password: text(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.userId],
@@ -32,12 +24,12 @@ export const account = pgTable("account", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const organization = pgTable("organization", {
+export const organization = sqliteTable("organization", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
 	slug: text(),
 	logo: text(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().notNull(),
 	metadata: text(),
 	maxMembers: integer(),
 	location: text(),
@@ -45,24 +37,21 @@ export const organization = pgTable("organization", {
 	phone: text(),
 	email: text(),
 	timeZone: text().notNull(),
-	appointmentStatus: bookingStatus().default('PENDING').notNull(),
-	minimumBookingTime: doublePrecision().default(0.5).notNull(),
+	appointmentStatus: text().default('PENDING').notNull(),
+	minimumBookingTime: real().default(0.5).notNull(),
 	bookingPeriod: integer().default(365).notNull(),
-	autoShiftTimeSlot: boolean().default(false).notNull(),
+	autoShiftTimeSlot: integer().default(0).notNull(),
 	onboardingStep: integer().default(0),
-}, (table) => [
-	uniqueIndex("organization_slug_key").using("btree", table.slug.asc().nullsLast().op("text_ops")),
-]);
+}, (table) => []);
 
-export const openingTime = pgTable("opening_time", {
+export const openingTime = sqliteTable("opening_time", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
 	dayOfWeek: integer().notNull(),
-	startTimeUtc: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	endTimeUtc: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	startTimeUtc: text().notNull(),
+	endTimeUtc: text().notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
-	uniqueIndex("opening_time_id_key").using("btree", table.id.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -70,22 +59,22 @@ export const openingTime = pgTable("opening_time", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const verification = pgTable("verification", {
+export const verification = sqliteTable("verification", {
 	id: text().primaryKey().notNull(),
 	identifier: text().notNull(),
 	value: text().notNull(),
-	expiresAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }),
+	expiresAt: text().notNull(),
+	createdAt: text(),
+	updatedAt: text(),
 });
 
-export const member = pgTable("member", {
+export const member = sqliteTable("member", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
 	userId: text().notNull(),
 	role: text().notNull(),
-	invitationStatus: invitationStatus().default('ACTIVE').notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	invitationStatus: text().default('ACTIVE').notNull(),
+	createdAt: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.organizationId],
@@ -99,7 +88,7 @@ export const member = pgTable("member", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const customer = pgTable("customer", {
+export const customer = sqliteTable("customer", {
 	id: text().primaryKey().notNull(),
 	authToken: text(),
 	name: text().notNull(),
@@ -107,11 +96,9 @@ export const customer = pgTable("customer", {
 	phone: text(),
 	address: text(),
 	organizationId: text().notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
 	userId: text(),
 }, (table) => [
-	uniqueIndex("customer_authToken_key").using("btree", table.authToken.asc().nullsLast().op("text_ops")),
-	uniqueIndex("customer_email_organizationId_key").using("btree", table.email.asc().nullsLast().op("text_ops"), table.organizationId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -124,13 +111,13 @@ export const customer = pgTable("customer", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const invitation = pgTable("invitation", {
+export const invitation = sqliteTable("invitation", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
 	email: text().notNull(),
 	role: text(),
 	status: text().notNull(),
-	expiresAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	expiresAt: text().notNull(),
 	inviterId: text().notNull(),
 }, (table) => [
 	foreignKey({
@@ -145,38 +132,24 @@ export const invitation = pgTable("invitation", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const fingerprint = pgTable("fingerprint", {
-	id: text().primaryKey().notNull(),
-	fingerprintId: text().notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	lastSeenAt: timestamp({ precision: 3, mode: 'string' }),
-	ipAddresses: text().array(),
-	flagged: boolean().default(false).notNull(),
-	trustScore: integer().default(0).notNull(),
-}, (table) => [
-	uniqueIndex("fingerprint_fingerprintId_key").using("btree", table.fingerprintId.asc().nullsLast().op("text_ops")),
-]);
 
-export const user = pgTable("user", {
+
+export const user = sqliteTable("user", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
 	email: text().notNull(),
-	emailVerified: boolean().notNull(),
+	emailVerified: integer().notNull(),
 	image: text(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().notNull(),
+	updatedAt: text().notNull(),
 	phone: text(),
-}, (table) => [
-	uniqueIndex("user_email_key").using("btree", table.email.asc().nullsLast().op("text_ops")),
-]);
+});
 
-export const employeeService = pgTable("employee_service", {
+export const employeeService = sqliteTable("employee_service", {
 	id: text().primaryKey().notNull(),
 	memberId: text().notNull(),
 	serviceId: text().notNull(),
 }, (table) => [
-	uniqueIndex("employee_service_memberId_serviceId_key").using("btree", table.memberId.asc().nullsLast().op("text_ops"), table.serviceId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.memberId],
 			foreignColumns: [member.id],
@@ -189,15 +162,15 @@ export const employeeService = pgTable("employee_service", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const service = pgTable("service", {
+export const service = sqliteTable("service", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
-	sortingIndex: integer().default(sql`'-1'`).notNull(),
+	sortingIndex: integer().default(-1).notNull(),
 	duration: integer().notNull(),
-	price: doublePrecision().notNull(),
+	price: real().notNull(),
 	organizationId: text().notNull(),
-	visible: boolean().default(true),
+	visible: integer().default(1),
 }, (table) => [
 	foreignKey({
 			columns: [table.organizationId],
@@ -206,22 +179,20 @@ export const service = pgTable("service", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const calendarItem = pgTable("calendar_item", {
+export const calendarItem = sqliteTable("calendar_item", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
 	title: text(),
 	memberId: text(),
-	startTime: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	endTime: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	type: calendarItemType().notNull(),
+	startTime: text().notNull(),
+	endTime: text().notNull(),
+	type: text().notNull(),
 	notes: text(),
 	bookingId: text(),
 	timeOffId: text(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
-	uniqueIndex("calendar_item_bookingId_key").using("btree", table.bookingId.asc().nullsLast().op("text_ops")),
-	uniqueIndex("calendar_item_timeOffId_key").using("btree", table.timeOffId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -244,12 +215,12 @@ export const calendarItem = pgTable("calendar_item", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const availability = pgTable("availability", {
+export const availability = sqliteTable("availability", {
 	id: text().primaryKey().notNull(),
 	memberId: text().notNull(),
 	dayOfWeek: integer().notNull(),
-	startTimeUtc: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	endTimeUtc: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	startTimeUtc: text().notNull(),
+	endTimeUtc: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.memberId],
@@ -258,17 +229,17 @@ export const availability = pgTable("availability", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const booking = pgTable("booking", {
+export const booking = sqliteTable("booking", {
 	id: text().primaryKey().notNull(),
 	serviceId: text().notNull(),
 	employeeId: text(),
 	organizationId: text().notNull(),
 	userId: text(),
 	customerId: text(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
 	duration: integer().notNull(),
 	notes: text(),
-	status: bookingStatus().notNull(),
+	status: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.serviceId],
@@ -297,16 +268,16 @@ export const booking = pgTable("booking", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const packageItem = pgTable("package", {
+export const packageItem = sqliteTable("package", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
-	sortingIndex: integer().default(sql`'-1'`).notNull(),
-	price: doublePrecision().notNull(),
+	sortingIndex: integer().default(-1).notNull(),
+	price: real().notNull(),
 	organizationId: text().notNull(),
-	visible: boolean().default(true),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	visible: integer().default(1),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.organizationId],
@@ -315,12 +286,11 @@ export const packageItem = pgTable("package", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const packageService = pgTable("package_service", {
+export const packageService = sqliteTable("package_service", {
 	id: text().primaryKey().notNull(),
 	packageId: text().notNull(),
 	serviceId: text().notNull(),
 }, (table) => [
-	uniqueIndex("package_service_packageId_serviceId_key").using("btree", table.packageId.asc().nullsLast().op("text_ops"), table.serviceId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.packageId],
 			foreignColumns: [packageItem.id],
@@ -333,13 +303,13 @@ export const packageService = pgTable("package_service", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const note = pgTable("note", {
+export const note = sqliteTable("note", {
 	id: text().primaryKey().notNull(),
 	content: text().notNull(),
 	customerId: text().notNull(),
 	authorId: text().notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.customerId],
@@ -353,18 +323,17 @@ export const note = pgTable("note", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const template = pgTable("template", {
+export const template = sqliteTable("template", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
-	type: templateType().notNull(),
-	target: templateTarget().notNull(),
+	type: text().notNull(),
+	target: text().notNull(),
 	subject: text(),
 	body: text().notNull(),
-	enabled: boolean().default(true).notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	enabled: integer().default(1).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
-	uniqueIndex("template_type_target_organizationId_key").using("btree", table.type.asc().nullsLast().op("text_ops"), table.target.asc().nullsLast().op("enum_ops"), table.organizationId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -372,18 +341,17 @@ export const template = pgTable("template", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const session = pgTable("session", {
+export const session = sqliteTable("session", {
 	id: text().primaryKey().notNull(),
-	expiresAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	expiresAt: text().notNull(),
 	token: text().notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	createdAt: text().notNull(),
+	updatedAt: text().notNull(),
 	ipAddress: text(),
 	userAgent: text(),
 	userId: text().notNull(),
 	activeOrganizationId: text(),
 }, (table) => [
-	uniqueIndex("session_token_key").using("btree", table.token.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.userId],
 			foreignColumns: [user.id],
@@ -391,11 +359,11 @@ export const session = pgTable("session", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const timeOff = pgTable("time_off", {
+export const timeOff = sqliteTable("time_off", {
 	id: text().primaryKey().notNull(),
 	memberId: text().notNull(),
 	reason: text(),
-	type: timeOffType().notNull(),
+	type: text().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.memberId],
@@ -404,16 +372,15 @@ export const timeOff = pgTable("time_off", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const communicationSetting = pgTable("communication_setting", {
+export const communicationSetting = sqliteTable("communication_setting", {
 	id: text().primaryKey().notNull(),
 	organizationId: text().notNull(),
-	settings: jsonb().notNull(),
-	type: communicationType().notNull(),
-	enabled: boolean().default(true).notNull(),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
+	settings: text().notNull(),
+	type: text().notNull(),
+	enabled: integer().default(1).notNull(),
+	createdAt: text().default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text().notNull(),
 }, (table) => [
-	uniqueIndex("communication_setting_type_organizationId_key").using("btree", table.type.asc().nullsLast().op("text_ops"), table.organizationId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -421,20 +388,4 @@ export const communicationSetting = pgTable("communication_setting", {
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
-export const fingerprintToUser = pgTable("_FingerprintToUser", {
-	a: text("A").notNull(),
-	b: text("B").notNull(),
-}, (table) => [
-	index().using("btree", table.b.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.a],
-			foreignColumns: [fingerprint.id],
-			name: "_FingerprintToUser_A_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	foreignKey({
-			columns: [table.b],
-			foreignColumns: [user.id],
-			name: "_FingerprintToUser_B_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	primaryKey({ columns: [table.a, table.b], name: "_FingerprintToUser_AB_pkey"}),
-]);
+

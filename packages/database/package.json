@@ -8,7 +8,7 @@
 		"db:push": "bun run prisma db push",
 		"db:studio": "bun run prisma studio",
 		"db:generate": "bun run prisma generate",
-		"services:up": "docker compose -f ../../docker-compose.yml up -d",
+		"services:up": "docker compose -f ../../docker-compose.yml up -d postgres redis",
 		"services:stop": "docker compose -f ../../docker-compose.yml stop",
 		"services:down": "docker compose -f ../../docker-compose.yml down",
 		"generate": "bun run prisma generate",

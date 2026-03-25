@@ -33,11 +33,9 @@ services:
 
   frontend:
     profiles: ["full"]
-    build:
-      context: .
-      dockerfile: apps/frontend/Dockerfile
+    build: .
     env_file:
-      - .env.dev
+      - .env
 
 volumes:
   postgres_data:

@@ -55,18 +55,23 @@ For full installation instructions, architectural overviews, and API references,
 
 ## Docker Deployment Modes
 
-The repository now supports two Docker Compose deployment modes:
+The repository now supports three Docker Compose deployment modes:
 
 - Infrastructure only (PostgreSQL + Redis)
-- Full stack (PostgreSQL + Redis + frontend + widgets)
+- Frontend only (no infra)
+- Full stack (PostgreSQL + Redis + frontend)
 
 Infrastructure only:
 
-docker compose up -d
+docker compose up -d postgres redis
+
+Frontend only:
+
+docker compose up -d --build frontend
 
 Full stack:
 
-docker compose --profile full up -d --build
+docker compose --profile infra --profile full up -d --build
 
 Stop services:
 

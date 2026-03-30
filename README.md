@@ -53,6 +53,39 @@ For full installation instructions, architectural overviews, and API references,
 
 **[https://docs.salora.app/docs](https://docs.salora.app/docs)**
 
+## Docker Deployment Modes
+
+The repository now supports three Docker Compose deployment modes:
+
+- Infrastructure only (PostgreSQL + Redis)
+- Frontend only (no infra)
+- Full stack (PostgreSQL + Redis + frontend)
+
+Infrastructure only:
+
+docker compose up -d postgres redis
+
+Frontend only:
+
+docker compose up -d --build frontend
+
+Full stack:
+
+docker compose --profile infra --profile full up -d --build
+
+Stop services:
+
+docker compose stop
+
+Tear down services and volumes:
+
+docker compose down -v
+
+Notes:
+
+- The full stack builds from the monorepo root so workspace dependencies resolve correctly.
+- For external deployments, provide your environment variables in a .env file before running compose.
+
 ## Architecture & Licensing
 
 Salora operates on an Open Core model. This repository contains the fundamental booking logic, widget interfaces, and base UI components.

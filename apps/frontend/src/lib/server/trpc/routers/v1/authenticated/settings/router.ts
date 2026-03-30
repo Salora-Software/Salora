@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '@salora/database';
+import { schema } from '@salora/database';
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 

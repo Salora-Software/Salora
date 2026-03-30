@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { db, schema } from '@salora/database';
+import { schema } from '@salora/database';
 import { eq, and, desc } from 'drizzle-orm';
 import type { GetTimeOffsInput } from './get-time-offs.schema';
 

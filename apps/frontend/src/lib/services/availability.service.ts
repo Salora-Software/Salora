@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { db, schema } from '@salora/database';
+import { schema } from '@salora/database';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import {
 	mapToBlockedPeriods,

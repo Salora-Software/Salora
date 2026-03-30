@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '@salora/database';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';

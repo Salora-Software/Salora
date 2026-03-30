@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { createDb, schema } from '@salora/database'; // Importeer createDb i.p.v. db
 import { env } from '$env/dynamic/private';
+import { env as envPublic } from '$env/dynamic/public';
 
 // 1. Exporteer de factory-functie
 export const createAuth = (platform: App.Platform | undefined) => {
@@ -30,7 +31,8 @@ export const createAuth = (platform: App.Platform | undefined) => {
 		trustedOrigins: [
 			'http://localhost:5173',
 			env?.NODE_ENV === 'development' ? 'http://dev.salora.app' : 'https://dev.salora.app',
-			env?.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app'
+			env?.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app',
+			envPublic?.PUBLIC_FRONTEND_URL
 		],
 		rateLimit: {
 			enabled: true

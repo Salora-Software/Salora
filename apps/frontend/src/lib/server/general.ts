@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { db } from '@salora/database';
+
 import { DateTime, Duration, Interval } from 'luxon';
 
 export type Branch = Awaited<ReturnType<typeof getOrganization>>;

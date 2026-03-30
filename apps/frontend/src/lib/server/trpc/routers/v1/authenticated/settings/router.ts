@@ -16,7 +16,7 @@ export const router = createRouter({
 				timeZone: z.string()
 			})
 		)
-		.query(async ({ input: { organizationId } }) => {
+		.query(async ({ input: { organizationId }, ctx: { db } }) => {
 			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId),
 				columns: {
@@ -51,7 +51,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ ctx, input }) => {
+		.mutation(async ({ ctx: { db }, input }) => {
 			const {
 				organizationId,
 				appointmentStatus,

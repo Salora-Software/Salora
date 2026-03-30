@@ -3,7 +3,6 @@ import { router as createRouter, privateProcedure } from '../../../../context';
 import { schema } from '@salora/database';
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { auth } from '$lib/server/auth';
 import { deleteImage, uploadImage } from '$lib/server/s3';
 
 export const router = createRouter({
@@ -14,7 +13,8 @@ export const router = createRouter({
 			async ({
 				input: { image },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				const response = await fetch(image);
@@ -43,14 +43,14 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { password, newPassword }, ctx }) => {
+		.mutation(async ({ input: { password, newPassword }, ctx: { auth, db, session } }) => {
 			// get the hashed passwords
 			const ctxAuth = await auth.$context;
 			const newPasswordHash = await ctxAuth.password.hash(newPassword);
 
 			// Check if the user exists and the password is correct
 			const account = await db.query.account.findFirst({
-				where: eq(schema.account.userId, ctx.session.user.id),
+				where: eq(schema.account.userId, session.user.id),
 				columns: { password: true }
 			});
 			if (!account) {
@@ -72,7 +72,7 @@ export const router = createRouter({
 			}
 
 			// Update the password
-			await ctxAuth.internalAdapter.updatePassword(ctx.session.user.id, newPasswordHash);
+			await ctxAuth.internalAdapter.updatePassword(session.user.id, newPasswordHash);
 			return true;
 		}),
 
@@ -87,7 +87,8 @@ export const router = createRouter({
 			async ({
 				input: { name },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				await db.update(schema.user).set({ name }).where(eq(schema.user.id, user.id));
@@ -106,7 +107,8 @@ export const router = createRouter({
 			async ({
 				input: { email },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				await db

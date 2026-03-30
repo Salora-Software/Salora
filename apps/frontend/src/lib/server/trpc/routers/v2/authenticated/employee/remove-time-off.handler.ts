@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { db } from '@salora/database';
+
 import { schema } from '@salora/database';
 import type { RemoveTimeOffInput } from './remove-time-off.schema';
 

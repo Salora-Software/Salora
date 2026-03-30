@@ -5,7 +5,6 @@ import { TRPCError } from '@trpc/server';
 import { getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';
 import { DateTime, Interval } from 'luxon';
-import { auth } from '$lib/server/auth';
 import { env } from '$lib/server/env';
 
 import { getAvailabilitySchema } from './availability.schema';
@@ -34,7 +33,7 @@ export const router = createRouter({
 				branchId: z.string()
 			})
 		)
-		.mutation(async ({ input: { email, branchId }, ctx: { headers } }) => {
+		.mutation(async ({ input: { email, branchId }, ctx: { headers, auth, db } }) => {
 			const customer = await db.query.customer.findFirst({
 				where: (c, { eq, and }) => and(eq(c.organizationId, branchId), eq(c.email, email))
 			});
@@ -133,14 +132,13 @@ export const router = createRouter({
 		}),
 	cancelAppointment: portalProcedure
 		.input(z.object({ appointmentId: z.string() }))
-		.mutation(async ({ input: { appointmentId, branchId }, ctx }) => {
-			if (!ctx.customer?.id) {
+		.mutation(async ({ input: { appointmentId, branchId }, ctx: { db, customer } }) => {
+			if (!customer?.id) {
 				throw new TRPCError({
 					code: 'UNAUTHORIZED',
 					message: 'you_need_to_be_authenticated_to_cancel_an_appointment'
 				});
 			}
-			const customer = ctx.customer;
 			//get branch
 			const organization = await getOrganization(branchId);
 			if (!organization) {

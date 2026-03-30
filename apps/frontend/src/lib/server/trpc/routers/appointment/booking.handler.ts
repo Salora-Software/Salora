@@ -8,19 +8,21 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { CreateBookingInput } from './booking.schema';
-import type { PortalProcedureContext } from '../../context';
+import type { Context } from '../../context';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
-import { auth } from '$lib/server/auth';
 import { env } from '$lib/server/env';
 import { notificationService } from '$lib/server/NotificationService';
 
 type CreateBookingOpts = {
-	ctx: PortalProcedureContext;
+	ctx: Context;
 	input: CreateBookingInput;
 };
 
-export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) => {
+export const createBookingHandler = async ({
+	input,
+	ctx: { db, headers, auth }
+}: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
 
 	// 1. Haal de globale organisatie- en service data op voor deze dag
@@ -160,7 +162,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 	// 6. Auth Magic Link (Originele logica)
 	const magicLink = await auth.api
 		.signInMagicLink({
-			headers: ctx.headers,
+			headers,
 			body: {
 				email: contact.email,
 				callbackURL: `${env?.PUBLIC_BACKEND_URL}/appointments/${organization.id}`
@@ -195,7 +197,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 			organizationId,
 			serviceId,
 			employeeId: bestEmployee.id,
-			customerId: customer.id,
+			customerId: customer?.id,
 			duration: service.duration,
 			notes: contact.notes,
 			status: organization.appointmentStatus || 'PENDING'
@@ -206,7 +208,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 		.insert(schema.calendarItem)
 		.values({
 			organizationId,
-			title: `${customer.name} - ${service.name}`,
+			title: `${customer?.name} - ${service.name}`,
 			memberId: bestEmployee.id,
 			startTime: requestedStart.toJSDate(),
 			endTime: requestedEnd.toJSDate(),
@@ -243,9 +245,9 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 		employeeEmail: employeeUser?.email || '',
 		variables: {
 			customer: {
-				name: customer.name,
-				email: customer.email,
-				phone: customer.phone,
+				name: customer?.name,
+				email: customer?.email,
+				phone: customer?.phone,
 				panel
 			},
 			booking: {

@@ -23,7 +23,7 @@
 		BranchesState
 	} from '$lib/runes.svelte';
 	import type { QueryClient } from '@tanstack/svelte-query';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import { organization } from '$lib/auth-client';
 	import { Input } from '$lib/components/ui/input/index';
 	import Label from './ui/label/label.svelte';
@@ -302,7 +302,7 @@
 					if (
 						wizardInputs.company[0].value &&
 						typeof wizardInputs.company[0].value === 'string' &&
-						!wizardInputs.company[0].value.includes(PUBLIC_CDN_URL)
+						!wizardInputs.company[0].value.includes(env.PUBLIC_CDN_URL)
 					) {
 						// upload new logo
 
@@ -357,7 +357,7 @@
 								});
 								//update the branch url
 								let reference = data.branchesState.getActiveBranch();
-								if (reference) reference.logo = PUBLIC_CDN_URL + logoPath;
+								if (reference) reference.logo = env.PUBLIC_CDN_URL + logoPath;
 							} catch (error) {
 								console.error('Error uploading logo:', error);
 								toast.error('Logo upload mislukt');
@@ -584,7 +584,7 @@
 
 	$effect(() => {
 		if (activeBranch && data.branchWizardState.value.id === activeBranch.id) {
-			wizardInputs.company[0].value = PUBLIC_CDN_URL + activeBranch.logo;
+			wizardInputs.company[0].value = env.PUBLIC_CDN_URL + activeBranch.logo;
 			wizardInputs.company[1].value = activeBranch.name ?? '';
 			wizardInputs.company[2].value = activeBranch.location ?? '';
 			wizardInputs.company[3].value = activeBranch.phone ?? '';

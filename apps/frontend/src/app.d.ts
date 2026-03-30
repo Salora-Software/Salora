@@ -8,7 +8,11 @@ declare global {
 			ip?: string;
 		}
 		// interface PageState {}
-		// interface Platform {}
+		interface Platform {
+			env?: {
+				DATABASE?: unknown;
+			};
+		}
 	}
 }
 declare module 'next-auth' {

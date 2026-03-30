@@ -2,10 +2,9 @@
 	import InfoCard from '$lib/components/InfoCard.svelte';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index';
-	import * as Chart from '$lib/components/ui/chart/index.js';
-	import DashboardChart from '$lib/components/DashboardChart.svelte';
-	import CustomerDonutChart from '$lib/components/CustomerDonutChart.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+
+	import { onMount } from 'svelte';
 
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index';
@@ -214,32 +213,20 @@
 		}
 	]);
 
-	const chartConfig = {
-		bookings: {
-			label: 'Afspraken',
-			color: '#3b82f6'
-		},
-		revenue: {
-			label: 'Omzet',
-			color: '#22c55e'
-		},
-		customers: {
-			label: 'Klanten',
-			color: '#f97316'
-		},
-		newCustomers: {
-			label: 'Nieuwe Klanten',
-			color: '#a855f7'
-		},
-		new: {
-			label: 'Nieuw',
-			color: '#3b82f6'
-		},
-		returning: {
-			label: 'Terugkerend',
-			color: '#22c55e'
-		}
-	} satisfies Chart.ChartConfig;
+	/* @ts-ignore */
+	let DashboardChart: any = $state(null);
+	/* @ts-ignore */
+	let CustomerDonutChart: any = $state(null);
+
+	onMount(async () => {
+		const [dashboardModule, donutModule] = await Promise.all([
+			import('$lib/components/DashboardChart.svelte'),
+			import('$lib/components/CustomerDonutChart.svelte')
+		]);
+		DashboardChart = dashboardModule.default;
+		CustomerDonutChart = donutModule.default;
+	});
+
 	const upsertCalendarItem = trpcQuery.v1.authenticated.calendar.upsertCalendarItem.createMutation({
 		mutationKey: ['upsertCalendarItem'],
 		onSettled: () => {
@@ -465,7 +452,7 @@
 			</Card.Header>
 			<Card.Content class="flex h-full items-center justify-center px-2 pt-0 pb-8">
 				<div class="w-full">
-					{#if !dashboardStatsQuery.isSuccess}
+					{#if !dashboardStatsQuery.isSuccess || !DashboardChart}
 						<Skeleton class="h-[350px] w-full" />
 					{:else}
 						<DashboardChart {chartData} {chartVisibility} />
@@ -480,7 +467,7 @@
 				<Card.Title>Klanten</Card.Title>
 			</Card.Header>
 			<Card.Content class="flex h-full items-center justify-center pt-0">
-				{#if !dashboardStatsQuery.isSuccess}
+				{#if !dashboardStatsQuery.isSuccess || !CustomerDonutChart}
 					<div class="flex h-full w-full flex-col items-center justify-center gap-4">
 						<Skeleton class="h-50 w-50 rounded-full" />
 						<div class="flex gap-4">

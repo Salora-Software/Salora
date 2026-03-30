@@ -6,7 +6,11 @@
 	"scripts": {
 		"dev": "bunx --bun vite dev --host",
 		"start": "PORT=5173 node ./build",
+		"start:docker": "PORT=5173 node ./build",
 		"build": "bunx --bun vite build",
+		"build:docker": "DEPLOY_TARGET=docker bunx --bun vite build",
+		"build:worker": "DEPLOY_TARGET=worker bunx --bun vite build",
+		"deploy": "wrangler deploy",
 		"buildWidget": "vite build --config vite.widget.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -25,6 +29,8 @@
 	"devDependencies": {
 		"@lucide/svelte": "^0.482.0",
 		"@salora/eslint-config": "workspace:*",
+		"@sveltejs/adapter-cloudflare": "^7.2.8",
+		"@sveltejs/adapter-cloudflare-workers": "^2.8.0",
 		"@sveltejs/adapter-node": "^5.2.13",
 		"@sveltejs/kit": "^2.26.1",
 		"@sveltejs/vite-plugin-svelte": "^5.1.1",
@@ -52,12 +58,14 @@
 		"tw-animate-css": "^1.3.6",
 		"typescript": "^5.8.3",
 		"vaul-svelte": "next",
-		"vite": "^6.3.5"
+		"vite": "^6.3.5",
+		"wrangler": "^4.76.0"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.855.0",
 		"@aws-sdk/s3-request-presigner": "^3.855.0",
 		"@babel/core": "^7.28.0",
+		"@cloudflare/workers-types": "^4.20260317.1",
 		"@internationalized/date": "^3.10.0",
 		"@lottiefiles/dotlottie-svelte": "^0.4.8",
 		"@neodrag/svelte": "^2.3.3",
@@ -76,7 +84,6 @@
 		"@types/d3-scale": "^4.0.9",
 		"@types/d3-shape": "^3.1.8",
 		"@types/luxon": "^3.7.0",
-		"apexcharts": "^4.7.0",
 		"aws-sdk": "^2.1692.0",
 		"better-auth": "1.3.7",
 		"bullmq": "^5.56.8",
@@ -93,6 +100,7 @@
 		"path": "^0.12.7",
 		"proxy-deep": "^4.0.1",
 		"redis": "^4.7.1",
+		"rollup-plugin-visualizer": "^7.0.1",
 		"shadcn-svelte": "latest",
 		"sharp": "^0.33.5",
 		"superjson": "^2.2.2",
@@ -103,6 +111,8 @@
 		"trpc-svelte-query": "^3.0.3",
 		"trpc-svelte-query-adapter": "^2.3.16",
 		"vite-plugin-javascript-obfuscator": "^3.1.0",
+		"vite-plugin-top-level-await": "^1.6.0",
+		"vite-plugin-wasm": "^3.6.0",
 		"zod": "^3.25.76"
 	}
 }

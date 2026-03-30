@@ -6,7 +6,7 @@ import { getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';
 import { DateTime, Interval } from 'luxon';
 import { auth } from '$lib/server/auth';
-import { PUBLIC_FRONTEND_URL } from '$env/static/public';
+import { env } from '$lib/server/env';
 
 import { getAvailabilitySchema } from './availability.schema';
 import { getOccupancySchema } from './occupancy.schema';
@@ -59,7 +59,7 @@ export const router = createRouter({
 				headers,
 				body: {
 					email,
-					callbackURL: `${PUBLIC_FRONTEND_URL}/app/appointments/${branchId}?email=${email}`
+					callbackURL: `${env?.PUBLIC_FRONTEND_URL}/app/appointments/${branchId}?email=${email}`
 				}
 			});
 
@@ -114,7 +114,7 @@ export const router = createRouter({
 			}
 			// Send magic link email using custom template
 			const encode = encodeURIComponent;
-			const url = `${PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
+			const url = `${env?.PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
 			await notificationService.sendEmailNotification({
 				to: email,
 				branch: organization,

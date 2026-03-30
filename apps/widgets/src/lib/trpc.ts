@@ -3,13 +3,14 @@ import { createTRPCProxyClient, httpBatchLink, type TRPCLink } from '@trpc/clien
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
 import type { AppRouter, RouterOutput } from '@salora/trpc-types';
-import { PUBLIC_BACKEND_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
 import { t } from './translation';
 import superjson from './superjson';
 
 type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
+const backendUrl = publicEnv.PUBLIC_BACKEND_URL ?? process.env.PUBLIC_BACKEND_URL ?? '';
 
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {
@@ -49,7 +50,7 @@ export const trpc: TRPCClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		customLink,
 		httpBatchLink({
-			url: PUBLIC_BACKEND_URL + '/api/trpc',
+			url: backendUrl + '/api/trpc',
 			transformer: superjson
 		})
 	]
@@ -57,7 +58,7 @@ export const trpc: TRPCClient = createTRPCProxyClient<AppRouter>({
 export const trpcS: TRPCClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: PUBLIC_BACKEND_URL + '/api/trpc',
+			url: backendUrl + '/api/trpc',
 			transformer: superjson
 		})
 	]
@@ -67,7 +68,7 @@ export const trpcOnServer = (fetch: FetchEsque): TRPCClient =>
 		links: [
 			customLink,
 			httpBatchLink({
-				url: PUBLIC_BACKEND_URL + '/api/trpc',
+				url: backendUrl + '/api/trpc',
 				fetch,
 				transformer: superjson
 			})

@@ -1,11 +1,8 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Chart from '$lib/components/ui/chart/index.js';
-	import { Arc, PieChart, Text } from 'layerchart';
-	import { AreaChart } from 'layerchart';
+	import { onMount } from 'svelte';
+	import type { ChartConfig } from '$lib/components/ui/chart/index.js';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import { curveBumpX } from 'd3-shape';
-	import { scaleUtc } from 'd3-scale';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -30,6 +27,18 @@
 	import { language } from '$lib/translation.js';
 
 	const { data } = $props();
+
+	let RevenueChartWrapper: any = $state(null);
+	let ServicesBreakdownChartWrapper: any = $state(null);
+
+	onMount(async () => {
+		const [revenueModule, servicesModule] = await Promise.all([
+			import('$lib/components/customers/RevenueChartWrapper.svelte'),
+			import('$lib/components/customers/ServicesBreakdownChartWrapper.svelte')
+		]);
+		RevenueChartWrapper = revenueModule.default;
+		ServicesBreakdownChartWrapper = servicesModule.default;
+	});
 
 	// Date picker setup - default to last 12 months
 	const todayDate = today(getLocalTimeZone());
@@ -236,54 +245,7 @@
 	const chartConfig = {
 		income: { label: 'Inkomsten', color: '#10b981' },
 		appointmentCount: { label: 'Aantal afspraken', color: '#3b82f6' }
-	} satisfies Chart.ChartConfig;
-
-	// Function to format dates based on grouping strategy
-	const formatChartDate = (date: Date, groupingStrategy?: string) => {
-		switch (groupingStrategy) {
-			case 'hourly':
-				return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-			case 'daily':
-				return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-			case 'weekly':
-				return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-			case 'monthly':
-				return date.toLocaleDateString('nl-NL', { month: 'short', year: 'numeric' });
-			case 'yearly':
-				return date.toLocaleDateString('nl-NL', { year: 'numeric' });
-			default:
-				return date.toLocaleDateString('nl-NL', { month: 'short' });
-		}
-	};
-
-	// Function to format tooltip dates based on grouping strategy
-	const formatTooltipDate = (date: Date, groupingStrategy?: string) => {
-		switch (groupingStrategy) {
-			case 'hourly':
-				return `${date.toLocaleDateString('nl-NL', {
-					weekday: 'long',
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})} om ${date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
-			case 'daily':
-				return date.toLocaleDateString('nl-NL', {
-					weekday: 'long',
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				});
-			case 'weekly':
-				// For weekly, show the range
-				return `Week van ${date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-			case 'monthly':
-				return date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
-			case 'yearly':
-				return date.toLocaleDateString('nl-NL', { year: 'numeric' });
-			default:
-				return date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
-		}
-	};
+	} satisfies ChartConfig;
 
 	// Purchase history from recent activity
 	const purchaseHistory = $derived(
@@ -303,7 +265,7 @@
 		...Object.fromEntries(
 			pieChartData.map((item) => [item.service, { label: item.service, color: item.color }])
 		)
-	} satisfies Chart.ChartConfig);
+	} satisfies ChartConfig);
 </script>
 
 <!-- Customer Overview Dashboard -->
@@ -403,44 +365,17 @@
 						<Skeleton class="h-full w-full" />
 					</div>
 				{:else if chartData.length > 0}
-					<Chart.Container config={chartConfig} class="h-75 w-full">
-						<AreaChart
+					{#if RevenueChartWrapper}
+						<RevenueChartWrapper
 							data={chartData}
-							x="date"
-							xScale={scaleUtc()}
-							yDomain={[0, null]}
-							yNice
-							series={[
-								{
-									key: 'income',
-									label: chartConfig.income.label,
-									color: chartConfig.income.color
-								},
-								{
-									key: 'appointmentCount',
-									label: chartConfig.appointmentCount.label,
-									color: chartConfig.appointmentCount.color
-								}
-							]}
-							props={{
-								area: {
-									curve: curveBumpX,
-									motion: 'tween'
-								},
-								xAxis: {
-									format: (v: Date) => formatChartDate(v, chartMetadata?.groupingStrategy)
-								}
-							}}
-						>
-							{#snippet tooltip()}
-								<Chart.Tooltip
-									labelFormatter={(v: Date) =>
-										formatTooltipDate(v, chartMetadata?.groupingStrategy)}
-									indicator="line"
-								/>
-							{/snippet}
-						</AreaChart>
-					</Chart.Container>
+							config={chartConfig}
+							groupingStrategy={chartMetadata?.groupingStrategy}
+						/>
+					{:else}
+						<div class="flex h-75 items-center justify-center">
+							<Skeleton class="h-full w-full" />
+						</div>
+					{/if}
 				{:else}
 					<div class="text-muted-foreground flex h-75 flex-col items-center justify-center">
 						<CircleDollarSign class="mb-4 h-12 w-12" />
@@ -479,44 +414,11 @@
 					</div>
 				{:else if pieChartData.length > 0}
 					<div class="w-full">
-						<Chart.Container config={pieChartConfig} class="mx-auto aspect-square max-h-62.5">
-							<PieChart
-								data={pieChartData}
-								key="service"
-								value="count"
-								cRange={pieChartData.map((d) => d.color)}
-								c="color"
-								innerRadius={-20}
-								cornerRadius={5}
-								padAngle={0.02}
-								legend
-								props={{
-									pie: {
-										motion: 'tween'
-									}
-								}}
-							>
-								{#snippet tooltip()}
-									<Chart.Tooltip hideLabel />
-								{/snippet}
-								{#snippet aboveMarks()}
-									<Text
-										value={pieChartData.reduce((acc, d) => acc + d.count, 0)}
-										textAnchor="middle"
-										verticalAnchor="middle"
-										class="fill-foreground !text-4xl"
-										dy={4}
-									/>
-									<Text
-										value="totaal"
-										textAnchor="middle"
-										verticalAnchor="middle"
-										class="fill-foreground/60 text-sm "
-										dy={26}
-									/>
-								{/snippet}
-							</PieChart>
-						</Chart.Container>
+						{#if ServicesBreakdownChartWrapper}
+							<ServicesBreakdownChartWrapper data={pieChartData} config={pieChartConfig} />
+						{:else}
+							<Skeleton class="mx-auto aspect-square max-h-62.5 rounded-full" />
+						{/if}
 					</div>
 				{:else}
 					<div class="text-muted-foreground flex h-full flex-col items-center justify-center">

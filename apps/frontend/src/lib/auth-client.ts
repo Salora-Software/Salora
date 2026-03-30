@@ -1,11 +1,11 @@
-import { PUBLIC_BACKEND_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { magicLinkClient, organizationClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/svelte';
 
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
 export const { signIn, signUp, signOut, useSession, organization, magicLink } = createAuthClient({
-	baseURL: PUBLIC_BACKEND_URL + '/api/auth',
+	baseURL: env?.PUBLIC_BACKEND_URL  + '/api/auth',
 	fetchOptions: {
 		onError: (error) => {
 			const errorKey = typeof error.error.code === 'string' ? error.error.code : 'default';

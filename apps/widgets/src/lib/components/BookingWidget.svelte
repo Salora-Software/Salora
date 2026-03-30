@@ -27,7 +27,6 @@
 	} from '$lib/booking-utils.js';
 	import { tick } from 'svelte';
 	import type { RouterOutput } from '@salora/trpc-types';
-	import type { Prisma } from '@salora/database';
 	import { DateTime, type Interval } from 'luxon';
 	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
 

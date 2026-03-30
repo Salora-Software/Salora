@@ -9,19 +9,16 @@ import { env } from '$lib/server/env';
 
 const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
 
-if (!env?.ACCOUNT_ID || !env?.ACCESS_KEY_ID || !env?.SECRET_ACCESS_KEY || !env?.S3_BUCKET) {
-	throw new Error('Missing required S3 environment variables');
-}
-
+//@ts-ignore
 const S3 = new S3Client({
 	region: 'auto',
-	endpoint: `https://${env.ACCOUNT_ID}.r2.cloudflarestorage.com`,
+	endpoint: `https://${env?.ACCOUNT_ID}.r2.cloudflarestorage.com`,
 	credentials: {
-		accessKeyId: env.ACCESS_KEY_ID,
-		secretAccessKey: env.SECRET_ACCESS_KEY
+		accessKeyId: env?.ACCESS_KEY_ID,
+		secretAccessKey: env?.SECRET_ACCESS_KEY
 	}
 });
-const bucket = env.S3_BUCKET;
+const bucket = env?.S3_BUCKET;
 
 export async function generateAccessToken(fileId: string) {
 	const token = await getSignedUrl(

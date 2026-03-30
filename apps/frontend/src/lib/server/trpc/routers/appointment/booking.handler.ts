@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { db, schema } from '$lib/server/db';
+import { db, schema } from '@salora/database';
 import { AvailabilityEngine } from '@salora/scheduler';
 import {
 	fetchBookingData,
@@ -128,27 +128,32 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 		where: (c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
 	});
 	if (customer) {
-		await db.update(schema.customer)
+		await db
+			.update(schema.customer)
 			.set({
 				name: `${contact.firstName} ${contact.lastName}`,
 				phone: contact.phone?.formattedNumber ?? '',
 				userId: user.id
 			})
-			.where(
-				(c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+			.where((c, { and, eq }) =>
+				and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
 			);
 		// re-fetch to get updated
 		customer = await db.query.customer.findFirst({
-			where: (c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+			where: (c, { and, eq }) =>
+				and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
 		});
 	} else {
-		const inserted = await db.insert(schema.customer).values({
-			name: `${contact.firstName} ${contact.lastName}`,
-			email: contact.email,
-			phone: contact.phone?.formattedNumber ?? '',
-			organizationId,
-			userId: user.id
-		}).returning();
+		const inserted = await db
+			.insert(schema.customer)
+			.values({
+				name: `${contact.firstName} ${contact.lastName}`,
+				email: contact.email,
+				phone: contact.phone?.formattedNumber ?? '',
+				organizationId,
+				userId: user.id
+			})
+			.returning();
 		customer = inserted[0];
 	}
 
@@ -158,7 +163,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 			headers: ctx.headers,
 			body: {
 				email: contact.email,
-				callbackURL: `${env?.PUBLIC_BACKEND_URL }/appointments/${organization.id}`
+				callbackURL: `${env?.PUBLIC_BACKEND_URL}/appointments/${organization.id}`
 			}
 		})
 		.catch((e) => {
@@ -169,10 +174,8 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 	let magicLinkVerification;
 	if (magicLink.status) {
 		magicLinkVerification = await db.query.verification.findFirst({
-			where: (v, { and, eq, gte }) => and(
-				eq(v.value, `{"email":"${contact.email}"}`),
-				gte(v.expiresAt, new Date())
-			),
+			where: (v, { and, eq, gte }) =>
+				and(eq(v.value, `{"email":"${contact.email}"}`), gte(v.expiresAt, new Date())),
 			orderBy: (v, { desc }) => desc(v.createdAt)
 		});
 		if (magicLinkVerification) {
@@ -186,36 +189,44 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 	}
 
 	// 7. Booking & CalendarItem aanmaken
-	const [booking] = await db.insert(schema.booking).values({
-		organizationId,
-		serviceId,
-		employeeId: bestEmployee.id,
-		customerId: customer.id,
-		duration: service.duration,
-		notes: contact.notes,
-		status: organization.appointmentStatus || 'PENDING'
-	}).returning();
+	const [booking] = await db
+		.insert(schema.booking)
+		.values({
+			organizationId,
+			serviceId,
+			employeeId: bestEmployee.id,
+			customerId: customer.id,
+			duration: service.duration,
+			notes: contact.notes,
+			status: organization.appointmentStatus || 'PENDING'
+		})
+		.returning();
 
-	const [calendarItem] = await db.insert(schema.calendarItem).values({
-		organizationId,
-		title: `${customer.name} - ${service.name}`,
-		memberId: bestEmployee.id,
-		startTime: requestedStart.toJSDate(),
-		endTime: requestedEnd.toJSDate(),
-		type: 'BOOKING',
-		notes: contact.notes,
-		bookingId: booking.id
-	}).returning();
+	const [calendarItem] = await db
+		.insert(schema.calendarItem)
+		.values({
+			organizationId,
+			title: `${customer.name} - ${service.name}`,
+			memberId: bestEmployee.id,
+			startTime: requestedStart.toJSDate(),
+			endTime: requestedEnd.toJSDate(),
+			type: 'BOOKING',
+			notes: contact.notes,
+			bookingId: booking.id
+		})
+		.returning();
 
 	// 8. Notificatie (Originele logica)
 	const encode = encodeURIComponent;
 	const panel = {
-		url: `${env?.PUBLIC_BACKEND_URL }/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
-		cancel: `${env?.PUBLIC_BACKEND_URL }/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env?.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
+		url: `${env?.PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
+		cancel: `${env?.PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env?.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
 	};
 
 	// Haal user email van employee op via de meegeleverde include in fetchBookingData (als je die daar hebt, anders extra query nodig)
-	const employeeUser = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, bestEmployee.userId) });
+	const employeeUser = await db.query.user.findFirst({
+		where: (u, { eq }) => eq(u.id, bestEmployee.userId)
+	});
 
 	const membersForNotification = employeesToUse.map((emp) => ({
 		...emp.member,

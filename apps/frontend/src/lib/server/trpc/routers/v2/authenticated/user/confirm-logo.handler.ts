@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { db, schema } from '$lib/server/db';
+import { db, schema } from '@salora/database';
 import { deleteImage, validateUploadedFileSize } from '$lib/server/s3';
 import type { ConfirmLogoUploadInput } from './confirm-logo.schema';
 
@@ -38,7 +38,8 @@ export const confirmLogoUploadHandler = async ({
 	}
 
 	// Update user with new image path
-	await db.update(schema.user)
+	await db
+		.update(schema.user)
 		.set({ image: `/${imageKey}` })
 		.where(schema.user.id.eq(userId));
 

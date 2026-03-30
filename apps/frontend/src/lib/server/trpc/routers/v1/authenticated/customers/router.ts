@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { count, and, or, ilike, desc, eq, gte, lte } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
@@ -35,7 +35,8 @@ export const router = createRouter({
 			async ({
 				input: { organizationId, skip, take, search },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Build the where clause for search
@@ -131,7 +132,8 @@ export const router = createRouter({
 			async ({
 				input: { id, organizationId },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Get customer with bookings
@@ -242,7 +244,8 @@ export const router = createRouter({
 			async ({
 				input: { id, organizationId, name, email, phone, address },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Check if customer exists and belongs to organization
@@ -326,7 +329,8 @@ export const router = createRouter({
 			async ({
 				input: { id, organizationId, startDate, endDate },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Get organization for timezone
@@ -634,7 +638,8 @@ export const router = createRouter({
 			async ({
 				input: { customerId, organizationId, skip, take, search },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Verify customer belongs to organization
@@ -723,7 +728,7 @@ export const router = createRouter({
 				search: z.string().optional()
 			})
 		)
-		.query(async ({ input, ctx }) => {
+		.query(async ({ input, ctx: { db } }) => {
 			const { customerId, organizationId, skip, take, search } = input;
 
 			// Verify customer belongs to organization
@@ -781,7 +786,7 @@ export const router = createRouter({
 				content: z.string().min(1).max(500)
 			})
 		)
-		.mutation(async ({ input, ctx }) => {
+		.mutation(async ({ input, ctx: { db, session } }) => {
 			const { customerId, organizationId, content } = input;
 
 			// Verify customer belongs to organization
@@ -805,7 +810,7 @@ export const router = createRouter({
 					id: crypto.randomUUID(),
 					content,
 					customerId,
-					authorId: ctx.session.user.id,
+					authorId: session.user.id,
 					updatedAt: new Date()
 				})
 				.returning();
@@ -829,7 +834,7 @@ export const router = createRouter({
 				organizationId: z.string()
 			})
 		)
-		.mutation(async ({ input, ctx }) => {
+		.mutation(async ({ input, ctx: { db, session } }) => {
 			const { noteId, customerId, organizationId } = input;
 
 			// Verify customer belongs to organization
@@ -860,11 +865,11 @@ export const router = createRouter({
 			}
 
 			// Only allow deletion by the author or organization admin
-			if (note.authorId !== ctx.session.user.id) {
+			if (note.authorId !== session.user.id) {
 				// Check if user is admin/owner of organization
 				const member = await db.query.member.findFirst({
 					where: and(
-						eq(schema.member.userId, ctx.session.user.id),
+						eq(schema.member.userId, session.user.id),
 						eq(schema.member.organizationId, organizationId),
 						or(eq(schema.member.role, 'admin'), eq(schema.member.role, 'owner'))
 					)

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, portalProcedure } from '../../context';
-import { db, schema } from '$lib/server/db';
+import { db, schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';
@@ -36,10 +36,7 @@ export const router = createRouter({
 		)
 		.mutation(async ({ input: { email, branchId }, ctx: { headers } }) => {
 			const customer = await db.query.customer.findFirst({
-				where: (c, { eq, and }) => and(
-					eq(c.organizationId, branchId),
-					eq(c.email, email)
-				)
+				where: (c, { eq, and }) => and(eq(c.organizationId, branchId), eq(c.email, email))
 			});
 			if (!customer) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'customer_not_found' });
@@ -65,10 +62,8 @@ export const router = createRouter({
 				});
 			}
 			const magicLinkVerification = await db.query.verification.findFirst({
-				where: (v, { eq, gte, and }) => and(
-					eq(v.value, `{"email":"${email}"}`),
-					gte(v.expiresAt, new Date())
-				),
+				where: (v, { eq, gte, and }) =>
+					and(eq(v.value, `{"email":"${email}"}`), gte(v.expiresAt, new Date())),
 				orderBy: (v, { desc }) => desc(v.createdAt)
 			});
 
@@ -80,11 +75,12 @@ export const router = createRouter({
 			}
 
 			const calendarItem = await db.query.calendarItem.findFirst({
-				where: (ci, { eq, and }) => and(
-					eq(ci.organizationId, branchId),
-					eq(ci.type, 'BOOKING'),
-					eq(ci.bookingId, customer.id)
-				),
+				where: (ci, { eq, and }) =>
+					and(
+						eq(ci.organizationId, branchId),
+						eq(ci.type, 'BOOKING'),
+						eq(ci.bookingId, customer.id)
+					),
 				orderBy: (ci, { asc }) => asc(ci.startTime)
 			});
 			if (!calendarItem) {
@@ -153,7 +149,7 @@ export const router = createRouter({
 
 			// Find the calendar item and booking
 			const calendarItem = await db.query.calendarItem.findFirst({
-				where: (ci, { eq }) => eq(ci.id, appointmentId),
+				where: (ci, { eq }) => eq(ci.id, appointmentId)
 			});
 			// NOTE: Drizzle does not support nested include, so you may need to join manually if needed
 			if (!calendarItem || !calendarItem.booking) {
@@ -168,7 +164,8 @@ export const router = createRouter({
 				});
 			}
 			// Update booking status to CANCELLED
-			await db.update(schema.booking)
+			await db
+				.update(schema.booking)
 				.set({ status: 'CANCELLED' })
 				.where((b, { eq }) => eq(b.id, calendarItem.bookingId));
 			// Optionally, update calendar item notes or other fields

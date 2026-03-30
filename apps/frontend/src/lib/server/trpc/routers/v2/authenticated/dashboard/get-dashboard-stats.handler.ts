@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import { db } from '$lib/server/db';
-import { schema } from '$lib/server/db';
+import { db } from '@salora/database';
+import { schema } from '@salora/database';
 import { and, count, eq, exists, gte, lt, lte } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';

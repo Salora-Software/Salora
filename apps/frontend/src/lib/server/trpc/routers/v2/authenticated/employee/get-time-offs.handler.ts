@@ -1,6 +1,5 @@
-
 import { TRPCError } from '@trpc/server';
-import { db, schema } from '$lib/server/db';
+import { db, schema } from '@salora/database';
 import { eq, and, desc } from 'drizzle-orm';
 import type { GetTimeOffsInput } from './get-time-offs.schema';
 
@@ -12,7 +11,6 @@ export const getTimeOffsHandler = async ({
 	ctx: any;
 }) => {
 	const { organizationId, memberId } = input;
-
 
 	// Simple check: check if user is member of organization
 	const userMember = await db.query.member.findFirst({
@@ -29,7 +27,6 @@ export const getTimeOffsHandler = async ({
 		});
 	}
 
-
 	// Get time offs with calendar items, ordered by calendarItem.startTime desc
 	const results = await db
 		.select({
@@ -37,10 +34,7 @@ export const getTimeOffsHandler = async ({
 			calendarItem: schema.calendarItem
 		})
 		.from(schema.timeOff)
-		.leftJoin(
-			schema.calendarItem,
-			eq(schema.calendarItem.timeOffId, schema.timeOff.id)
-		)
+		.leftJoin(schema.calendarItem, eq(schema.calendarItem.timeOffId, schema.timeOff.id))
 		.where(
 			and(
 				eq(schema.timeOff.memberId, memberId),

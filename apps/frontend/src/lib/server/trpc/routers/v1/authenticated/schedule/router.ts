@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { convertToLocal, convertToUtc } from '$lib/utils';
 
@@ -17,8 +17,9 @@ export const router = createRouter({
 				})
 			)
 		)
-		.query(async ({ input: { organizationId, timezone } }) => {
-			const openingTimes = await db.select()
+		.query(async ({ input: { organizationId, timezone }, ctx: { db } }) => {
+			const openingTimes = await db
+				.select()
 				.from(schema.openingTime)
 				.where(schema.openingTime.organizationId.eq(organizationId));
 			return openingTimes.map((time) => ({
@@ -56,11 +57,12 @@ export const router = createRouter({
 				})
 			)
 		)
-		.mutation(async ({ ctx, input }) => {
+		.mutation(async ({ ctx: { db }, input }) => {
 			const { organizationId, openingTimes, removeItems } = input;
 
 			// Get the organization's time zone
-			const organization = await db.select({ timeZone: schema.organization.timeZone })
+			const organization = await db
+				.select({ timeZone: schema.organization.timeZone })
 				.from(schema.organization)
 				.where(schema.organization.id.eq(organizationId))
 				.limit(1);
@@ -87,19 +89,20 @@ export const router = createRouter({
 			await db.transaction(async (trx) => {
 				// Delete outdated opening times (only if removeItems has values)
 				if (removeItems && removeItems.length > 0) {
-					await trx.delete(schema.openingTime)
-						.where(schema.openingTime.id.in(removeItems));
+					await trx.delete(schema.openingTime).where(schema.openingTime.id.in(removeItems));
 				}
 
 				// Upsert opening times (create/update)
 				for (const time of updatedTimes) {
 					if (time.id) {
-						const existing = await trx.select()
+						const existing = await trx
+							.select()
 							.from(schema.openingTime)
 							.where(schema.openingTime.id.eq(time.id))
 							.limit(1);
 						if (existing.length > 0) {
-							await trx.update(schema.openingTime)
+							await trx
+								.update(schema.openingTime)
 								.set({
 									dayOfWeek: time.dayOfWeek,
 									startTimeUtc: time.startTimeUtc,
@@ -107,28 +110,27 @@ export const router = createRouter({
 								})
 								.where(schema.openingTime.id.eq(time.id));
 						} else {
-							await trx.insert(schema.openingTime)
-								.values({
-									id: time.id,
-									organizationId,
-									dayOfWeek: time.dayOfWeek,
-									startTimeUtc: time.startTimeUtc,
-									endTimeUtc: time.endTimeUtc
-								});
-						}
-					} else {
-						await trx.insert(schema.openingTime)
-							.values({
+							await trx.insert(schema.openingTime).values({
+								id: time.id,
 								organizationId,
 								dayOfWeek: time.dayOfWeek,
 								startTimeUtc: time.startTimeUtc,
 								endTimeUtc: time.endTimeUtc
 							});
+						}
+					} else {
+						await trx.insert(schema.openingTime).values({
+							organizationId,
+							dayOfWeek: time.dayOfWeek,
+							startTimeUtc: time.startTimeUtc,
+							endTimeUtc: time.endTimeUtc
+						});
 					}
 				}
 			});
 			// request the new opening times
-			const newOpeningTimes = await db.select()
+			const newOpeningTimes = await db
+				.select()
 				.from(schema.openingTime)
 				.where(schema.openingTime.organizationId.eq(organizationId));
 			return newOpeningTimes.map((time) => ({

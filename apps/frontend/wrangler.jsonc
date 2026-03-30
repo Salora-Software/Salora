@@ -13,8 +13,9 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
+			"migrations_dir": "../../packages/database/drizzle",
 			"database_name": "salora-frontend",
-			"database_id": "e948003e-f342-4674-a065-4c47c48174ef"
+			"database_id": "e948003e-f342-4674-a065-4c47c48174ef",
 		}
 	],
 	"observability": {

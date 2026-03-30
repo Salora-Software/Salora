@@ -1,96 +1,78 @@
 {
-	"$schema": "https://turbo.build/schema.json",
-	"globalEnv": [
-		"ACCESS_KEY_ID",
-		"ACCOUNT_ID",
-		"BETTER_AUTH_SECRET",
-		"DATABASE_URL",
-		"DEPLOY_TARGET",
-		"EMAIL_REDIS_HOST",
-		"EMAIL_REDIS_PASSWORD",
-		"EMAIL_REDIS_PORT",
-		"EMAIL_REDIS_USERNAME",
-		"MAIL_EMAIL_SENDER",
-		"MAIL_FALLBACK_PASSWORD",
-		"MAIL_FALLBACK_PORT",
-		"MAIL_FALLBACK_SERVER",
-		"MAIL_FALLBACK_USERNAME",
-		"PORT",
-		"PUBLIC_BACKEND_URL",
-		"PUBLIC_CDN_URL",
-		"PUBLIC_FRONTEND_URL",
-		"REDIS_HOST",
-		"REDIS_PASSWORD",
-		"REDIS_PORT",
-		"REDIS_USERNAME",
-		"S3_BUCKET",
-		"SECRET_ACCESS_KEY",
-		"TRUSTED_IPS",
-		"TURNSTILE_SECRET_KEY",
-		"PUBLIC_DEMO_ORGANIZATION_ID",
-		"PUBLIC_DEMO_WIDGET_URL"
-	],
-	"tasks": {
-		"build": {
-			"cache": false,
-			"dependsOn": [
-				"^db:generate",
-				"^build"
-			],
-			"outputs": [
-				"dist/**",
-				".svelte-kit/**",
-				"build/**"
-			]
-		},
-		"lint": {},
-		"check": {},
-		"db:generate": {
-			"cache": false
-		},
-		"generate:worker": {
-			"cache": false
-		},
-		"db:push": {
-			"cache": false
-		},
-		"services:up": {
-			"cache": false
-		},
-		"build:worker": {
-			"cache": false,
-			"dependsOn": [
-				"^generate:worker",
-				"^build:worker"
-			],
-			"outputs": [
-				"dist/**",
-				".svelte-kit/**",
-				"build/**"
-			]
-		},
-		"build:embed": {
-			"cache": false,
-			"dependsOn": [
-				"^build:embed"
-			],
-			"outputs": [
-				"dist/**",
-				".svelte-kit/**",
-				"build/**"
-			]
-		},
-		"dev": {
-			"dependsOn": [
-				"^db:generate",
-				"^services:up"
-			],
-			"cache": false,
-			"persistent": true
-		},
-		"start": {
-			"persistent": true,
-			"cache": false
-		}
-	}
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "ACCESS_KEY_ID",
+    "ACCOUNT_ID",
+    "BETTER_AUTH_SECRET",
+    "DATABASE_URL",
+    "DEPLOY_TARGET",
+    "EMAIL_REDIS_HOST",
+    "EMAIL_REDIS_PASSWORD",
+    "EMAIL_REDIS_PORT",
+    "EMAIL_REDIS_USERNAME",
+    "MAIL_EMAIL_SENDER",
+    "MAIL_FALLBACK_PASSWORD",
+    "MAIL_FALLBACK_PORT",
+    "MAIL_FALLBACK_SERVER",
+    "MAIL_FALLBACK_USERNAME",
+    "PORT",
+    "PUBLIC_BACKEND_URL",
+    "PUBLIC_CDN_URL",
+    "PUBLIC_FRONTEND_URL",
+    "REDIS_HOST",
+    "REDIS_PASSWORD",
+    "REDIS_PORT",
+    "REDIS_USERNAME",
+    "S3_BUCKET",
+    "SECRET_ACCESS_KEY",
+    "TRUSTED_IPS",
+    "TURNSTILE_SECRET_KEY",
+    "PUBLIC_DEMO_ORGANIZATION_ID",
+    "PUBLIC_DEMO_WIDGET_URL"
+  ],
+  "tasks": {
+    "build": {
+      "cache": false,
+      "dependsOn": ["^db:generate", "^build"],
+      "outputs": ["dist/**", ".svelte-kit/**", "build/**"]
+    },
+    "lint": {},
+    "check": {},
+    "db:generate": {
+      "cache": false
+    },
+    "generate:worker": {
+      "cache": false
+    },
+    "db:push": {
+      "cache": false
+    },
+    "services:up": {
+      "cache": false
+    },
+
+    "build:worker": {
+      "cache": false,
+      "dependsOn": ["^generate:worker", "^build:worker"],
+      "outputs": ["dist/**", ".svelte-kit/**", "build/**"]
+    },
+    "build:embed": {
+      "cache": false,
+      "dependsOn": ["^build:embed"],
+      "outputs": ["dist/**", ".svelte-kit/**", "build/**"]
+    },
+    "dev": {
+      "dependsOn": ["^db:generate", "^services:up"],
+      "cache": false,
+      "persistent": true
+    },
+    "dev:worker": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "persistent": true,
+      "cache": false
+    }
+  }
 }

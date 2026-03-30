@@ -4,9 +4,79 @@ import {
   text,
   real,
   integer,
-  SQLiteBoolean,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+
+// 1. Definieer je enums als constante arrays
+export const calendarItemTypes = [
+  "AVAILABILITY",
+  "TIME_OFF",
+  "BOOKING",
+  "NOTE",
+] as const;
+export enum CalendarItemTypes {
+  AVAILABILITY = "AVAILABILITY",
+  TIME_OFF = "TIME_OFF",
+  BOOKING = "BOOKING",
+  NOTE = "NOTE",
+}
+export const templateTargets = ["CUSTOMER", "EMPLOYEE"] as const;
+export enum TemplateTargets {
+  CUSTOMER = "CUSTOMER",
+  EMPLOYEE = "EMPLOYEE",
+}
+export const templateTypes = [
+  "EMAIL_APPROVED",
+  "EMAIL_DENIED",
+  "EMAIL_CANCELED",
+  "EMAIL_CREATED",
+  "SMS_APPROVED",
+  "SMS_DENIED",
+  "SMS_CANCELED",
+] as const;
+export enum TemplateTypes {
+  EMAIL_APPROVED = "EMAIL_APPROVED",
+  EMAIL_DENIED = "EMAIL_DENIED",
+  EMAIL_CANCELED = "EMAIL_CANCELED",
+  EMAIL_CREATED = "EMAIL_CREATED",
+  SMS_APPROVED = "SMS_APPROVED",
+  SMS_DENIED = "SMS_DENIED",
+  SMS_CANCELED = "SMS_CANCELED",
+}
+export const communicationTypes = ["EMAIL", "SMS"] as const;
+export enum CommunicationTypes {
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+}
+export const bookingStatuses = [
+  "PENDING",
+  "CONFIRMED",
+  "CANCELLED",
+  "COMPLETED",
+] as const;
+export enum BookingStatuses {
+  PENDING = "PENDING",
+  CONFIRMED = "CONFIRMED",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
+}
+export const timeOffTypes = ["LEAVE", "SPECIAL"] as const;
+export enum TimeOffTypes {
+  LEAVE = "LEAVE",
+  SPECIAL = "SPECIAL",
+}
+export const invitationStatuses = [
+  "PENDING",
+  "ACCEPTED",
+  "DECLINED",
+  "ACTIVE",
+] as const;
+export enum InvitationStatuses {
+  PENDING = "PENDING",
+  ACCEPTED = "ACCEPTED",
+  DECLINED = "DECLINED",
+  ACTIVE = "ACTIVE",
+}
 
 export const account = sqliteTable(
   "account",

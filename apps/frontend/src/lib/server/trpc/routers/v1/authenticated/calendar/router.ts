@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
 import { db, schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
-import { BookingStatus, CalendarItemType } from '@salora/database';
 import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';
 
@@ -321,7 +320,7 @@ export const router = createRouter({
 				}
 
 				let calendarItem;
-				let oldStatus: BookingStatus | null = null;
+				let oldStatus: schema.BookingStatuses | null = null;
 
 				if (id) {
 					// Get existing calendar item with booking details for status comparison
@@ -343,7 +342,7 @@ export const router = createRouter({
 					});
 
 					if (existingItem?.booking) {
-						oldStatus = existingItem.booking.status as BookingStatus;
+						oldStatus = existingItem.booking.status as schema.BookingStatuses;
 					}
 
 					// Check if member (employee) has changed
@@ -363,7 +362,7 @@ export const router = createRouter({
 									? input.memberId
 									: undefined,
 							notes: data.notes,
-							type: data.type as CalendarItemType
+							type: data.type as schema.CalendarItemTypes
 						})
 						.where(eq(schema.calendarItem.id, id));
 
@@ -371,7 +370,7 @@ export const router = createRouter({
 						await db
 							.update(schema.booking)
 							.set({
-								status: data.status as BookingStatus,
+								status: data.status as schema.BookingStatuses,
 								notes: data.notes,
 								...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
 									? { serviceId: input.serviceId }
@@ -386,7 +385,7 @@ export const router = createRouter({
 					// Send email notification if status changed, time changed, or member changed
 					if (type === 'BOOKING' && existingItem?.booking) {
 						const booking = existingItem.booking;
-						const newStatus = data.status as BookingStatus;
+						const newStatus = data.status as schema.BookingStatuses;
 						const statusChanged = oldStatus && oldStatus !== newStatus;
 						const timeChanged =
 							existingItem.startTime.getTime() !== data.startTime.getTime() ||
@@ -539,7 +538,7 @@ export const router = createRouter({
 								startTime: data.startTime,
 								endTime: data.endTime,
 								notes: data.notes,
-								type: data.type as CalendarItemType,
+								type: data.type as schema.CalendarItemTypes,
 								organizationId: input.organizationId,
 								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
 								updatedAt: new Date(),
@@ -550,7 +549,7 @@ export const router = createRouter({
 						if (createdCalendarItem) {
 							await db.insert(schema.booking).values({
 								id: createdCalendarItem.bookingId!,
-								status: (data.status as BookingStatus) || 'PENDING',
+								status: (data.status as schema.BookingStatuses) || 'PENDING',
 								notes: data.notes,
 								serviceId: input.serviceId,
 								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
@@ -570,7 +569,7 @@ export const router = createRouter({
 									startTime: data.startTime,
 									endTime: data.endTime,
 									notes: data.notes,
-									type: data.type as CalendarItemType,
+									type: data.type as schema.CalendarItemTypes,
 									organizationId: input.organizationId,
 									updatedAt: new Date()
 								})
@@ -638,7 +637,7 @@ export const router = createRouter({
 					// Update booking status to CANCELLED
 					await db
 						.update(schema.booking)
-						.set({ status: BookingStatus.CANCELLED })
+						.set({ status: schema.BookingStatuses.CANCELLED })
 						.where(eq(schema.booking.id, booking.id));
 
 					// Send cancellation email notification to customer

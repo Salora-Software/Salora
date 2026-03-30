@@ -17,6 +17,12 @@
 			"database_id": "e948003e-f342-4674-a065-4c47c48174ef"
 		}
 	],
+	"observability": {
+		"logs": {
+			"enabled": false,
+			"invocation_logs": true
+		}
+	},
 	"vars": {
 		"DEPLOY_TARGET": "worker",
 		"SKIP_DEPENDENCY_INSTALL": "true",

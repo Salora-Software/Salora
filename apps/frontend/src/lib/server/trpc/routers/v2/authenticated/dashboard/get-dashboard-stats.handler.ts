@@ -1,5 +1,7 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
+import { schema } from '$lib/server/db';
+import { and, count, eq, exists, gte, lt, lte } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';
 
@@ -11,10 +13,8 @@ export const getDashboardStatsHandler = async ({
 	ctx: any;
 }) => {
 	const organizationId = input.organizationId || session.session.activeOrganizationId;
-	const branch = await prisma.organization.findFirst({
-		where: {
-			id: organizationId!
-		}
+	const branch = await db.query.organization.findFirst({
+		where: (org, { eq }) => eq(org.id, organizationId!)
 	});
 
 	if (!branch) {
@@ -57,110 +57,115 @@ export const getDashboardStatsHandler = async ({
 		newCustomersLastPeriod,
 		returningCustomers
 	] = await Promise.all([
-		prisma.booking.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfPeriodUTC,
-					lte: endOfPeriodUTC
-				}
-			},
-			select: {
+		db.query.booking.findMany({
+			where: (booking, { and, eq, gte, lte }) =>
+				and(
+					eq(booking.organizationId, organizationId!),
+					gte(booking.createdAt, startOfPeriodUTC),
+					lte(booking.createdAt, endOfPeriodUTC)
+				),
+			columns: {
 				id: true,
 				createdAt: true,
 				customerId: true,
-				status: true,
+				status: true
+			},
+			with: {
 				service: {
-					select: {
+					columns: {
 						price: true
 					}
 				}
 			},
-			take: 5000
+			limit: 5000
 		}),
-		prisma.booking.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfLastPeriodUTC,
-					lte: endOfLastPeriodUTC
-				}
-			},
-			select: {
+		db.query.booking.findMany({
+			where: (booking, { and, eq, gte, lte }) =>
+				and(
+					eq(booking.organizationId, organizationId!),
+					gte(booking.createdAt, startOfLastPeriodUTC),
+					lte(booking.createdAt, endOfLastPeriodUTC)
+				),
+			columns: {
 				id: true,
-				status: true,
+				createdAt: true,
+				customerId: true,
+				status: true
+			},
+			with: {
 				service: {
-					select: {
+					columns: {
 						price: true
 					}
 				}
 			},
-			take: 5000
+			limit: 5000
 		}),
-		prisma.customer.findMany({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfPeriodUTC,
-					lte: endOfPeriodUTC
-				}
-			},
-			select: {
+		db.query.customer.findMany({
+			where: (customer, { and, eq, gte, lte }) =>
+				and(
+					eq(customer.organizationId, organizationId!),
+					gte(customer.createdAt, startOfPeriodUTC),
+					lte(customer.createdAt, endOfPeriodUTC)
+				),
+			columns: {
 				id: true,
 				createdAt: true
 			}
 		}),
-		prisma.customer.count({
-			where: {
-				organizationId: organizationId!,
-				createdAt: {
-					gte: startOfLastPeriodUTC,
-					lte: endOfLastPeriodUTC
-				}
-			}
-		}),
-		prisma.customer.count({
-			where: {
-				organizationId: organizationId!,
-				bookings: {
-					some: {
-						createdAt: {
-							lt: startOfPeriodUTC
-						}
-					}
-				}
-			}
-		})
+		db
+			.select({ count: count() })
+			.from(schema.customer)
+			.where(
+				and(
+					eq(schema.customer.organizationId, organizationId!),
+					gte(schema.customer.createdAt, startOfLastPeriodUTC),
+					lte(schema.customer.createdAt, endOfLastPeriodUTC)
+				)
+			)
+			.then((rows) => rows[0]?.count ?? 0),
+		db
+			.select({ count: count() })
+			.from(schema.customer)
+			.where(
+				and(
+					eq(schema.customer.organizationId, organizationId!),
+					exists(
+						db
+							.select()
+							.from(schema.booking)
+							.where(
+								and(
+									eq(schema.booking.customerId, schema.customer.id),
+									lt(schema.booking.createdAt, startOfPeriodUTC)
+								)
+							)
+					)
+				)
+			)
+			.then((rows) => rows[0]?.count ?? 0)
 	]);
 
 	const uniqueCustomerIds = new Set(currentPeriodBookings.map((booking) => booking.customerId));
 	const totalCustomersThisPeriod = uniqueCustomerIds.size;
 
-	const lastPeriodUniqueCustomers = await prisma.booking.findMany({
-		where: {
-			organizationId: organizationId!,
-			createdAt: {
-				gte: startOfLastPeriodUTC,
-				lte: endOfLastPeriodUTC
-			}
-		},
-		select: {
-			customerId: true
-		},
-		distinct: ['customerId']
-	});
+	// Drizzle: get unique customerIds for last period
+	const lastPeriodUniqueCustomers = Array.from(
+		new Set(lastPeriodBookings.map((booking) => booking.customerId))
+	);
 	const totalCustomersLastPeriod = lastPeriodUniqueCustomers.length;
 
 	const currentPeriodRevenue = currentPeriodBookings
 		.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-		.reduce((sum, booking) => sum + booking.service.price, 0);
+		.reduce((sum, booking) => sum + (booking.service?.price ?? 0), 0);
 	const lastPeriodRevenue = lastPeriodBookings
 		.filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'COMPLETED')
-		.reduce((sum, booking) => sum + booking.service.price, 0);
+		.reduce((sum, booking) => sum + (booking.service?.price ?? 0), 0);
 
 	const appointmentChange =
 		lastPeriodBookings.length > 0
-			? ((currentPeriodBookings.length - lastPeriodBookings.length) / lastPeriodBookings.length) * 100
+			? ((currentPeriodBookings.length - lastPeriodBookings.length) / lastPeriodBookings.length) *
+				100
 			: 100;
 	const revenueChange =
 		lastPeriodRevenue > 0
@@ -249,7 +254,7 @@ export const getDashboardStatsHandler = async ({
 		if (periodIndex >= 0 && periodIndex < periodCount) {
 			bookingsByPeriod[periodIndex]++;
 			if (booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') {
-				revenueByPeriod[periodIndex] += booking.service.price;
+				revenueByPeriod[periodIndex] += booking.service?.price ?? 0;
 			}
 			if (booking.customerId) {
 				periodCustomers[periodIndex].add(booking.customerId);

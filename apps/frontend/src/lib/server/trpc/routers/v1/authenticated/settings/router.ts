@@ -1,15 +1,15 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
+import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { BookingStatus } from '@salora/database';
 
 export const router = createRouter({
 	getGeneralSettings: privateProcedure
 		.input(z.object({ organizationId: z.string() }))
 		.output(
 			z.object({
-				appointmentStatus: z.nativeEnum(BookingStatus),
+				appointmentStatus: z.string(),
 				minimumBookingTime: z.number(),
 				bookingPeriod: z.number(),
 				autoShiftTimeSlot: z.boolean(),
@@ -17,9 +17,9 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { organizationId } }) => {
-			const organization = await prisma.organization.findUnique({
-				where: { id: organizationId },
-				select: {
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				columns: {
 					appointmentStatus: true,
 					minimumBookingTime: true,
 					bookingPeriod: true,
@@ -32,9 +32,9 @@ export const router = createRouter({
 			}
 			return {
 				appointmentStatus: organization.appointmentStatus || 'PENDING',
-				minimumBookingTime: organization.minimumBookingTime || 0.5,
+				minimumBookingTime: Number(organization.minimumBookingTime) || 0.5,
 				bookingPeriod: organization.bookingPeriod || 365,
-				autoShiftTimeSlot: organization.autoShiftTimeSlot ?? false,
+				autoShiftTimeSlot: !!organization.autoShiftTimeSlot,
 				timeZone: organization.timeZone || 'Europe/Amsterdam'
 			};
 		}),
@@ -43,7 +43,7 @@ export const router = createRouter({
 		.input(
 			z.object({
 				organizationId: z.string(),
-				appointmentStatus: z.nativeEnum(BookingStatus),
+				appointmentStatus: z.string(),
 				minimumBookingTime: z.number(),
 				bookingPeriod: z.number(),
 				autoShiftTimeSlot: z.boolean(),
@@ -51,31 +51,32 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(
-			async ({
-				input: {
-					organizationId,
+		.mutation(async ({ ctx, input }) => {
+			const {
+				organizationId,
+				appointmentStatus,
+				minimumBookingTime,
+				bookingPeriod,
+				autoShiftTimeSlot,
+				timeZone
+			} = input;
+
+			const result = await db
+				.update(schema.organization)
+				.set({
 					appointmentStatus,
+					//@ts-ignore
 					minimumBookingTime,
 					bookingPeriod,
-					autoShiftTimeSlot,
+					autoShiftTimeSlot: autoShiftTimeSlot ? 1 : 0,
 					timeZone
-				}
-			}) => {
-				const organization = await prisma.organization.update({
-					where: { id: organizationId },
-					data: {
-						appointmentStatus,
-						minimumBookingTime,
-						bookingPeriod,
-						autoShiftTimeSlot,
-						timeZone
-					}
-				});
-				if (!organization) {
-					throw new TRPCError({ code: 'BAD_REQUEST', message: 'organization_not_found' });
-				}
-				return true;
+				})
+				.where(eq(schema.organization.id, organizationId))
+				.returning({ id: schema.organization.id });
+
+			if (result.length === 0) {
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'organization_not_found' });
 			}
-		)
+			return true;
+		})
 });

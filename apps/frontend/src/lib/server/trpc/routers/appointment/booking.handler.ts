@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { AvailabilityEngine } from '@salora/scheduler';
 import {
 	fetchBookingData,
@@ -112,7 +112,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 
 	// 5. User / Customer Upsert (Originele logica behouden)
 	const ctxAuth = await auth.$context;
-	let user = await prisma.user.findUnique({ where: { email: contact.email } });
+	let user = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.email, contact.email) });
 
 	if (!user) {
 		user = await ctxAuth.internalAdapter.createUser({
@@ -123,26 +123,34 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 		});
 	}
 
-	const customer = await prisma.customer.upsert({
-		where: {
-			email_organizationId: {
-				email: contact.email,
-				organizationId
-			}
-		},
-		update: {
-			name: `${contact.firstName} ${contact.lastName}`,
-			phone: contact.phone?.formattedNumber ?? '',
-			user: { connect: { id: user.id } }
-		},
-		create: {
+	// Drizzle does not have upsert, so try update, then insert if not found
+	let customer = await db.query.customer.findFirst({
+		where: (c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+	});
+	if (customer) {
+		await db.update(schema.customer)
+			.set({
+				name: `${contact.firstName} ${contact.lastName}`,
+				phone: contact.phone?.formattedNumber ?? '',
+				userId: user.id
+			})
+			.where(
+				(c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+			);
+		// re-fetch to get updated
+		customer = await db.query.customer.findFirst({
+			where: (c, { and, eq }) => and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+		});
+	} else {
+		const inserted = await db.insert(schema.customer).values({
 			name: `${contact.firstName} ${contact.lastName}`,
 			email: contact.email,
 			phone: contact.phone?.formattedNumber ?? '',
 			organizationId,
 			userId: user.id
-		}
-	});
+		}).returning();
+		customer = inserted[0];
+	}
 
 	// 6. Auth Magic Link (Originele logica)
 	const magicLink = await auth.api
@@ -160,51 +168,44 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 
 	let magicLinkVerification;
 	if (magicLink.status) {
-		magicLinkVerification = await prisma.verification.findFirst({
-			where: {
-				value: { equals: `{"email":"${contact.email}"}` },
-				expiresAt: { gte: new Date() }
-			},
-			orderBy: { createdAt: 'desc' }
+		magicLinkVerification = await db.query.verification.findFirst({
+			where: (v, { and, eq, gte }) => and(
+				eq(v.value, `{"email":"${contact.email}"}`),
+				gte(v.expiresAt, new Date())
+			),
+			orderBy: (v, { desc }) => desc(v.createdAt)
 		});
-
 		if (magicLinkVerification) {
-			await prisma.verification.create({
-				data: {
-					id: crypto.randomUUID(),
-					identifier: magicLinkVerification.identifier,
-					value: magicLinkVerification.value,
-					expiresAt: magicLinkVerification.expiresAt
-				}
+			await db.insert(schema.verification).values({
+				id: crypto.randomUUID(),
+				identifier: magicLinkVerification.identifier,
+				value: magicLinkVerification.value,
+				expiresAt: magicLinkVerification.expiresAt
 			});
 		}
 	}
 
 	// 7. Booking & CalendarItem aanmaken
-	const booking = await prisma.booking.create({
-		data: {
-			organizationId,
-			serviceId,
-			employeeId: bestEmployee.id,
-			customerId: customer.id,
-			duration: service.duration,
-			notes: contact.notes,
-			status: organization.appointmentStatus || 'PENDING'
-		}
-	});
+	const [booking] = await db.insert(schema.booking).values({
+		organizationId,
+		serviceId,
+		employeeId: bestEmployee.id,
+		customerId: customer.id,
+		duration: service.duration,
+		notes: contact.notes,
+		status: organization.appointmentStatus || 'PENDING'
+	}).returning();
 
-	const calendarItem = await prisma.calendarItem.create({
-		data: {
-			organizationId,
-			title: `${customer.name} - ${service.name}`,
-			memberId: bestEmployee.id,
-			startTime: requestedStart.toJSDate(),
-			endTime: requestedEnd.toJSDate(),
-			type: 'BOOKING',
-			notes: contact.notes,
-			bookingId: booking.id
-		}
-	});
+	const [calendarItem] = await db.insert(schema.calendarItem).values({
+		organizationId,
+		title: `${customer.name} - ${service.name}`,
+		memberId: bestEmployee.id,
+		startTime: requestedStart.toJSDate(),
+		endTime: requestedEnd.toJSDate(),
+		type: 'BOOKING',
+		notes: contact.notes,
+		bookingId: booking.id
+	}).returning();
 
 	// 8. Notificatie (Originele logica)
 	const encode = encodeURIComponent;
@@ -214,7 +215,7 @@ export const createBookingHandler = async ({ input, ctx }: CreateBookingOpts) =>
 	};
 
 	// Haal user email van employee op via de meegeleverde include in fetchBookingData (als je die daar hebt, anders extra query nodig)
-	const employeeUser = await prisma.user.findUnique({ where: { id: bestEmployee.userId } });
+	const employeeUser = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, bestEmployee.userId) });
 
 	const membersForNotification = employeesToUse.map((emp) => ({
 		...emp.member,

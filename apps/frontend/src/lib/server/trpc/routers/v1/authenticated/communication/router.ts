@@ -2,21 +2,27 @@ import { z } from 'zod';
 import { router as createRouter, privateProcedure, publicProcedure } from '../../../../context';
 import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
-import { getCommunications, prisma } from '$lib/server/prisma';
-import { env } from '$lib/server/env';
+import { db, schema } from '$lib/server/db';
+import { eq, and } from 'drizzle-orm';
+import {
+	MAIL_FALLBACK_PASSWORD,
+	MAIL_FALLBACK_PORT,
+	MAIL_FALLBACK_SERVER,
+	MAIL_FALLBACK_USERNAME
+} from '$env/static/private';
 import { replaceVariables } from '$lib/templateReplacer';
 import { Emailer } from '@salora/mailer';
-import redis from '$lib/server/redis';
 
 export const router = createRouter({
-	getTemplates: privateProcedure.query(async ({ ctx, input }) => {
-		const templates = await prisma.template.findMany({
-			where: {
-				organizationId: input.organizationId
-			}
-		});
-		return templates;
-	}),
+	getTemplates: privateProcedure
+		.input(z.object({ organizationId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const templates = await db
+				.select()
+				.from(schema.template)
+				.where(eq(schema.template.organizationId, input.organizationId));
+			return templates;
+		}),
 	updateTemplateStatus: privateProcedure
 		.input(
 			z.object({
@@ -27,25 +33,24 @@ export const router = createRouter({
 		)
 		.output(z.any())
 		.mutation(async ({ ctx, input }) => {
-			const template = await prisma.template.updateMany({
-				where: {
-					//@ts-ignore
-					type: input.type,
-					//@ts-ignore
-					target: input.target,
-					organizationId: ctx.session.session.activeOrganizationId!
-				},
-				data: {
-					enabled: input.enabled
-				}
-			});
-			if (template.count === 0)
+			const updated = await db
+				.update(schema.template)
+				.set({ enabled: input.enabled ? 1 : 0 })
+				.where(
+					and(
+						eq(schema.template.type, input.type),
+						eq(schema.template.target, input.target),
+						eq(schema.template.organizationId, ctx.session.session.activeOrganizationId!)
+					)
+				)
+				.returning();
+
+			if (updated.length === 0)
 				throw new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'template_not_found'
 				});
-
-			return template;
+			return updated;
 		}),
 	upsertTemplate: privateProcedure
 		.input(
@@ -58,31 +63,29 @@ export const router = createRouter({
 		)
 		.output(z.any())
 		.mutation(async ({ ctx, input }) => {
-			const template = await prisma.template.upsert({
-				where: {
-					type_target_organizationId: {
-						//@ts-ignore
-						type: input.type,
-						organizationId: ctx.session.session.activeOrganizationId!,
-						//@ts-ignore
-						target: input.target
-					}
-				},
-				create: {
-					//@ts-ignore
-					type: input.type,
-					organizationId: ctx.session.session.activeOrganizationId!,
+			// Upsert template by (type, target, organizationId)
+			const orgId = ctx.session.session.activeOrganizationId!;
+			const upserted = await db
+				.insert(schema.template)
+				.values({
+					id: crypto.randomUUID(),
+					type: input.type as any,
+					target: input.target,
+					organizationId: orgId,
 					subject: input.subject,
 					body: input.body,
-					//@ts-ignore
-					target: input.target
-				},
-				update: {
-					subject: input.subject,
-					body: input.body
-				}
-			});
-			return template;
+					enabled: 1,
+					updatedAt: new Date()
+				})
+				.onConflictDoUpdate({
+					target: [schema.template.type, schema.template.target, schema.template.organizationId],
+					set: {
+						subject: input.subject,
+						body: input.body,
+						updatedAt: new Date()
+					}
+				});
+			return upserted;
 		}),
 	sendTestEmail: privateProcedure
 		.input(
@@ -95,29 +98,22 @@ export const router = createRouter({
 		.output(z.any())
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = ctx.session.session.activeOrganizationId;
-			let branch = await prisma.organization.findFirst({
-				where: {
-					id: organizationId!
-				},
-				include: {
-					members: {
-						include: {
-							user: true
-						}
-					}
-				}
+			// Drizzle: get organization and members (no include, need two queries)
+			let branch = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId!)
 			});
+			// TODO: If members are needed, fetch separately (not used in this code)
 			if (!branch) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'branch_not_found'
 				});
 			}
-			const communication = await prisma.communicationSetting.findFirst({
-				where: {
-					organizationId: organizationId!,
-					type: 'EMAIL'
-				}
+			const communication = await db.query.communicationSetting.findFirst({
+				where: and(
+					eq(schema.communicationSetting.organizationId, organizationId!),
+					eq(schema.communicationSetting.type, 'EMAIL')
+				)
 			});
 			console.log('communication', communication, organizationId);
 			// if (!communication)
@@ -131,16 +127,12 @@ export const router = createRouter({
 			const formattedEmailCommunication = {
 				provider_name: communication?.type as string,
 				priority: 10,
-				//@ts-ignore
-				smtp_host: communication?.settings?.smtpServer,
-				//@ts-ignore
-				smtp_port: communication?.settings?.smtpPort,
-				//@ts-ignore
-				username: communication?.settings?.smtpUsername,
-				//@ts-ignore
-				password: communication?.settings?.smtpPassword
+				smtp_host: communication?.settings?.smtpServer || '',
+				smtp_port: communication?.settings?.smtpPort || 0,
+				username: communication?.settings?.smtpUsername || '',
+				password: communication?.settings?.smtpPassword || ''
 			};
-			const emailer = new Emailer(redis, [
+			const emailer = new Emailer(null, [
 				{
 					provider_name: 'EMAIL FALLBACK',
 					priority: 100,
@@ -149,12 +141,13 @@ export const router = createRouter({
 					username: env?.MAIL_FALLBACK_USERNAME,
 					password: env?.MAIL_FALLBACK_PASSWORD
 				},
-				formattedEmailCommunication
+				formattedEmailCommunication as any
 			]);
 			emailer.sendEmail(
 				'',
 				(communication?.settings as { smtpEmail?: string })?.smtpEmail ||
-					formattedEmailCommunication.username,
+					formattedEmailCommunication.username ||
+					'',
 				input.email,
 				input.subject,
 				replaceVariables(input.body, {
@@ -215,7 +208,26 @@ export const router = createRouter({
 		)
 		//@ts-ignore
 		.query(async ({ ctx }) => {
-			return await getCommunications(ctx.session.session.activeOrganizationId!);
+			const organizationId = ctx.session.session.activeOrganizationId!;
+			const communications = await db
+				.select()
+				.from(schema.communicationSetting)
+				.where(eq(schema.communicationSetting.organizationId, organizationId));
+
+			return communications.map((communication) => {
+				const settings = communication.settings;
+				return {
+					enabled: !!communication.enabled,
+					type: communication.type,
+					smtpServer: settings.smtpServer,
+					smtpPort: settings.smtpPort,
+					smtpUsername: settings.smtpUsername,
+					smtpPassword: settings.smtpPassword,
+					smsProvider: settings.smsProvider,
+					smsApiKey: settings.smsApiKey,
+					smtpEmail: settings.smtpEmail
+				};
+			});
 		}),
 	saveCommunications: privateProcedure
 		.input(
@@ -264,40 +276,37 @@ export const router = createRouter({
 		.output(z.any())
 		.mutation(async ({ input, ctx }) => {
 			//use upsert and also use transactional so if 1 fails, all fail
-			let communications = await prisma.$transaction(
-				input.communications.map((communication) =>
-					(() => {
+			// Drizzle transaction for bulk upsert
+			const orgId2 = ctx.session.session.activeOrganizationId!;
+			const results = await db.transaction(async (trx) => {
+				const upserts = await Promise.all(
+					input.communications.map(async (communication) => {
 						const { type, enabled, ...rest } = communication;
-						return prisma.communicationSetting.upsert({
-							where: {
-								type_organizationId: {
-									//@ts-ignore
-									type: type,
-									organizationId: input.organizationId
-								}
-							},
-							create: {
-								//@ts-ignore
-								type: type,
-								organizationId: ctx.session.session.activeOrganizationId!,
+						return trx
+							.insert(schema.communicationSetting)
+							.values({
+								id: crypto.randomUUID(),
+								type: type as any,
+								organizationId: orgId2,
 								enabled,
-								settings: {
-									...rest
+								settings: rest,
+								updatedAt: new Date()
+							})
+							.onConflictDoUpdate({
+								target: [
+									schema.communicationSetting.type,
+									schema.communicationSetting.organizationId
+								],
+								set: {
+									enabled,
+									settings: rest,
+									updatedAt: new Date()
 								}
-							},
-							update: {
-								//@ts-ignore
-								type: type,
-								organizationId: ctx.session.session.activeOrganizationId!,
-								enabled,
-								settings: {
-									...rest
-								}
-							}
-						});
-					})()
-				)
-			);
-			return communications;
+							});
+					})
+				);
+				return upserts;
+			});
+			return results;
 		})
 });

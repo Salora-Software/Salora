@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
-import { BookingStatus, CalendarItemType } from '@salora/database';
 import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general';
 import { notificationService } from '$lib/server/NotificationService';
 
 import { DateTime, Interval } from 'luxon';
+import { eq } from 'drizzle-orm';
 
 // Utility: Given a range and an array of open intervals, return the complement (closed intervals) within the range
 function getClosedIntervals(range: Interval, openIntervals: Interval[]): Interval[] {
@@ -53,15 +53,15 @@ export const router = createRouter({
 				}
 			}) => {
 				// Get existing calendar item with booking details for comparison
-				const existingItem = await prisma.calendarItem.findUnique({
-					where: { id },
-					include: {
+				const existingItem = await db.query.calendarItem.findFirst({
+					where: (calendarItem, { eq }) => eq(calendarItem.id, id),
+					with: {
 						booking: {
-							include: {
+							with: {
 								customer: true,
 								service: true,
 								employee: {
-									include: {
+									with: {
 										user: true
 									}
 								}
@@ -90,18 +90,13 @@ export const router = createRouter({
 				}
 
 				const timeChanged =
-					existingItem.startTime.getTime() !== startTime.getTime() ||
-					existingItem.endTime.getTime() !== endTime.getTime();
+					new Date(existingItem.startTime).getTime() !== startTime.getTime() ||
+					new Date(existingItem.endTime).getTime() !== endTime.getTime();
 
-				await prisma.calendarItem.update({
-					where: {
-						id
-					},
-					data: {
-						startTime: startTime,
-						endTime: endTime
-					}
-				});
+				await db
+					.update(schema.calendarItem)
+					.set({ startTime, endTime })
+					.where(eq(schema.calendarItem.id, id));
 
 				// Send email notification if time changed and it's a booking (but not for canceled bookings)
 				if (
@@ -202,48 +197,28 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { organizationId, startDate, endDate } }) => {
-			let calendarItems = await prisma.calendarItem.findMany({
-				where: {
-					organizationId,
-					startTime: { lt: endDate },
-					endTime: { gt: startDate }
-				},
-				orderBy: { startTime: 'asc' },
-				include: {
+			let calendarItems = await db.query.calendarItem.findMany({
+				where: (calendarItem, { eq, and, lt, gt }) =>
+					and(
+						eq(calendarItem.organizationId, organizationId),
+						lt(calendarItem.startTime, endDate),
+						gt(calendarItem.endTime, startDate)
+					),
+				orderBy: (calendarItem, { asc }) => [asc(calendarItem.startTime)],
+				with: {
 					booking: {
-						include: {
-							service: {
-								select: {
-									id: true,
-									name: true,
-									duration: true,
-									price: true
-								}
-							},
+						with: {
+							service: true,
 							employee: {
-								select: {
-									id: true,
-									user: {
-										select: {
-											id: true,
-											name: true,
-											email: true
-										}
-									}
+								with: {
+									user: true
 								}
 							}
 						}
 					},
 					member: {
-						include: {
-							user: {
-								select: {
-									id: true,
-									name: true,
-									email: true,
-									image: true
-								}
-							}
+						with: {
+							user: true
 						}
 					}
 				}
@@ -345,19 +320,19 @@ export const router = createRouter({
 				}
 
 				let calendarItem;
-				let oldStatus: BookingStatus | null = null;
+				let oldStatus: schema.BookingStatuses | null = null;
 
 				if (id) {
 					// Get existing calendar item with booking details for status comparison
-					const existingItem = await prisma.calendarItem.findUnique({
-						where: { id: id },
-						include: {
+					const existingItem = await db.query.calendarItem.findFirst({
+						where: (calendarItem, { eq }) => eq(calendarItem.id, id),
+						with: {
 							booking: {
-								include: {
+								with: {
 									customer: true,
 									service: true,
 									employee: {
-										include: {
+										with: {
 											user: true
 										}
 									}
@@ -367,7 +342,7 @@ export const router = createRouter({
 					});
 
 					if (existingItem?.booking) {
-						oldStatus = existingItem.booking.status;
+						oldStatus = existingItem.booking.status as schema.BookingStatuses;
 					}
 
 					// Check if member (employee) has changed
@@ -376,37 +351,41 @@ export const router = createRouter({
 						type === 'BOOKING' && 'memberId' in input ? input.memberId : undefined;
 					const memberChanged = oldEmployeeId !== newEmployeeId;
 
-					calendarItem = await prisma.calendarItem.update({
-						where: { id: id },
-						data: {
+					await db
+						.update(schema.calendarItem)
+						.set({
 							title: data.title,
 							startTime: data.startTime,
 							endTime: data.endTime,
-							booking: {
-								update: {
-									status: data.status as BookingStatus,
-									notes: data.notes,
-									...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
-										? { serviceId: input.serviceId }
-										: {}),
-									...(type === 'BOOKING' && 'memberId' in input && input.memberId
-										? { employeeId: input.memberId }
-										: {})
-								}
-							},
-							member:
+							employeeId:
 								type === 'BOOKING' && 'memberId' in input && input.memberId
-									? { connect: { id: input.memberId } }
+									? input.memberId
 									: undefined,
 							notes: data.notes,
-							type: CalendarItemType[data.type as keyof typeof CalendarItemType]
-						}
-					});
+							type: data.type as schema.CalendarItemTypes
+						})
+						.where(eq(schema.calendarItem.id, id));
+
+					if (type === 'BOOKING' && existingItem?.booking) {
+						await db
+							.update(schema.booking)
+							.set({
+								status: data.status as schema.BookingStatuses,
+								notes: data.notes,
+								...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
+									? { serviceId: input.serviceId }
+									: {}),
+								...(type === 'BOOKING' && 'memberId' in input && input.memberId
+									? { employeeId: input.memberId }
+									: {})
+							})
+							.where(eq(schema.booking.id, existingItem.booking.id));
+					}
 
 					// Send email notification if status changed, time changed, or member changed
 					if (type === 'BOOKING' && existingItem?.booking) {
 						const booking = existingItem.booking;
-						const newStatus = data.status as BookingStatus;
+						const newStatus = data.status as schema.BookingStatuses;
 						const statusChanged = oldStatus && oldStatus !== newStatus;
 						const timeChanged =
 							existingItem.startTime.getTime() !== data.startTime.getTime() ||
@@ -458,16 +437,10 @@ export const router = createRouter({
 							// Get new member information if member changed
 							let newMember = null;
 							if (memberChanged && newEmployeeId) {
-								newMember = await prisma.member.findUnique({
-									where: { id: newEmployeeId },
-									include: {
-										user: {
-											select: {
-												id: true,
-												name: true,
-												email: true
-											}
-										}
+								newMember = await db.query.member.findFirst({
+									where: (member, { eq }) => eq(member.id, newEmployeeId),
+									with: {
+										user: true
 									}
 								});
 							}
@@ -557,39 +530,51 @@ export const router = createRouter({
 					// Create calendar item
 					if (type === 'BOOKING' && 'serviceId' in input && input.serviceId) {
 						// Create with booking relationship - serviceId is required for bookings
-						calendarItem = await prisma.calendarItem.create({
-							data: {
+						const [createdCalendarItem] = await db
+							.insert(schema.calendarItem)
+							.values({
+								id: crypto.randomUUID(),
 								title: data.title,
 								startTime: data.startTime,
 								endTime: data.endTime,
 								notes: data.notes,
-								type: data.type as CalendarItemType,
-								organization: { connect: { id: input.organizationId } },
-								booking: {
-									create: {
-										status: (data.status as BookingStatus) || 'PENDING',
-										notes: data.notes,
-										serviceId: input.serviceId,
-										employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
-										customerId: null, // This would need to be provided for actual bookings
-										organizationId: input.organizationId,
-										duration: 60 // Default duration, should be calculated from service
-									}
-								}
-							}
-						});
+								type: data.type as schema.CalendarItemTypes,
+								organizationId: input.organizationId,
+								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
+								updatedAt: new Date(),
+								bookingId: crypto.randomUUID()
+							})
+							.returning();
+
+						if (createdCalendarItem) {
+							await db.insert(schema.booking).values({
+								id: createdCalendarItem.bookingId!,
+								status: (data.status as schema.BookingStatuses) || 'PENDING',
+								notes: data.notes,
+								serviceId: input.serviceId,
+								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
+								customerId: null, // This would need to be provided for actual bookings
+								organizationId: input.organizationId,
+								duration: 60 // Default duration, should be calculated from service
+							});
+						}
 					} else {
 						// Create non-booking calendar item or booking without service
-						calendarItem = await prisma.calendarItem.create({
-							data: {
-								title: data.title,
-								startTime: data.startTime,
-								endTime: data.endTime,
-								notes: data.notes,
-								type: data.type as CalendarItemType,
-								organization: { connect: { id: input.organizationId } }
-							}
-						});
+						calendarItem = (
+							await db
+								.insert(schema.calendarItem)
+								.values({
+									id: crypto.randomUUID(),
+									title: data.title,
+									startTime: data.startTime,
+									endTime: data.endTime,
+									notes: data.notes,
+									type: data.type as schema.CalendarItemTypes,
+									organizationId: input.organizationId,
+									updatedAt: new Date()
+								})
+								.returning()
+						)[0];
 					}
 				}
 				return calendarItem;
@@ -608,15 +593,15 @@ export const router = createRouter({
 			}) => {
 				// TODO: Add validation to ensure user is a member of the organization before deleting
 				// Get existing calendar item with booking details
-				const existingItem = await prisma.calendarItem.findUnique({
-					where: { id },
-					include: {
+				const existingItem = await db.query.calendarItem.findFirst({
+					where: (calendarItem, { eq }) => eq(calendarItem.id, id),
+					with: {
 						booking: {
-							include: {
+							with: {
 								customer: true,
 								service: true,
 								employee: {
-									include: {
+									with: {
 										user: true
 									}
 								}
@@ -650,10 +635,10 @@ export const router = createRouter({
 					const organization = await getOrganization(existingItem.organization.id);
 
 					// Update booking status to CANCELLED
-					await prisma.booking.update({
-						where: { id: booking.id },
-						data: { status: BookingStatus.CANCELLED }
-					});
+					await db
+						.update(schema.booking)
+						.set({ status: schema.BookingStatuses.CANCELLED })
+						.where(eq(schema.booking.id, booking.id));
 
 					// Send cancellation email notification to customer
 					if (organization && booking.customer && booking.status !== 'CANCELLED') {
@@ -711,9 +696,7 @@ export const router = createRouter({
 				}
 
 				// Delete the calendar item
-				await prisma.calendarItem.delete({
-					where: { id }
-				});
+				await db.delete(schema.calendarItem).where(eq(schema.calendarItem.id, id));
 
 				return true;
 			}

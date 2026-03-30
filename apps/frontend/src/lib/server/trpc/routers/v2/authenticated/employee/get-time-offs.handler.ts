@@ -1,5 +1,7 @@
+
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
+import { eq, and, desc } from 'drizzle-orm';
 import type { GetTimeOffsInput } from './get-time-offs.schema';
 
 export const getTimeOffsHandler = async ({
@@ -11,12 +13,13 @@ export const getTimeOffsHandler = async ({
 }) => {
 	const { organizationId, memberId } = input;
 
+
 	// Simple check: check if user is member of organization
-	const userMember = await prisma.member.findFirst({
-		where: {
-			organizationId: organizationId,
-			userId: session.user.id
-		}
+	const userMember = await db.query.member.findFirst({
+		where: and(
+			eq(schema.member.organizationId, organizationId),
+			eq(schema.member.userId, session.user.id)
+		)
 	});
 
 	if (!userMember) {
@@ -26,20 +29,25 @@ export const getTimeOffsHandler = async ({
 		});
 	}
 
-	return await prisma.timeOff.findMany({
-		where: {
-			memberId: memberId,
-			member: {
-				organizationId: organizationId
-			}
-		},
-		include: {
-			calendarItem: true
-		},
-		orderBy: {
-			calendarItem: {
-				startTime: 'desc'
-			}
-		}
-	});
+
+	// Get time offs with calendar items, ordered by calendarItem.startTime desc
+	const results = await db
+		.select({
+			timeOff: schema.timeOff,
+			calendarItem: schema.calendarItem
+		})
+		.from(schema.timeOff)
+		.leftJoin(
+			schema.calendarItem,
+			eq(schema.calendarItem.timeOffId, schema.timeOff.id)
+		)
+		.where(
+			and(
+				eq(schema.timeOff.memberId, memberId),
+				eq(schema.calendarItem.organizationId, organizationId)
+			)
+		)
+		.orderBy(desc(schema.calendarItem.startTime));
+
+	return results;
 };

@@ -12,7 +12,7 @@ import { router as calendarRouter } from './calendar/router';
 import { router as userRouter } from './user/router';
 
 export const router = createRouter({
-	ping: privateProcedure.input(z.void()).query(async ({ ctx }) => {
+	ping: privateProcedure.query(async ({ ctx }) => {
 		return true;
 	}),
 

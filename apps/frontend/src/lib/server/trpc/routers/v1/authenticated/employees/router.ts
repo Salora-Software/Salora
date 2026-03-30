@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
+import { eq, and, inArray } from 'drizzle-orm';
 import { convertToLocal, convertToUtc } from '$lib/utils';
 import { env } from '$env/dynamic/private';
+import { randomUUID } from 'node:crypto';
 
 export const router = createRouter({
 	createEmployee: privateProcedure
@@ -27,13 +29,11 @@ export const router = createRouter({
 		)
 		.mutation(async ({ input: { organizationId, name, email, role, sendInvitation } }) => {
 			// get organization
-			const organization = await prisma.organization.findFirst({
-				where: {
-					id: organizationId
-				},
-				include: {
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				with: {
 					members: {
-						include: {
+						with: {
 							user: true
 						}
 					}
@@ -54,30 +54,35 @@ export const router = createRouter({
 					code: 'BAD_REQUEST',
 					message: 'employee_already_exists'
 				});
-			const user = await prisma.user.upsert({
-				where: {
-					email
-				},
-				update: {},
-				create: {
-					id: crypto.randomUUID(),
-					name,
-					email,
-					emailVerified: false,
-					createdAt: new Date(),
-					updatedAt: new Date()
-				}
+			// Upsert user: try to find, else insert
+			let user = await db.query.user.findFirst({
+				where: eq(schema.user.email, email)
 			});
-			const member = await prisma.member.create({
-				data: {
+			if (!user) {
+				const [inserted] = await db
+					.insert(schema.user)
+					.values({
+						id: crypto.randomUUID(),
+						name,
+						email,
+						emailVerified: false,
+						createdAt: new Date(),
+						updatedAt: new Date()
+					})
+					.returning();
+				user = inserted;
+			}
+			const [member] = await db
+				.insert(schema.member)
+				.values({
 					id: crypto.randomUUID(),
 					createdAt: new Date(),
 					userId: user.id,
 					organizationId,
 					role,
 					invitationStatus: sendInvitation ? 'PENDING' : 'ACTIVE'
-				}
-			});
+				})
+				.returning();
 
 			// Send invitation email if requested
 			if (sendInvitation) {
@@ -106,11 +111,9 @@ export const router = createRouter({
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId } }) => {
 			// get organization
-			const organization = await prisma.organization.findFirst({
-				where: {
-					id: organizationId
-				},
-				include: {
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				with: {
 					members: true
 				}
 			});
@@ -119,22 +122,18 @@ export const router = createRouter({
 					code: 'BAD_REQUEST',
 					message: 'organization_not_found'
 				});
-			const member = await prisma.member.findFirst({
-				where: {
-					id: employeeId,
-					organizationId
-				}
+			const member = await db.query.member.findFirst({
+				where: and(
+					eq(schema.member.id, employeeId),
+					eq(schema.member.organizationId, organizationId)
+				)
 			});
 			if (!member)
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'employee_not_found'
 				});
-			await prisma.member.delete({
-				where: {
-					id: employeeId
-				}
-			});
+			await db.delete(schema.member).where(eq(schema.member.id, employeeId));
 			return true;
 		}),
 
@@ -200,11 +199,9 @@ export const router = createRouter({
 				}
 			}) => {
 				// get organization
-				const organization = await prisma.organization.findFirst({
-					where: {
-						id: organizationId
-					},
-					include: {
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
 						members: true
 					}
 				});
@@ -219,42 +216,30 @@ export const router = createRouter({
 						code: 'BAD_REQUEST',
 						message: 'employee_not_found'
 					});
-				await prisma.member.update({
-					where: {
-						id: employeeId
-					},
-					data: {
-						role
-					}
-				});
+				await db.update(schema.member).set({ role }).where(eq(schema.member.id, employeeId));
 				//assign services to the employee
 				if (assignedServices) {
-					//remove all services
-					await prisma.employeeService.deleteMany({
-						where: {
-							memberId: employeeId
-						}
-					});
-					//add the new services
+					// Remove all services
+					await db
+						.delete(schema.employeeService)
+						.where(eq(schema.employeeService.memberId, employeeId));
+					// Add the new services
 					for (let service of assignedServices) {
-						const serviceExists = await prisma.service.findFirst({
-							where: {
-								id: service
-							}
+						const serviceExists = await db.query.service.findFirst({
+							where: eq(schema.service.id, service)
 						});
 						if (serviceExists) {
-							const employeeService = await prisma.employeeService.findFirst({
-								where: {
-									serviceId: service,
-									memberId: employeeId
-								}
+							const employeeService = await db.query.employeeService.findFirst({
+								where: and(
+									eq(schema.employeeService.serviceId, service),
+									eq(schema.employeeService.memberId, employeeId)
+								)
 							});
 							if (!employeeService) {
-								await prisma.employeeService.create({
-									data: {
-										serviceId: service,
-										memberId: employeeId
-									}
+								await db.insert(schema.employeeService).values({
+									id: crypto.randomUUID(),
+									serviceId: service,
+									memberId: employeeId
 								});
 							}
 						}
@@ -275,59 +260,55 @@ export const router = createRouter({
 							message: 'start_time_must_be_before_end_time'
 						});
 				}
-				await prisma.$transaction(async (tx) => {
+				await db.transaction(async (tx) => {
 					// Delete outdated availability (only if removeItems has values)
 					if (removeItems && removeItems.length > 0) {
-						await tx.availability.deleteMany({
-							where: { id: { in: removeItems } }
-						});
+						await tx
+							.delete(schema.availability)
+							.where(inArray(schema.availability.id, removeItems));
 					}
 
 					// Handle availability updates/creates separately
 					for (const time of updatedTimes) {
 						if (time.id) {
 							// Update existing availability
-							await tx.availability.update({
-								where: { id: time.id },
-								data: {
+							await tx
+								.update(schema.availability)
+								.set({
 									dayOfWeek: time.dayOfWeek,
 									startTimeUtc: time.startTimeUtc,
 									endTimeUtc: time.endTimeUtc
-								}
-							});
+								})
+								.where(eq(schema.availability.id, time.id));
 						} else {
 							// Create new availability
-							await tx.availability.create({
-								data: {
-									id: crypto.randomUUID(),
-									dayOfWeek: time.dayOfWeek,
-									startTimeUtc: time.startTimeUtc,
-									endTimeUtc: time.endTimeUtc,
-									memberId: employeeId
-								}
+							await tx.insert(schema.availability).values({
+								id: crypto.randomUUID(),
+								dayOfWeek: time.dayOfWeek,
+								startTimeUtc: time.startTimeUtc,
+								endTimeUtc: time.endTimeUtc,
+								memberId: employeeId
 							});
 						}
 					}
 				});
 
 				// also update the user
-				const user = await prisma.user.update({
-					where: {
-						id: member.userId
-					},
-					data: {
-						name,
-						email
-					}
-				});
-				const fetchedMember = await prisma.member.findFirst({
-					where: {
-						id: employeeId
-					},
-					include: {
-						services: true,
+				const [user] = await db
+					.update(schema.user)
+					.set({ name, email })
+					.where(eq(schema.user.id, member.userId))
+					.returning();
+				const fetchedMember = await db.query.member.findFirst({
+					where: eq(schema.member.id, employeeId),
+					with: {
+						employeeServices: {
+							with: {
+								service: true
+							}
+						},
 						timeOffs: true,
-						availability: true,
+						availabilities: true,
 						user: true
 					}
 				});
@@ -339,11 +320,11 @@ export const router = createRouter({
 				return {
 					...user,
 					...fetchedMember,
-					services: fetchedMember.services.map((service) => service.serviceId),
-					availability: fetchedMember.availability.map((time) => ({
+					services: fetchedMember.employeeServices.map((es) => es.serviceId),
+					availability: fetchedMember.availabilities.map((time) => ({
 						...time,
-						startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
-						endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
+						startTimeLocal: convertToLocal(new Date(time.startTimeUtc), organization.timeZone),
+						endTimeLocal: convertToLocal(new Date(time.endTimeUtc), organization.timeZone)
 					}))
 				};
 			}
@@ -359,9 +340,15 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId, status } }) => {
-			const organization = await prisma.organization.findFirst({
-				where: { id: organizationId },
-				include: { members: { include: { user: true } } }
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				with: {
+					members: {
+						with: {
+							user: true
+						}
+					}
+				}
 			});
 
 			if (!organization) {
@@ -379,10 +366,10 @@ export const router = createRouter({
 				});
 			}
 
-			await prisma.member.update({
-				where: { id: employeeId },
-				data: { invitationStatus: status }
-			});
+			await db
+				.update(schema.member)
+				.set({ invitationStatus: status })
+				.where(eq(schema.member.id, employeeId));
 
 			return true;
 		}),
@@ -396,9 +383,15 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, employeeId } }) => {
-			const organization = await prisma.organization.findFirst({
-				where: { id: organizationId },
-				include: { members: { include: { user: true } } }
+			const organization = await db.query.organization.findFirst({
+				where: eq(schema.organization.id, organizationId),
+				with: {
+					members: {
+						with: {
+							user: true
+						}
+					}
+				}
 			});
 
 			if (!organization) {
@@ -417,10 +410,10 @@ export const router = createRouter({
 			}
 
 			// Update status to pending
-			await prisma.member.update({
-				where: { id: employeeId },
-				data: { invitationStatus: 'PENDING' }
-			});
+			await db
+				.update(schema.member)
+				.set({ invitationStatus: 'PENDING' })
+				.where(eq(schema.member.id, employeeId));
 
 			// Send invitation email
 			try {

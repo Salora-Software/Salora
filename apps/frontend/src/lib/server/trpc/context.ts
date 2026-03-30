@@ -14,43 +14,11 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
-import { env } from '$lib/server/env';
+import { TRUSTED_IPS } from '$env/static/private';
 import { auth } from '../auth';
-import { prisma } from '$lib/server/prisma';
-
-const isWorkerTarget = process.env?.DEPLOY_TARGET === 'worker';
-
-// Lazily load redis dependencies to avoid bundling for Workers
-let redisLimiter: any = null;
-
-(async () => {
-	if (!isWorkerTarget) {
-		try {
-			const { createTrpcRedisLimiter, defaultFingerPrint } = await import('@trpc-limiter/redis');
-			const redisModule = await import('../redis');
-			const redisClient = redisModule.default;
-			
-			if (redisClient) {
-				redisLimiter = createTrpcRedisLimiter({
-					fingerprint: (ctx: any) => defaultFingerPrint(ctx.req),
-					message: () => `too_many_requests`,
-					max: 300,
-					windowMs: 10_000,
-					redisClient
-				});
-			}
-		} catch (e) {
-			console.warn('Redis limiter initialization failed, continuing without rate limiting');
-		}
-	}
-})();
-
-// Fix type to infer correct context
-const t = initTRPC
-	.context<typeof createSvelteKitContext extends (...args: any) => infer R ? R : never>()
-	.create({
-		transformer: SuperJSON
-	});
+import { db } from '@salora/database';
+import { member, customer, user } from '@salora/database/src/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export const createSvelteKitContext =
 	(locals: App.Locals) => (opts: FetchCreateContextFnOptions) => {
@@ -78,18 +46,16 @@ export const createSvelteKitContext =
 			cacheSeconds
 		};
 	};
-// Rate limiter will be initialized asynchronously above
+// Fix type to infer correct context
+const t = initTRPC
+	.context<typeof createSvelteKitContext extends (...args: any) => infer R ? R : never>()
+	.create({
+		transformer: SuperJSON
+	});
+
 export const router = t.router;
 export const publicProcedure = t.procedure.use(async (opts) => {
-	if (!opts.ctx.ip || env?.TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
-		return opts.next();
-	}
-
-	if (!redisLimiter) {
-		return opts.next();
-	}
-
-	return redisLimiter(opts);
+	return opts.next();
 });
 
 export const privateProcedure = publicProcedure
@@ -113,13 +79,13 @@ export const privateProcedure = publicProcedure
 			});
 		if (branchId) {
 			//check if user is part of the branch
-			const member = await prisma.member.findFirst({
-				where: {
-					userId: session.user.id,
-					organizationId: branchId
-				}
-			});
-			if (!member) {
+			const [foundMember] = await db
+				.select()
+				.from(member)
+				.where(and(eq(member.userId, session.user.id), eq(member.organizationId, branchId)))
+				.limit(1);
+
+			if (!foundMember) {
 				throw new TRPCError({
 					code: 'FORBIDDEN',
 					message: 'not_a_member_of_organization'
@@ -151,19 +117,17 @@ export const portalProcedure = t.procedure
 					customer: null
 				}
 			});
-		const customer = await prisma.customer.findFirst({
-			where: {
-				user: {
-					id: session.user.id
-				}
-			}
-		});
+		const [foundCustomer] = await db
+			.select()
+			.from(customer)
+			.where(eq(customer.userId, session.user.id))
+			.limit(1);
 
 		return opts.next({
 			ctx: {
 				...opts.ctx,
 				headers,
-				customer,
+				customer: foundCustomer,
 				session
 			}
 		});

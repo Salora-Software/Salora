@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
 import { convertToLocal, convertToSlug } from '$lib/utils';
 import { deleteImage, uploadImage } from '$lib/server/s3';
+import { eq, exists, and } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 
 export const router = createRouter({
 	updateLogo: privateProcedure
@@ -13,10 +15,10 @@ export const router = createRouter({
 		.mutation(async ({ input: { image, organizationId }, ctx: { headers } }) => {
 			const response = await fetch(image);
 			const imageBlob = await response.blob();
-			const imageId = crypto.randomUUID().replace(/-/g, '');
-			const org = await prisma.organization.findUnique({
-				where: { id: organizationId },
-				select: { logo: true }
+			const imageId = randomUUID().replace(/-/g, '');
+			const org = await db.query.organization.findFirst({
+				where: (org, { eq }) => eq(org.id, organizationId),
+				columns: { logo: true }
 			});
 			if (org?.logo)
 				deleteImage(org.logo[0] === '/' ? org.logo.substring(1) : org.logo).catch((e) => {
@@ -27,14 +29,10 @@ export const router = createRouter({
 				`organizations/${organizationId}/logo_${imageId}.png`
 			);
 
-			await prisma.organization.update({
-				where: {
-					id: organizationId
-				},
-				data: {
-					logo: `/organizations/${organizationId}/logo_${imageId}.png`
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ logo: `/organizations/${organizationId}/logo_${imageId}.png` })
+				.where(eq(schema.organization.id, organizationId));
 			return `/organizations/${organizationId}/logo_${imageId}.png`;
 		}),
 
@@ -47,14 +45,10 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { location, organizationId } }) => {
-			await prisma.organization.update({
-				where: {
-					id: organizationId
-				},
-				data: {
-					location
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ location })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 
@@ -67,14 +61,10 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { website, organizationId } }) => {
-			await prisma.organization.update({
-				where: {
-					id: organizationId
-				},
-				data: {
-					website
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ website })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 
@@ -87,14 +77,10 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { phone, organizationId } }) => {
-			await prisma.organization.update({
-				where: {
-					id: organizationId
-				},
-				data: {
-					phone
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ phone })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 
@@ -107,14 +93,10 @@ export const router = createRouter({
 		)
 		.output(z.boolean())
 		.mutation(async ({ input: { email, organizationId } }) => {
-			await prisma.organization.update({
-				where: {
-					id: organizationId
-				},
-				data: {
-					email
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ email })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 
@@ -183,14 +165,16 @@ export const router = createRouter({
 						message: 'slug_can_not_be_empty'
 					});
 				// check if user already is in a organization. If so throw a error
-				let userOrganization = await prisma.organization.findMany({
-					where: {
-						members: {
-							some: {
-								userId: user.id
-							}
-						}
-					}
+				const userOrganization = await db.query.organization.findMany({
+					where: (org) =>
+						exists(
+							db
+								.select()
+								.from(schema.member)
+								.where(
+									and(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								)
+						)
 				});
 				console.log(userOrganization);
 				if (userOrganization.length >= 5) {
@@ -200,15 +184,11 @@ export const router = createRouter({
 					});
 				}
 				// check if it already exists
-				let organization = await prisma.organization.findFirst({
-					where: {
-						slug
-					},
-					include: {
+				let organization = await db.query.organization.findFirst({
+					where: (org, { eq }) => eq(org.slug, slug),
+					with: {
 						members: {
-							include: {
-								user: true
-							}
+							with: { user: true }
 						},
 						openingTimes: true
 					}
@@ -246,15 +226,11 @@ export const router = createRouter({
 						message: 'organization_not_found'
 					});
 
-				organization = await prisma.organization.findFirst({
-					where: {
-						id: response.id
-					},
-					include: {
+				organization = await db.query.organization.findFirst({
+					where: (org, { eq }) => eq(org.id, response.id),
+					with: {
 						members: {
-							include: {
-								user: true
-							}
+							with: { user: true }
 						},
 						openingTimes: true
 					}
@@ -286,9 +262,9 @@ export const router = createRouter({
 				input: { organizationId, name, location, phone, email, website, timezone },
 				ctx: { session }
 			}) => {
-				await prisma.organization.update({
-					where: { id: organizationId },
-					data: {
+				await db
+					.update(schema.organization)
+					.set({
 						name,
 						slug: convertToSlug(name),
 						location,
@@ -296,8 +272,8 @@ export const router = createRouter({
 						email,
 						website,
 						timeZone: timezone
-					}
-				});
+					})
+					.where(eq(schema.organization.id, organizationId));
 				return true;
 			}
 		),
@@ -305,24 +281,20 @@ export const router = createRouter({
 		.input(z.object({ organizationId: z.string(), step: z.number().min(1) }))
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId, step } }) => {
-			await prisma.organization.update({
-				where: { id: organizationId },
-				data: {
-					onboardingStep: step
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ onboardingStep: step })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 	finishOnboarding: privateProcedure
 		.input(z.object({ organizationId: z.string() }))
 		.output(z.boolean())
 		.mutation(async ({ input: { organizationId }, ctx: { session } }) => {
-			await prisma.organization.update({
-				where: { id: organizationId },
-				data: {
-					onboardingStep: null
-				}
-			});
+			await db
+				.update(schema.organization)
+				.set({ onboardingStep: null })
+				.where(eq(schema.organization.id, organizationId));
 			return true;
 		}),
 
@@ -398,21 +370,19 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				const organizations = await prisma.organization.findMany({
-					where: {
+				const organizations = await db.query.organization.findMany({
+					where: (org) =>
+						exists(
+							db
+								.select()
+								.from(schema.member)
+								.where(
+									and(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								)
+						),
+					with: {
 						members: {
-							some: {
-								userId: user.id
-							}
-						}
-					},
-					include: {
-						members: {
-							include: {
-								user: true,
-								availability: true,
-								services: true
-							}
+							with: { user: true, availabilities: true, employeeServices: true }
 						},
 						openingTimes: true,
 						services: true
@@ -425,22 +395,25 @@ export const router = createRouter({
 							...organization,
 							openingTimes: organization.openingTimes.map((time) => ({
 								...time,
-								startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
-								endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
+								startTimeLocal: convertToLocal(new Date(time.startTimeUtc), organization.timeZone),
+								endTimeLocal: convertToLocal(new Date(time.endTimeUtc), organization.timeZone)
 							})),
 							members: organization.members.map((member) => ({
 								...member,
-								availability: member.availability.map((time) => ({
+								availability: member.availabilities.map((time) => ({
 									...time,
-									startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
-									endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
+									startTimeLocal: convertToLocal(
+										new Date(time.startTimeUtc),
+										organization.timeZone
+									),
+									endTimeLocal: convertToLocal(new Date(time.endTimeUtc), organization.timeZone)
 								})),
-								services: member.services.map((service) => service.serviceId)
+								services: member.employeeServices.map((service) => service.serviceId)
 							})),
 							active: false
 						};
 					})
-					.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+					.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 			}
 		)
 });

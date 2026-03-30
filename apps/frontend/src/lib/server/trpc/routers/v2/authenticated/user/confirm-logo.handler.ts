@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { deleteImage, validateUploadedFileSize } from '$lib/server/s3';
 import type { ConfirmLogoUploadInput } from './confirm-logo.schema';
 
@@ -25,9 +25,9 @@ export const confirmLogoUploadHandler = async ({
 	}
 
 	// Get current image to delete it
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { image: true }
+	const user = await db.query.user.findFirst({
+		where: (user, { eq }) => eq(user.id, userId),
+		columns: { image: true }
 	});
 
 	// Delete old image if it exists
@@ -38,10 +38,9 @@ export const confirmLogoUploadHandler = async ({
 	}
 
 	// Update user with new image path
-	await prisma.user.update({
-		where: { id: userId },
-		data: { image: `/${imageKey}` }
-	});
+	await db.update(schema.user)
+		.set({ image: `/${imageKey}` })
+		.where(schema.user.id.eq(userId));
 
 	return `/${imageKey}`;
 };

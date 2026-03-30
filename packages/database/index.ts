@@ -1,3 +1,2 @@
-export * from "./prisma/generated/prisma/client";
-export { createClient, prisma } from "./src/node";
-export type WorkerDatabaseBinding = unknown;
+export * from "./src/client";
+export * as schema from "./src/db/schema";

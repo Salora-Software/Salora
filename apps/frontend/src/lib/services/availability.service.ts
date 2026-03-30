@@ -1,17 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { prisma } from '$lib/server/prisma';
+import { db } from '@salora/database';
+import {
+	organization as organizationTable,
+	service as serviceTable,
+	employeeService as employeeServiceTable
+} from '@salora/database/src/db/schema';
+import { eq, and, gt, lt } from 'drizzle-orm';
 import {
 	mapToBlockedPeriods,
 	IntervalUtils,
 	type BlockedPeriod,
 	ConfiguredEngine
 } from '@salora/scheduler';
-import type { Prisma } from '@salora/database';
 
 // 1. Datum-helper geïsoleerd
 export const getIntervalsForDate = (
-	shifts: { dayOfWeek: number; startTimeUtc: Date; endTimeUtc: Date }[],
+	shifts: { dayOfWeek: number; startTimeUtc: string | Date; endTimeUtc: string | Date }[],
 	date: DateTime,
 	timeZone: string
 ) => {
@@ -19,8 +24,10 @@ export const getIntervalsForDate = (
 	return shifts
 		.filter((s) => s.dayOfWeek === targetWeekday)
 		.map((s) => {
-			const sStart = DateTime.fromJSDate(s.startTimeUtc, { zone: 'UTC' }).setZone(timeZone);
-			const sEnd = DateTime.fromJSDate(s.endTimeUtc, { zone: 'UTC' }).setZone(timeZone);
+			const sStart = DateTime.fromJSDate(new Date(s.startTimeUtc), { zone: 'UTC' }).setZone(
+				timeZone
+			);
+			const sEnd = DateTime.fromJSDate(new Date(s.endTimeUtc), { zone: 'UTC' }).setZone(timeZone);
 			return Interval.fromDateTimes(
 				date.set({ hour: sStart.hour, minute: sStart.minute }),
 				date.set({ hour: sEnd.hour, minute: sEnd.minute })
@@ -36,12 +43,12 @@ export const fetchBookingData = async (
 	searchSpan: Interval
 ) => {
 	const [organization, service] = await Promise.all([
-		prisma.organization.findUnique({
-			where: { id: branchId },
-			include: { openingTimes: true }
+		db.query.organization.findFirst({
+			where: eq(organizationTable.id, branchId),
+			with: { openingTimes: true }
 		}),
-		prisma.service.findUnique({
-			where: { id: serviceId }
+		db.query.service.findFirst({
+			where: eq(serviceTable.id, serviceId)
 		})
 	]);
 
@@ -49,31 +56,31 @@ export const fetchBookingData = async (
 		throw new TRPCError({ code: 'NOT_FOUND', message: 'Organisatie of dienst niet gevonden' });
 	}
 
-	const employees = await prisma.employeeService.findMany({
-		where: { serviceId },
-		include: {
+	const employees = (await db.query.employeeService.findMany({
+		where: eq(employeeServiceTable.serviceId, serviceId),
+		with: {
 			member: {
-				include: {
+				with: {
 					availability: true,
 					calendarItems: {
-						where: {
-							startTime: { lt: searchSpan.end?.toJSDate() },
-							endTime: { gt: searchSpan.start?.toJSDate() }
-						}
+						// Using where closure for dates (assuming string format in SQLite)
+						where: (items, { and, lt, gt }) =>
+							and(
+								lt(items.startTime, searchSpan.end!.toJSDate()),
+								gt(items.endTime, searchSpan.start!.toJSDate())
+							)
 					}
 				}
 			}
 		}
-	});
+	})) as any[];
 
 	return { organization, service, employees };
 };
 
 // 3. Logica per medewerker geïsoleerd
 export const calculateEmployeeSlots = (
-	employees: Prisma.EmployeeServiceGetPayload<{
-		include: { member: { include: { availability: true; calendarItems: true } } };
-	}>[],
+	employees: any[],
 	engine: ConfiguredEngine<any>,
 	searchSpan: Interval,
 	orgIntervals: Interval[],
@@ -93,18 +100,21 @@ export const calculateEmployeeSlots = (
 			metadata: { type: 'UNAVAILABLE' }
 		}));
 
+		const calendarItems = member.calendarItems.map((item: any) => ({
+			...item,
+			startTime: item.startTime,
+			endTime: item.endTime
+		}));
+
 		const { intervals } = engine.getAvailableSlots({
 			searchSpan,
-			blockedPeriods: [
-				...unavailabilityBlocks,
-				...mapToBlockedPeriods(member.calendarItems, 'type')
-			]
+			blockedPeriods: [...unavailabilityBlocks, ...mapToBlockedPeriods(calendarItems, 'type')]
 		});
 
 		return {
 			employeeId: member.id,
 			intervals,
-			calendarItems: mapToBlockedPeriods(member.calendarItems, 'type').flatMap((b) => b.interval)
+			calendarItems: mapToBlockedPeriods(calendarItems, 'type').flatMap((b) => b.interval)
 		};
 	});
 };

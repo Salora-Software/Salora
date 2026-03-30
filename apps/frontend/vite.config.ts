@@ -44,5 +44,8 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		exclude: ['fingerprint'] // exclude your package from optimization
+	},
+	ssr: {
+		external: ['@libsql/client']
 	}
 }); //

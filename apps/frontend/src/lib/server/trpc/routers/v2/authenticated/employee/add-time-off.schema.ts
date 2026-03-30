@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TimeOffType } from '@salora/database';
+import { schema } from '@salora/database';
 
 export const addTimeOffSchema = z.object({
 	organizationId: z.string(),
@@ -7,7 +7,7 @@ export const addTimeOffSchema = z.object({
 	startTime: z.coerce.date(),
 	endTime: z.coerce.date(),
 	reason: z.string().optional(),
-	type: z.nativeEnum(TimeOffType).default(TimeOffType.LEAVE)
+	type: z.nativeEnum(schema.TimeOffTypes).default(schema.TimeOffTypes.LEAVE)
 });
 
 export type AddTimeOffInput = z.infer<typeof addTimeOffSchema>;

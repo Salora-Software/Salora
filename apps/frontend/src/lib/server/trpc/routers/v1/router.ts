@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { router as createRouter, publicProcedure } from '../../context';
 import { router as authenticatedRouter } from './authenticated/router';
+import { eq } from 'drizzle-orm';
 import { router as protectedRouter } from './protected/router';
-import { prisma } from '$lib/server/prisma';
+import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { CalendarDate } from '@internationalized/date';
-import { convertToLocal, generateTimeSlots } from '$lib/utils';
-import type { OpeningTime, TimeSlot } from '$lib/types';
+
 import {
 	transformTimeSlots,
 	generateEmployeesTimeSlots,
@@ -65,40 +65,52 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { id } }) => {
-			let branch = await prisma.organization
-				.findFirst({
-					where: {
-						id
-					},
-					include: {
-						services: true,
-						members: {
-							include: {
-								user: true
-							}
-						}
-					}
+			const orgRows = await db
+				.select({
+					organization: schema.organization,
+					service: schema.service,
+					member: schema.member,
+					user: schema.user
 				})
-				.then((branch) => {
-					if (!branch) {
-						return;
-					}
-					return {
-						...branch,
-						members: branch?.members.map((member) => {
-							return {
-								...member.user,
-								...member
-							};
-						})
-					};
-				});
-			if (!branch) {
+				.from(schema.organization)
+				.leftJoin(schema.service, eq(schema.service.organizationId, schema.organization.id))
+				.leftJoin(schema.member, eq(schema.member.organizationId, schema.organization.id))
+				.leftJoin(schema.user, eq(schema.user.id, schema.member.userId))
+				.where(eq(schema.organization.id, id));
+
+			if (!orgRows.length || !orgRows[0].organization) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'branch_not_found'
 				});
 			}
+
+			// Flatten and group services and members
+			const org = orgRows[0].organization;
+			const servicesMap = new Map();
+			const membersMap = new Map();
+
+			for (const row of orgRows) {
+				if (row.service && row.service.id) {
+					servicesMap.set(row.service.id, row.service);
+				}
+				if (row.member && row.member.id) {
+					const memberId = row.member.id;
+					if (!membersMap.has(memberId)) {
+						membersMap.set(memberId, {
+							...row.member,
+							user: row.user && row.user.id ? row.user : null
+						});
+					}
+				}
+			}
+
+			const branch = {
+				...org,
+				services: Array.from(servicesMap.values()),
+				members: Array.from(membersMap.values())
+			};
+
 			//sort branch.services by sortingIndex
 			branch.services = branch.services.sort((a, b) => {
 				if (a.sortingIndex === null && b.sortingIndex === null) {

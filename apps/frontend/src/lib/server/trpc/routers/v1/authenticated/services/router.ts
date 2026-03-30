@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -30,6 +30,7 @@ export const router = createRouter({
 		)
 		.mutation(
 			async ({
+				ctx: { db },
 				input: { organizationId, name, employees, duration, price, visible, sortingIndex }
 			}) => {
 				// get organization
@@ -98,7 +99,7 @@ export const router = createRouter({
 				})
 			)
 		)
-		.query(async ({ input: { organizationId } }) => {
+		.query(async ({ ctx: { db }, input: { organizationId } }) => {
 			const services = await db.query.service.findMany({
 				where: eq(schema.service.organizationId, organizationId),
 				with: {
@@ -151,6 +152,7 @@ export const router = createRouter({
 		)
 		.mutation(
 			async ({
+				ctx: { db },
 				input: {
 					organizationId,
 					serviceId,
@@ -238,6 +240,7 @@ export const router = createRouter({
 			async ({
 				input: { serviceId, organizationId },
 				ctx: {
+					db,
 					session: { user }
 				}
 			}) => {
@@ -303,7 +306,10 @@ export const router = createRouter({
 			})
 		)
 		.mutation(
-			async ({ input: { organizationId, name, services, price, visible, sortingIndex } }) => {
+			async ({
+				ctx: { db },
+				input: { organizationId, name, services, price, visible, sortingIndex }
+			}) => {
 				// get organization
 				const organization = await db.query.organization.findFirst({
 					where: eq(schema.organization.id, organizationId),
@@ -371,7 +377,7 @@ export const router = createRouter({
 				})
 			)
 		)
-		.query(async ({ input: { organizationId } }) => {
+		.query(async ({ ctx: { db }, input: { organizationId } }) => {
 			const packages = await db.query.packageItem.findMany({
 				where: eq(schema.packageItem.organizationId, organizationId),
 				with: {
@@ -418,10 +424,8 @@ export const router = createRouter({
 		)
 		.mutation(
 			async ({
-				input: { organizationId, packageId, name, services, price, visible, sortingIndex },
-				ctx: {
-					session: { user }
-				}
+				ctx: { db, session },
+				input: { organizationId, packageId, name, services, price, visible, sortingIndex }
 			}) => {
 				// get organization
 				const organization = await db.query.organization.findFirst({
@@ -438,7 +442,7 @@ export const router = createRouter({
 						message: 'organization_not_found'
 					});
 
-				if (!organization.members.find((member) => member.userId === user.id))
+				if (!organization.members.find((member) => member.userId === session.user.id))
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_member_not_found'
@@ -500,6 +504,7 @@ export const router = createRouter({
 			async ({
 				input: { packageId, organizationId },
 				ctx: {
+					db,
 					session: { user }
 				}
 			}) => {

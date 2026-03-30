@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
-import { auth } from '$lib/server/auth';
 import { convertToLocal, convertToSlug } from '$lib/utils';
 import { deleteImage, uploadImage } from '$lib/server/s3';
 import { eq, exists, and } from 'drizzle-orm';
@@ -12,7 +11,7 @@ export const router = createRouter({
 	updateLogo: privateProcedure
 		.input(z.object({ image: z.string().url(), organizationId: z.string() }))
 		.output(z.string())
-		.mutation(async ({ input: { image, organizationId }, ctx: { headers } }) => {
+		.mutation(async ({ input: { image, organizationId }, ctx: { headers, db } }) => {
 			const response = await fetch(image);
 			const imageBlob = await response.blob();
 			const imageId = randomUUID().replace(/-/g, '');
@@ -44,7 +43,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { location, organizationId } }) => {
+		.mutation(async ({ input: { location, organizationId }, ctx: { db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ location })
@@ -60,7 +59,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { website, organizationId } }) => {
+		.mutation(async ({ input: { website, organizationId }, ctx: { db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ website })
@@ -76,7 +75,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { phone, organizationId } }) => {
+		.mutation(async ({ input: { phone, organizationId }, ctx: { db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ phone })
@@ -92,7 +91,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { email, organizationId } }) => {
+		.mutation(async ({ input: { email, organizationId }, ctx: { db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ email })
@@ -155,7 +154,9 @@ export const router = createRouter({
 				input,
 				ctx: {
 					session: { user },
-					headers
+					headers,
+					db,
+					auth
 				}
 			}) => {
 				const slug = convertToSlug(input.name);
@@ -260,7 +261,7 @@ export const router = createRouter({
 		.mutation(
 			async ({
 				input: { organizationId, name, location, phone, email, website, timezone },
-				ctx: { session }
+				ctx: { session, db }
 			}) => {
 				await db
 					.update(schema.organization)
@@ -280,7 +281,7 @@ export const router = createRouter({
 	updateOnboardingStep: privateProcedure
 		.input(z.object({ organizationId: z.string(), step: z.number().min(1) }))
 		.output(z.boolean())
-		.mutation(async ({ input: { organizationId, step } }) => {
+		.mutation(async ({ input: { organizationId, step }, ctx: { db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ onboardingStep: step })
@@ -290,7 +291,7 @@ export const router = createRouter({
 	finishOnboarding: privateProcedure
 		.input(z.object({ organizationId: z.string() }))
 		.output(z.boolean())
-		.mutation(async ({ input: { organizationId }, ctx: { session } }) => {
+		.mutation(async ({ input: { organizationId }, ctx: { session, db } }) => {
 			await db
 				.update(schema.organization)
 				.set({ onboardingStep: null })
@@ -367,7 +368,8 @@ export const router = createRouter({
 		.query(
 			async ({
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				const organizations = await db.query.organization.findMany({

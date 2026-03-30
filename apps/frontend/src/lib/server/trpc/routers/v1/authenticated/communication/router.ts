@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure, publicProcedure } from '../../../../context';
 import { TRPCError } from '@trpc/server';
-import { auth } from '$lib/server/auth';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
 import {
 	MAIL_FALLBACK_PASSWORD,
@@ -17,7 +16,7 @@ import { env } from '$env/dynamic/private';
 export const router = createRouter({
 	getTemplates: privateProcedure
 		.input(z.object({ organizationId: z.string() }))
-		.query(async ({ ctx, input }) => {
+		.query(async ({ ctx: { db }, input }) => {
 			const templates = await db
 				.select()
 				.from(schema.template)
@@ -33,7 +32,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.any())
-		.mutation(async ({ ctx, input }) => {
+		.mutation(async ({ ctx: { db, session }, input }) => {
 			const updated = await db
 				.update(schema.template)
 				.set({ enabled: input.enabled ? 1 : 0 })
@@ -41,7 +40,7 @@ export const router = createRouter({
 					and(
 						eq(schema.template.type, input.type),
 						eq(schema.template.target, input.target),
-						eq(schema.template.organizationId, ctx.session.session.activeOrganizationId!)
+						eq(schema.template.organizationId, session.session.activeOrganizationId!)
 					)
 				)
 				.returning();
@@ -63,9 +62,9 @@ export const router = createRouter({
 			})
 		)
 		.output(z.any())
-		.mutation(async ({ ctx, input }) => {
+		.mutation(async ({ ctx: { db, session }, input }) => {
 			// Upsert template by (type, target, organizationId)
-			const orgId = ctx.session.session.activeOrganizationId!;
+			const orgId = session.session.activeOrganizationId!;
 			const upserted = await db
 				.insert(schema.template)
 				.values({
@@ -97,8 +96,8 @@ export const router = createRouter({
 			})
 		)
 		.output(z.any())
-		.mutation(async ({ ctx, input }) => {
-			const organizationId = ctx.session.session.activeOrganizationId;
+		.mutation(async ({ ctx: { db, session }, input }) => {
+			const organizationId = session.session.activeOrganizationId;
 			// Drizzle: get organization and members (no include, need two queries)
 			let branch = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId!)
@@ -208,8 +207,8 @@ export const router = createRouter({
 			)
 		)
 		//@ts-ignore
-		.query(async ({ ctx }) => {
-			const organizationId = ctx.session.session.activeOrganizationId!;
+		.query(async ({ ctx: { db, session } }) => {
+			const organizationId = session.session.activeOrganizationId!;
 			const communications = await db
 				.select()
 				.from(schema.communicationSetting)
@@ -275,10 +274,10 @@ export const router = createRouter({
 			})
 		)
 		.output(z.any())
-		.mutation(async ({ input, ctx }) => {
+		.mutation(async ({ input, ctx: { db, session } }) => {
 			//use upsert and also use transactional so if 1 fails, all fail
 			// Drizzle transaction for bulk upsert
-			const orgId2 = ctx.session.session.activeOrganizationId!;
+			const orgId2 = session.session.activeOrganizationId!;
 			const results = await db.transaction(async (trx) => {
 				const upserts = await Promise.all(
 					input.communications.map(async (communication) => {

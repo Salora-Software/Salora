@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
@@ -13,8 +12,8 @@ export const router = createRouter({
 				endDate: z.string().optional()
 			})
 		)
-		.query(async ({ ctx, input }) => {
-			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;
+		.query(async ({ ctx: { db, session }, input }) => {
+			const organizationId = input?.organizationId || session.session.activeOrganizationId;
 			let branch = await db.query.organization.findFirst({
 				where: (org, { eq }) => eq(org.id, organizationId!),
 				with: {
@@ -107,8 +106,8 @@ export const router = createRouter({
 				endDate: z.string().optional()
 			})
 		)
-		.query(async ({ ctx, input }) => {
-			const organizationId = input?.organizationId || ctx.session.session.activeOrganizationId;
+		.query(async ({ ctx: { db, session }, input }) => {
+			const organizationId = input?.organizationId || session.session.activeOrganizationId;
 			let branch = await db.query.organization.findFirst({
 				where: (org, { eq }) => eq(org.id, organizationId!)
 			});

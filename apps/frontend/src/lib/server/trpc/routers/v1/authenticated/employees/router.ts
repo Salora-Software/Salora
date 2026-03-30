@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { eq, and, inArray } from 'drizzle-orm';
 import { convertToLocal, convertToUtc } from '$lib/utils';
@@ -27,79 +27,81 @@ export const router = createRouter({
 				invitationStatus: z.string()
 			})
 		)
-		.mutation(async ({ input: { organizationId, name, email, role, sendInvitation } }) => {
-			// get organization
-			const organization = await db.query.organization.findFirst({
-				where: eq(schema.organization.id, organizationId),
-				with: {
-					members: {
-						with: {
-							user: true
+		.mutation(
+			async ({ ctx: { db }, input: { organizationId, name, email, role, sendInvitation } }) => {
+				// get organization
+				const organization = await db.query.organization.findFirst({
+					where: eq(schema.organization.id, organizationId),
+					with: {
+						members: {
+							with: {
+								user: true
+							}
 						}
 					}
+				});
+				if (!organization)
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'organization_not_found'
+					});
+				if (organization.maxMembers && organization.members.length >= organization.maxMembers)
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'max_members_reached'
+					});
+				if (organization.members.find((member) => member.user.email === email))
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'employee_already_exists'
+					});
+				// Upsert user: try to find, else insert
+				let user = await db.query.user.findFirst({
+					where: eq(schema.user.email, email)
+				});
+				if (!user) {
+					const [inserted] = await db
+						.insert(schema.user)
+						.values({
+							id: crypto.randomUUID(),
+							name,
+							email,
+							emailVerified: false,
+							createdAt: new Date(),
+							updatedAt: new Date()
+						})
+						.returning();
+					user = inserted;
 				}
-			});
-			if (!organization)
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'organization_not_found'
-				});
-			if (organization.maxMembers && organization.members.length >= organization.maxMembers)
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'max_members_reached'
-				});
-			if (organization.members.find((member) => member.user.email === email))
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'employee_already_exists'
-				});
-			// Upsert user: try to find, else insert
-			let user = await db.query.user.findFirst({
-				where: eq(schema.user.email, email)
-			});
-			if (!user) {
-				const [inserted] = await db
-					.insert(schema.user)
+				const [member] = await db
+					.insert(schema.member)
 					.values({
 						id: crypto.randomUUID(),
-						name,
-						email,
-						emailVerified: false,
 						createdAt: new Date(),
-						updatedAt: new Date()
+						userId: user.id,
+						organizationId,
+						role,
+						invitationStatus: sendInvitation ? 'PENDING' : 'ACTIVE'
 					})
 					.returning();
-				user = inserted;
-			}
-			const [member] = await db
-				.insert(schema.member)
-				.values({
-					id: crypto.randomUUID(),
-					createdAt: new Date(),
-					userId: user.id,
-					organizationId,
-					role,
-					invitationStatus: sendInvitation ? 'PENDING' : 'ACTIVE'
-				})
-				.returning();
 
-			// Send invitation email if requested
-			if (sendInvitation) {
-				try {
-					await sendInvitationEmail(organization, user, role);
-				} catch (error) {
-					console.error('Failed to send invitation email:', error);
-					// Don't fail the entire operation if email fails
+				// Send invitation email if requested
+				if (sendInvitation) {
+					try {
+						await sendInvitationEmail(organization, user, role);
+					} catch (error) {
+						console.error('Failed to send invitation email:', error);
+						// Don't fail the entire operation if email fails
+					}
 				}
-			}
 
-			return {
-				...user,
-				...member,
-				invitationStatus: member.invitationStatus
-			};
-		}),
+				return {
+					...user,
+					...member,
+					invitationStatus: member.invitationStatus
+				};
+			}
+		),
 
 	removeEmployee: privateProcedure
 		.input(
@@ -109,7 +111,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { organizationId, employeeId } }) => {
+		.mutation(async ({ ctx: { db }, input: { organizationId, employeeId } }) => {
 			// get organization
 			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId),
@@ -187,6 +189,7 @@ export const router = createRouter({
 		)
 		.mutation(
 			async ({
+				ctx: { db },
 				input: {
 					organizationId,
 					employeeId,
@@ -339,7 +342,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { organizationId, employeeId, status } }) => {
+		.mutation(async ({ ctx: { db }, input: { organizationId, employeeId, status } }) => {
 			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId),
 				with: {
@@ -382,7 +385,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.boolean())
-		.mutation(async ({ input: { organizationId, employeeId } }) => {
+		.mutation(async ({ ctx: { db }, input: { organizationId, employeeId } }) => {
 			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId),
 				with: {

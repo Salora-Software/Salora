@@ -7,6 +7,7 @@ import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general'
 import { notificationService } from '$lib/server/NotificationService';
 
 import { DateTime, Interval } from 'luxon';
+import { eq } from 'drizzle-orm';
 
 // Utility: Given a range and an array of open intervals, return the complement (closed intervals) within the range
 function getClosedIntervals(range: Interval, openIntervals: Interval[]): Interval[] {
@@ -52,7 +53,6 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-
 				// Get existing calendar item with booking details for comparison
 				const existingItem = await db.query.calendarItem.findFirst({
 					where: (calendarItem, { eq }) => eq(calendarItem.id, id),
@@ -90,12 +90,12 @@ export const router = createRouter({
 					}
 				}
 
-
 				const timeChanged =
 					new Date(existingItem.startTime).getTime() !== startTime.getTime() ||
 					new Date(existingItem.endTime).getTime() !== endTime.getTime();
 
-				await db.update(schema.calendarItem)
+				await db
+					.update(schema.calendarItem)
 					.set({ startTime, endTime })
 					.where(eq(schema.calendarItem.id, id));
 
@@ -352,24 +352,33 @@ export const router = createRouter({
 						type === 'BOOKING' && 'memberId' in input ? input.memberId : undefined;
 					const memberChanged = oldEmployeeId !== newEmployeeId;
 
-					await db.update(schema.calendarItem)
+					await db
+						.update(schema.calendarItem)
 						.set({
 							title: data.title,
 							startTime: data.startTime,
 							endTime: data.endTime,
-							memberId: type === 'BOOKING' && 'memberId' in input && input.memberId ? input.memberId : undefined,
+							employeeId:
+								type === 'BOOKING' && 'memberId' in input && input.memberId
+									? input.memberId
+									: undefined,
 							notes: data.notes,
 							type: data.type as CalendarItemType
 						})
 						.where(eq(schema.calendarItem.id, id));
 
 					if (type === 'BOOKING' && existingItem?.booking) {
-						await db.update(schema.booking)
+						await db
+							.update(schema.booking)
 							.set({
 								status: data.status as BookingStatus,
 								notes: data.notes,
-								...(type === 'BOOKING' && 'serviceId' in input && input.serviceId ? { serviceId: input.serviceId } : {}),
-								...(type === 'BOOKING' && 'memberId' in input && input.memberId ? { employeeId: input.memberId } : {})
+								...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
+									? { serviceId: input.serviceId }
+									: {}),
+								...(type === 'BOOKING' && 'memberId' in input && input.memberId
+									? { employeeId: input.memberId }
+									: {})
 							})
 							.where(eq(schema.booking.id, existingItem.booking.id));
 					}
@@ -549,17 +558,19 @@ export const router = createRouter({
 						}
 					} else {
 						// Create non-booking calendar item or booking without service
-						calendarItem = (await db
-							.insert(schema.calendarItem)
-							.values({
-								title: data.title,
-								startTime: data.startTime,
-								endTime: data.endTime,
-								notes: data.notes,
-								type: data.type as CalendarItemType,
-								organizationId: input.organizationId
-							})
-							.returning())[0];
+						calendarItem = (
+							await db
+								.insert(schema.calendarItem)
+								.values({
+									title: data.title,
+									startTime: data.startTime,
+									endTime: data.endTime,
+									notes: data.notes,
+									type: data.type as CalendarItemType,
+									organizationId: input.organizationId
+								})
+								.returning()
+						)[0];
 					}
 				}
 				return calendarItem;
@@ -620,7 +631,8 @@ export const router = createRouter({
 					const organization = await getOrganization(existingItem.organization.id);
 
 					// Update booking status to CANCELLED
-					await db.update(schema.booking)
+					await db
+						.update(schema.booking)
 						.set({ status: BookingStatus.CANCELLED })
 						.where(eq(schema.booking.id, booking.id));
 
@@ -680,8 +692,7 @@ export const router = createRouter({
 				}
 
 				// Delete the calendar item
-				await db.delete(schema.calendarItem)
-					.where(eq(schema.calendarItem.id, id));
+				await db.delete(schema.calendarItem).where(eq(schema.calendarItem.id, id));
 
 				return true;
 			}

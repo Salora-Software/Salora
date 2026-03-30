@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { router as createRouter, publicProcedure } from '../../context';
 import { router as authenticatedRouter } from './authenticated/router';
+import { eq } from 'drizzle-orm';
 import { router as protectedRouter } from './protected/router';
 import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
 import { CalendarDate } from '@internationalized/date';
-import { convertToLocal, generateTimeSlots } from '$lib/utils';
-import type { OpeningTime, TimeSlot } from '$lib/types';
+
 import {
 	transformTimeSlots,
 	generateEmployeesTimeSlots,
@@ -65,8 +65,6 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { id } }) => {
-			import { eq } from 'drizzle-orm';
-
 			const orgRows = await db
 				.select({
 					organization: schema.organization,

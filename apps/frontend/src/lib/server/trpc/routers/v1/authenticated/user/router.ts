@@ -27,7 +27,8 @@ export const router = createRouter({
 				const imageurl = await uploadImage(imageBlob, `users/${user.id}/profile_${imageId}.png`);
 
 				//save the image in the database
-				await db.update(schema.user)
+				await db
+					.update(schema.user)
 					.set({ image: `/users/${user.id}/profile_${imageId}.png` })
 					.where(eq(schema.user.id, user.id));
 				return `/users/${user.id}/profile_${imageId}.png`;
@@ -89,9 +90,7 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				await db.update(schema.user)
-					.set({ name })
-					.where(eq(schema.user.id, user.id));
+				await db.update(schema.user).set({ name }).where(eq(schema.user.id, user.id));
 				return true;
 			}
 		),
@@ -110,7 +109,8 @@ export const router = createRouter({
 					session: { user }
 				}
 			}) => {
-				await db.update(schema.user)
+				await db
+					.update(schema.user)
 					.set({ email, emailVerified: false })
 					.where(eq(schema.user.id, user.id));
 				return true;

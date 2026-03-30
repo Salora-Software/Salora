@@ -1,13 +1,12 @@
 import { TRPCError } from '@trpc/server';
-import { prisma } from './prisma';
-import { convertToLocal, generateTimeSlots } from '$lib/utils';
-import type { OpeningTime, TimeSlot, TimeSlotV2 } from '$lib/types';
-import { CalendarDate } from '@internationalized/date';
+import { db } from '@salora/database';
 import { DateTime, Duration, Interval } from 'luxon';
+
+export type Branch = Awaited<ReturnType<typeof getOrganization>>;
 
 // Returns the availability intervals for a single employee within the allowed booking window
 export function getEmployeeAvailabilityV2(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
+	branch: Branch,
 	employeeId: string,
 	intervalRange: Interval,
 	includeBooked: boolean = true
@@ -27,10 +26,10 @@ export function getEmployeeAvailabilityV2(
 	let current = intervalRange.start.startOf('day');
 	while (current <= intervalRange.end) {
 		const weekday = current.weekday; // 1 = Monday, 7 = Sunday
-		const availabilities = member.availability.filter((a) => a.dayOfWeek === weekday);
+		const availabilities = member.availabilities.filter((a) => a.dayOfWeek === weekday);
 		for (const avail of availabilities) {
-			const refStart = DateTime.fromJSDate(avail.startTimeUtc, { zone: branch.timeZone });
-			const refEnd = DateTime.fromJSDate(avail.endTimeUtc, { zone: branch.timeZone });
+			const refStart = DateTime.fromJSDate(new Date(avail.startTimeUtc), { zone: branch.timeZone });
+			const refEnd = DateTime.fromJSDate(new Date(avail.endTimeUtc), { zone: branch.timeZone });
 			const start = current.setZone(branch.timeZone).set({
 				hour: refStart.hour,
 				minute: refStart.minute,
@@ -81,7 +80,7 @@ export function getEmployeeAvailabilityV2(
 }
 
 export function generateTimeSlotsForEmployeesV2(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
+	branch: Branch,
 	service: { duration: number },
 	employeeIds: string[],
 	intervalRange: Interval
@@ -126,23 +125,23 @@ export function generateTimeSlotsForEmployeesV2(
 	return { openingTimes, openingTimesTimeSlots, availabilityMap };
 }
 export async function getOrganization(id: string) {
-	const organization = await prisma.organization.findFirst({
-		where: {
-			id
-		},
-		include: {
+	const organization = await db.query.organization.findFirst({
+		where: (table, { eq }) => eq(table.id, id),
+		with: {
 			services: true,
 			openingTimes: true,
 			members: {
-				include: {
-					availability: true,
-					services: true,
+				with: {
+					organization: true,
+					availabilities: true,
+					employeeServices: true,
 					calendarItems: true,
 					user: true
 				}
 			}
 		}
 	});
+
 	if (!organization) {
 		throw new TRPCError({
 			code: 'NOT_FOUND',
@@ -151,10 +150,7 @@ export async function getOrganization(id: string) {
 	}
 	return organization;
 }
-export function getEmployees(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
-	employeeIds: string[] = []
-) {
+export function getEmployees(branch: Branch, employeeIds: string[] = []) {
 	const employees = branch.members.filter((member) => {
 		if (employeeIds.length === 0) return true;
 		return employeeIds.includes(member.id);
@@ -167,7 +163,7 @@ export function getEmployees(
 	}
 	return employees;
 }
-export function getOpeningTimes(branch: Awaited<ReturnType<typeof getOrganization>>) {
+export function getOpeningTimes(branch: Branch) {
 	const openingTimes = branch.openingTimes;
 	if (!openingTimes) {
 		throw new TRPCError({
@@ -178,7 +174,7 @@ export function getOpeningTimes(branch: Awaited<ReturnType<typeof getOrganizatio
 	return openingTimes;
 }
 export function getBookingsForEmployee(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
+	branch: Branch,
 	employeeId: string,
 	dateStart?: DateTime,
 	dateEnd?: DateTime
@@ -187,10 +183,10 @@ export function getBookingsForEmployee(
 		if (employee.id === employeeId) {
 			return employee.calendarItems
 				.map((item) => {
-					const start = DateTime.fromJSDate(item.startTime, {
+					const start = DateTime.fromJSDate(new Date(item.startTime), {
 						zone: branch.timeZone
 					});
-					const end = DateTime.fromJSDate(item.endTime, {
+					const end = DateTime.fromJSDate(new Date(item.endTime), {
 						zone: branch.timeZone
 					});
 					if (dateStart && dateEnd) {
@@ -224,7 +220,7 @@ export function subtractIntervals(source: Interval[], toRemove: Interval[]): Int
 	return result;
 }
 export function getBookingsForEmployeeV2(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
+	branch: Branch,
 	employeeId: string,
 	range: Interval
 ): Interval[] {
@@ -232,10 +228,10 @@ export function getBookingsForEmployeeV2(
 		if (employee.id === employeeId) {
 			return employee.calendarItems
 				.map((item) => {
-					const start = DateTime.fromJSDate(item.startTime, {
+					const start = DateTime.fromJSDate(new Date(item.startTime), {
 						zone: branch.timeZone
 					});
-					const end = DateTime.fromJSDate(item.endTime, {
+					const end = DateTime.fromJSDate(new Date(item.endTime), {
 						zone: branch.timeZone
 					});
 					const bookingInterval = Interval.fromDateTimes(start, end);
@@ -247,7 +243,7 @@ export function getBookingsForEmployeeV2(
 		return [];
 	});
 }
-export function getService(branch: Awaited<ReturnType<typeof getOrganization>>, serviceId: string) {
+export function getService(branch: Branch, serviceId: string) {
 	const service = branch.services.find((service) => service.id === serviceId);
 	if (!service) {
 		throw new TRPCError({
@@ -257,10 +253,7 @@ export function getService(branch: Awaited<ReturnType<typeof getOrganization>>, 
 	}
 	return service;
 }
-export function alignToBranchOpeningHours(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
-	interval: Interval
-) {
+export function alignToBranchOpeningHours(branch: Branch, interval: Interval) {
 	const weekday = interval.start?.weekday;
 	const dateNow = DateTime.now().setZone(branch.timeZone);
 
@@ -292,12 +285,12 @@ export function alignToBranchOpeningHours(
 		.filter((time) => time.dayOfWeek === weekday)
 		.map((time) => {
 			return Interval.fromDateTimes(
-				DateTime.fromJSDate(time.startTimeUtc, { zone: branch.timeZone }).set({
+				DateTime.fromJSDate(new Date(time.startTimeUtc), { zone: branch.timeZone }).set({
 					year: interval.start?.year,
 					month: interval.start?.month,
 					day: interval.start?.day
 				}),
-				DateTime.fromJSDate(time.endTimeUtc, { zone: branch.timeZone }).set({
+				DateTime.fromJSDate(new Date(time.endTimeUtc), { zone: branch.timeZone }).set({
 					year: interval.end?.year,
 					month: interval.end?.month,
 					day: interval.end?.day
@@ -351,7 +344,7 @@ export function generateAvailableTimeslots(
 	return slots;
 }
 export async function generateEmployeesTimeSlots(
-	branch: string | Awaited<ReturnType<typeof getOrganization>>,
+	branch: string | Branch,
 	serviceId: string,
 	employeeIds: string[],
 	date: Interval
@@ -360,24 +353,25 @@ export async function generateEmployeesTimeSlots(
 	const service = getService(branch, serviceId);
 	const employees = getEmployees(branch, employeeIds).filter(
 		(employee) =>
-			employee.availability.length > 0 || employee.services.some((s) => s.serviceId === serviceId)
+			employee.availabilities.length > 0 ||
+			employee.employeeServices.some((s) => s.serviceId === serviceId)
 	);
 	if (!date.start || !date.end)
 		throw new TRPCError({ code: 'BAD_REQUEST', message: 'invalid_date_range' });
 	const startWeekday = date.start.weekday;
 	const blockedIntervals = employees.flatMap((employee) => {
 		if (!date.start || !date.end) return [];
-		return getBookingsForEmployee(branch, employee.id, date.start, date.end);
+		return getBookingsForEmployee(branch as Branch, employee.id, date.start, date.end);
 	});
 	//TODO: Fix having to loop instead of putting it in the interval timespan
 	const allowedIntervals: Interval[] = employees
 		.flatMap((employee) => {
-			const allowed = employee.availability.map((availability) => {
-				const start = DateTime.fromJSDate(availability.startTimeUtc, {
-					zone: branch.timeZone
+			const allowed = employee.availabilities.map((availability) => {
+				const start = DateTime.fromJSDate(new Date(availability.startTimeUtc), {
+					zone: (branch as Branch).timeZone
 				}).plus({ days: 1 });
-				const end = DateTime.fromJSDate(availability.endTimeUtc, {
-					zone: branch.timeZone
+				const end = DateTime.fromJSDate(new Date(availability.endTimeUtc), {
+					zone: (branch as Branch).timeZone
 				}).plus({ days: 1 });
 				if (availability.dayOfWeek === startWeekday) {
 					const availabilityInterval = Interval.fromDateTimes(
@@ -393,7 +387,7 @@ export async function generateEmployeesTimeSlots(
 		})
 		.filter((interval): interval is Interval => interval !== null);
 	const alignedIntervals = allowedIntervals
-		.flatMap((interval) => alignToBranchOpeningHours(branch, interval))
+		.flatMap((interval) => alignToBranchOpeningHours(branch as Branch, interval))
 		.filter((interval): interval is Interval => interval !== null);
 
 	const timeSlots = generateAvailableTimeslots(
@@ -405,10 +399,7 @@ export async function generateEmployeesTimeSlots(
 	return timeSlots;
 }
 
-export function getOpeningTimesV2(
-	branch: Awaited<ReturnType<typeof getOrganization>>,
-	range: Interval
-): Interval[] {
+export function getOpeningTimesV2(branch: Branch, range: Interval): Interval[] {
 	const openingTimes = branch.openingTimes;
 	const timeZone = branch.timeZone ?? 'UTC';
 
@@ -433,8 +424,8 @@ export function getOpeningTimesV2(
 		const openings = openingTimes.filter((o) => o.dayOfWeek === weekday);
 
 		for (const opening of openings) {
-			const refStart = DateTime.fromJSDate(opening.startTimeUtc, { zone: timeZone });
-			const refEnd = DateTime.fromJSDate(opening.endTimeUtc, { zone: timeZone });
+			const refStart = DateTime.fromJSDate(new Date(opening.startTimeUtc), { zone: timeZone });
+			const refEnd = DateTime.fromJSDate(new Date(opening.endTimeUtc), { zone: timeZone });
 
 			const start = current.setZone(timeZone).set({
 				hour: refStart.hour,
@@ -490,7 +481,7 @@ export function getOpeningTimesV2(
 	return merged;
 }
 
-export function transformTimeSlots(EmployeeTimeSlots: Interval[]): any {
+export function transformTimeSlots(EmployeeTimeSlots: Interval[]) {
 	let groupedByDate: Record<
 		string,
 		{

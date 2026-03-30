@@ -2,8 +2,7 @@ import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
 import { db, schema } from '$lib/server/db';
 import { TRPCError } from '@trpc/server';
-import { eq, and } from 'drizzle-orm';
-import { convertToLocal, convertToUtc } from '$lib/utils';
+import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 
 export const router = createRouter({
@@ -252,14 +251,14 @@ export const router = createRouter({
 						}
 					}
 				});
-				
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-					
-				const isMember = organization.members.some(m => m.userId === user.id);
+
+				const isMember = organization.members.some((m) => m.userId === user.id);
 				if (!isMember) {
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
@@ -328,8 +327,8 @@ export const router = createRouter({
 						price,
 						visible,
 						sortingIndex: sortingIndex || 0,
-						updatedAt: new Date().toISOString(),
-						createdAt: new Date().toISOString() // Safely add createdAt too if missing default logic
+						updatedAt: new Date(),
+						createdAt: new Date()
 					})
 					.returning();
 
@@ -514,14 +513,14 @@ export const router = createRouter({
 						}
 					}
 				});
-				
+
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
 						message: 'organization_not_found'
 					});
-				
-				const isMember = organization.members.some(m => m.userId === user.id);
+
+				const isMember = organization.members.some((m) => m.userId === user.id);
 				if (!isMember) {
 					throw new TRPCError({
 						code: 'BAD_REQUEST',

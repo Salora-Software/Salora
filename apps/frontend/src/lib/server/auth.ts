@@ -1,6 +1,5 @@
 import { betterAuth } from 'better-auth';
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { prisma } from '$lib/server/prisma';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
 import { db } from '@salora/database';

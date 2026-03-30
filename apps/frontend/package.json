@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "bunx --bun vite dev --host",
 		"start": "PORT=5173 node ./build",
-		"build": "bunx --bun vite build",
+		"build": "bun vite build",
 		"buildWidget": "vite build --config vite.widget.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

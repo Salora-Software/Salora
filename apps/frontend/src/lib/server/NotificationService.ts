@@ -8,17 +8,12 @@ import {
 	MAIL_EMAIL_SENDER
 } from '$env/static/private';
 import type { getOrganization } from './general';
-import type { $Enums } from '@salora/database';
-import redis from '$lib/server/redis';
-
-import { prisma as prismaInstance } from './prisma';
-import type { RedisClient } from 'bun';
+import { db } from '@salora/database';
+import { communicationSetting, template as templateTable } from '@salora/database/src/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 
 class NotificationService {
-	constructor(
-		private prisma: typeof prismaInstance,
-		private redis: RedisClient | null = null
-	) {}
+	constructor() {}
 
 	async sendEmailNotification({
 		type,
@@ -29,8 +24,8 @@ class NotificationService {
 		variables,
 		customTemplate
 	}: {
-		type?: $Enums.TemplateType; // Make type optional
-		target?: $Enums.TemplateTarget;
+		type?: string; // Replace $Enums.TemplateType
+		target?: string;
 		branch: Awaited<ReturnType<typeof getOrganization>>;
 		to: string;
 		employeeEmail?: string;
@@ -41,18 +36,22 @@ class NotificationService {
 			enabled?: boolean;
 		};
 	}) {
-		const targets: $Enums.TemplateTarget[] = target ? [target] : ['CUSTOMER', 'EMPLOYEE'];
+		const targets: string[] = target ? [target] : ['CUSTOMER', 'EMPLOYEE'];
 
-		const communication = await this.prisma.communicationSetting.findFirst({
-			where: {
-				organizationId: branch.id,
-				type: 'EMAIL'
-			}
-		});
+		const [communication] = await db
+			.select()
+			.from(communicationSetting)
+			.where(
+				and(
+					eq(communicationSetting.organizationId, branch.id),
+					eq(communicationSetting.type, 'EMAIL')
+				)
+			)
+			.limit(1);
 
 		const formatted = communication
 			? (() => {
-					const settings = communication.settings as {
+					const settings = JSON.parse(communication.settings as string) as {
 						smtpServer: string;
 						smtpPort: number;
 						smtpUsername: string;
@@ -69,7 +68,7 @@ class NotificationService {
 				})()
 			: null;
 
-		const emailer = new Emailer(this.redis, [
+		const emailer = new Emailer(null, [
 			{
 				provider_name: 'EMAIL FALLBACK',
 				priority: 100,
@@ -83,15 +82,16 @@ class NotificationService {
 
 		const templates = customTemplate
 			? null
-			: await this.prisma.template.findMany({
-					where: {
-						organizationId: branch.id,
-						...(type ? { type } : {}),
-						target: {
-							in: targets
-						}
-					}
-				});
+			: await db
+					.select()
+					.from(templateTable)
+					.where(
+						and(
+							eq(templateTable.organizationId, branch.id),
+							type ? eq(templateTable.type, type) : undefined,
+							inArray(templateTable.target, targets)
+						)
+					);
 
 		const templateMap = customTemplate
 			? null
@@ -100,7 +100,7 @@ class NotificationService {
 		for (const tgt of targets) {
 			const template = customTemplate || templateMap?.[tgt];
 			if (!template) continue;
-			if (!customTemplate && template.enabled) continue;
+			if (!customTemplate && !template.enabled) continue;
 
 			const defaultVariables = {
 				branch,
@@ -115,9 +115,12 @@ class NotificationService {
 			};
 			const subject = replaceVariables(template.subject ?? '', defaultVariables);
 			const body = replaceVariables(template.body ?? '', defaultVariables);
-			const from = communication?.settings
-				? (communication.settings as { smtpEmail?: string })?.smtpEmail || MAIL_EMAIL_SENDER
-				: MAIL_EMAIL_SENDER;
+
+			const settings = communication?.settings
+				? (JSON.parse(communication.settings as string) as { smtpEmail?: string })
+				: null;
+			const from = settings?.smtpEmail || MAIL_EMAIL_SENDER;
+
 			// if no target send to both
 			if (!tgt) {
 				await emailer.sendEmail(subject, from, to, subject, body);
@@ -136,4 +139,4 @@ class NotificationService {
 	}
 }
 
-export const notificationService = new NotificationService(prismaInstance, redis);
+export const notificationService = new NotificationService();

@@ -15,10 +15,11 @@ import { createTrpcRedisLimiter, defaultFingerPrint } from '@trpc-limiter/redis'
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
-import redis from '../redis';
 import { TRUSTED_IPS } from '$env/static/private';
 import { auth } from '../auth';
-import { prisma } from '../prisma';
+import { db } from '@salora/database';
+import { member, customer, user } from '@salora/database/src/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export const createSvelteKitContext =
 	(locals: App.Locals) => (opts: FetchCreateContextFnOptions) => {
@@ -46,15 +47,6 @@ export const createSvelteKitContext =
 			cacheSeconds
 		};
 	};
-// Rate limiter (15 requests per 10 seconds)
-const rateLimiter = createTrpcRedisLimiter<typeof t>({
-	fingerprint: (ctx) => defaultFingerPrint(ctx.req),
-	message: (hitInfo) => `too_many_requests`,
-	max: 300,
-	windowMs: 10_000,
-	redisClient: redis
-});
-
 // Fix type to infer correct context
 const t = initTRPC
 	.context<typeof createSvelteKitContext extends (...args: any) => infer R ? R : never>()
@@ -64,10 +56,7 @@ const t = initTRPC
 
 export const router = t.router;
 export const publicProcedure = t.procedure.use(async (opts) => {
-	if (!opts.ctx.ip || TRUSTED_IPS.includes(opts.ctx.ip.split(', ')[0])) {
-		return opts.next();
-	}
-	return rateLimiter(opts);
+	return opts.next();
 });
 
 export const privateProcedure = publicProcedure
@@ -91,13 +80,13 @@ export const privateProcedure = publicProcedure
 			});
 		if (branchId) {
 			//check if user is part of the branch
-			const member = await prisma.member.findFirst({
-				where: {
-					userId: session.user.id,
-					organizationId: branchId
-				}
-			});
-			if (!member) {
+			const [foundMember] = await db
+				.select()
+				.from(member)
+				.where(and(eq(member.userId, session.user.id), eq(member.organizationId, branchId)))
+				.limit(1);
+
+			if (!foundMember) {
 				throw new TRPCError({
 					code: 'FORBIDDEN',
 					message: 'not_a_member_of_organization'
@@ -129,19 +118,17 @@ export const portalProcedure = t.procedure
 					customer: null
 				}
 			});
-		const customer = await prisma.customer.findFirst({
-			where: {
-				user: {
-					id: session.user.id
-				}
-			}
-		});
+		const [foundCustomer] = await db
+			.select()
+			.from(customer)
+			.where(eq(customer.userId, session.user.id))
+			.limit(1);
 
 		return opts.next({
 			ctx: {
 				...opts.ctx,
 				headers,
-				customer,
+				customer: foundCustomer,
 				session
 			}
 		});

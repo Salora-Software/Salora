@@ -45,9 +45,9 @@ export const router = createRouter({
 				endTime = now.endOf('day');
 			}
 
-			// Convert to UTC for database query
-			const startTimeUTC = startTime.toISO()!;
-			const endTimeUTC = endTime.toISO()!;
+			// Convert to UTC Date objects for database query
+			const startTimeUTC = startTime.toJSDate();
+			const endTimeUTC = endTime.toJSDate();
 
 			// Query appointments for the selected date range
 			const appointments = await db.query.calendarItem.findMany({
@@ -75,8 +75,8 @@ export const router = createRouter({
 
 			// Transform appointments to include customer info at the top level
 			const appointmentsWithCustomer = appointments.map((appointment) => {
-				const localStartTime = DateTime.fromISO(appointment.startTime).setZone(branch.timeZone);
-				const localEndTime = DateTime.fromISO(appointment.endTime).setZone(branch.timeZone);
+				const localStartTime = DateTime.fromJSDate(appointment.startTime).setZone(branch.timeZone);
+				const localEndTime = DateTime.fromJSDate(appointment.endTime).setZone(branch.timeZone);
 
 				return {
 					...appointment,
@@ -138,11 +138,11 @@ export const router = createRouter({
 				endOfLastPeriod = endOfPeriod.minus({ months: 1 });
 			}
 
-			// Convert to UTC for database queries
-			const startOfPeriodUTC = startOfPeriod.toISO()!;
-			const endOfPeriodUTC = endOfPeriod.toISO()!;
-			const startOfLastPeriodUTC = startOfLastPeriod.toISO()!;
-			const endOfLastPeriodUTC = endOfLastPeriod.toISO()!;
+			// Convert to UTC Date objects for database queries
+			const startOfPeriodUTC = startOfPeriod.toJSDate();
+			const endOfPeriodUTC = endOfPeriod.toJSDate();
+			const startOfLastPeriodUTC = startOfLastPeriod.toJSDate();
+			const endOfLastPeriodUTC = endOfLastPeriod.toJSDate();
 
 			// Execute all database queries in parallel for better performance
 			const [
@@ -373,7 +373,7 @@ export const router = createRouter({
 
 			// Group current period bookings by the chosen strategy
 			for (const booking of currentPeriodBookings) {
-				const bookingDate = DateTime.fromISO(booking.createdAt).setZone(branch.timeZone);
+				const bookingDate = DateTime.fromJSDate(booking.createdAt).setZone(branch.timeZone);
 				const periodIndex = getPeriodIndex(bookingDate);
 
 				if (periodIndex >= 0 && periodIndex < periodCount) {
@@ -388,7 +388,7 @@ export const router = createRouter({
 
 			// Group new customers by the chosen strategy
 			for (const customer of newCustomersThisPeriod) {
-				const customerDate = DateTime.fromISO(customer.createdAt).setZone(branch.timeZone);
+				const customerDate = DateTime.fromJSDate(customer.createdAt).setZone(branch.timeZone);
 				const periodIndex = getPeriodIndex(customerDate);
 
 				if (periodIndex >= 0 && periodIndex < periodCount) {

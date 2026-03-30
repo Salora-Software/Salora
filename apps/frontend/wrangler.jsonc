@@ -27,7 +27,6 @@
 	"vars": {
 		"DEPLOY_TARGET": "worker",
 		"SKIP_DEPENDENCY_INSTALL": "true",
-		"PUBLIC_BACKEND_URL": "http://localhost:5173",
 		"PUBLIC_CDN_URL": "https://cdn.salora.app",
 		"MAIL_FALLBACK_SERVER": "example.smtp.com",
 		"MAIL_FALLBACK_PORT": "587",

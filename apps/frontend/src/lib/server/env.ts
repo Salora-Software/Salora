@@ -4,8 +4,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 
 // Define the schema for public environment variables
 const publicSchema = z.object({
-	PUBLIC_BACKEND_URL : z.string().url().optional(),
-	PUBLIC_CDN_URL : z.string().url().default('https://cdn.salora.app'),
+	PUBLIC_CDN_URL: z.string().url().default('https://cdn.salora.app'),
 	PUBLIC_FRONTEND_URL: z.string().url().default('http://localhost:5173'),
 });
 
@@ -23,10 +22,10 @@ const privateSchema = z.object({
 	ACCESS_KEY_ID: z.string().min(1, 'ACCESS_KEY_ID is required'),
 	SECRET_ACCESS_KEY: z.string().min(1, 'SECRET_ACCESS_KEY is required'),
 	S3_BUCKET: z.string().min(1, 'S3_BUCKET is required'),
-	
+
 	// Security
 	TRUSTED_IPS: z.string().default('127.0.0.1,::1').transform((val) => val.split(',').map(ip => ip.trim())),
-	
+
 	// App Specific
 	DEPLOY_TARGET: z.enum(['worker', 'node', 'docker']).default('node'),
 });

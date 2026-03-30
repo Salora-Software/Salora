@@ -54,7 +54,7 @@ export const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		customLink,
 		httpBatchLink({
-			url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
+			url: '/api/trpc',
 			transformer: SuperJSON
 		})
 	]
@@ -65,7 +65,7 @@ export const trpcQuery = createTrpcQueryProxy<AppRouter>(trpc);
 export const trpcS = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
+			url: '/api/trpc',
 			transformer: SuperJSON
 		})
 	]
@@ -75,7 +75,7 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 		links: [
 			customLink,
 			httpBatchLink({
-				url: env?.PUBLIC_BACKEND_URL  + '/api/trpc',
+				url: '/api/trpc',
 				transformer: SuperJSON
 			})
 		]
@@ -87,6 +87,5 @@ export type RouterOutput = inferRouterOutputs<AppRouter>;
 export type BranchType = RouterOutput['v1']['authenticated']['organization']['getBranches'][number];
 export type CalendarType =
 	RouterOutput['v1']['authenticated']['calendar']['getCalendar']['items'][number];
-export type CalendarMemberType = CalendarType['member'];
 export type ServiceType = BranchType['services'][number];
 export type MemberType = BranchType['members'][number];

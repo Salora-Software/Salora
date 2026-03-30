@@ -3,7 +3,7 @@ import { Emailer } from '@salora/mailer';
 import { env } from '$lib/server/env';
 import type { getOrganization } from './general';
 import { db } from '@salora/database';
-import { communicationSetting, template as templateTable } from '@salora/database/src/db/schema';
+import { schema } from '@salora/database';
 import { eq, and, inArray } from 'drizzle-orm';
 
 class NotificationService {
@@ -34,11 +34,11 @@ class NotificationService {
 
 		const [communication] = await db
 			.select()
-			.from(communicationSetting)
+			.from(schema.communicationSetting)
 			.where(
 				and(
-					eq(communicationSetting.organizationId, branch.id),
-					eq(communicationSetting.type, 'EMAIL')
+					eq(schema.communicationSetting.organizationId, branch.id),
+					eq(schema.communicationSetting.type, 'EMAIL')
 				)
 			)
 			.limit(1);
@@ -78,12 +78,12 @@ class NotificationService {
 			? null
 			: await db
 					.select()
-					.from(templateTable)
+					.from(schema.template)
 					.where(
 						and(
-							eq(templateTable.organizationId, branch.id),
-							type ? eq(templateTable.type, type) : undefined,
-							inArray(templateTable.target, targets)
+							eq(schema.template.organizationId, branch.id),
+							type ? eq(schema.template.type, type) : undefined,
+							inArray(schema.template.target, targets)
 						)
 					);
 

@@ -12,6 +12,7 @@ import {
 } from '$env/static/private';
 import { replaceVariables } from '$lib/templateReplacer';
 import { Emailer } from '@salora/mailer';
+import { env } from '$env/dynamic/private';
 
 export const router = createRouter({
 	getTemplates: privateProcedure

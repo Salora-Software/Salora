@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
 import { db, schema } from '@salora/database';
+import { env } from '$env/dynamic/private';
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
@@ -19,11 +20,8 @@ export const auth = betterAuth({
 	},
 	trustedOrigins: [
 		'http://localhost:5173',
-		process.env?.NODE_ENV === 'development' ? 'http://dev.salora.app' : 'https://dev.salora.app',
-		process.env?.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app',
-		env?.PUBLIC_FRONTEND_URL.startsWith('https://') && process.env?.NODE_ENV === 'development'
-			? env?.PUBLIC_FRONTEND_URL.replace(/^https:\/\//, 'http://')
-			: env?.PUBLIC_FRONTEND_URL
+		env?.NODE_ENV === 'development' ? 'http://dev.salora.app' : 'https://dev.salora.app',
+		env?.NODE_ENV === 'development' ? 'http://salora.app' : 'https://salora.app'
 	],
 	rateLimit: {
 		enabled: true

@@ -1,11 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { db } from '@salora/database';
-import {
-	organization as organizationTable,
-	service as serviceTable,
-	employeeService as employeeServiceTable
-} from '@salora/database/src/db/schema';
+import { db, schema } from '@salora/database';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import {
 	mapToBlockedPeriods,
@@ -44,11 +39,11 @@ export const fetchBookingData = async (
 ) => {
 	const [organization, service] = await Promise.all([
 		db.query.organization.findFirst({
-			where: eq(organizationTable.id, branchId),
+			where: eq(schema.organization.id, branchId),
 			with: { openingTimes: true }
 		}),
 		db.query.service.findFirst({
-			where: eq(serviceTable.id, serviceId)
+			where: eq(schema.service.id, serviceId)
 		})
 	]);
 
@@ -57,7 +52,7 @@ export const fetchBookingData = async (
 	}
 
 	const employees = (await db.query.employeeService.findMany({
-		where: eq(employeeServiceTable.serviceId, serviceId),
+		where: eq(schema.employeeService.serviceId, serviceId),
 		with: {
 			member: {
 				with: {

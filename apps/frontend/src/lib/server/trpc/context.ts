@@ -17,7 +17,7 @@ import SuperJSON from '$lib/superjson';
 import { TRUSTED_IPS } from '$env/static/private';
 import { auth } from '../auth';
 import { db } from '@salora/database';
-import { member, customer, user } from '@salora/database/src/db/schema';
+import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
 
 export const createSvelteKitContext =
@@ -81,8 +81,10 @@ export const privateProcedure = publicProcedure
 			//check if user is part of the branch
 			const [foundMember] = await db
 				.select()
-				.from(member)
-				.where(and(eq(member.userId, session.user.id), eq(member.organizationId, branchId)))
+				.from(schema.member)
+				.where(
+					and(eq(schema.member.userId, session.user.id), eq(schema.member.organizationId, branchId))
+				)
 				.limit(1);
 
 			if (!foundMember) {
@@ -119,8 +121,8 @@ export const portalProcedure = t.procedure
 			});
 		const [foundCustomer] = await db
 			.select()
-			.from(customer)
-			.where(eq(customer.userId, session.user.id))
+			.from(schema.customer)
+			.where(eq(schema.customer.userId, session.user.id))
 			.limit(1);
 
 		return opts.next({

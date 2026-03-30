@@ -22,6 +22,20 @@
       "when": 1774861086682,
       "tag": "0002_certain_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774873494380,
+      "tag": "0003_yummy_nightshade",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774873742151,
+      "tag": "0004_secret_tyrannus",
+      "breakpoints": true
     }
   ]
 }

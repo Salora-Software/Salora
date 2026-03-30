@@ -1,7 +1,16 @@
-import { auth } from '$lib/server/auth'; // Path to your auth file
+import { createAuth } from '$lib/server/auth'; // Path to your auth file
+import { createDb } from '@salora/database';
+import type { Handle } from '@sveltejs/kit';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
-export async function handle({ event, resolve }) {
+export const handle: Handle = async ({ event, resolve }) => {
+	if (!event.platform?.env?.DB) {
+		throw new Error('Geen database binding gevonden voor dit request.');
+	}
+
+	// Initialiseer db en auth één keer per request
+	event.locals.db = createDb(event.platform.env.DB) as any;
+	event.locals.auth = createAuth(event.platform) as any;
 	// Handle CORS preflight requests
 	if (event.request.method === 'OPTIONS') {
 		return new Response(null, {
@@ -25,7 +34,12 @@ export async function handle({ event, resolve }) {
 
 	event.locals.ip = ip;
 
-	const response = await svelteKitHandler({ event, resolve, auth, building: false });
+	const response = await svelteKitHandler({
+		event,
+		resolve,
+		auth: event.locals.auth,
+		building: false
+	});
 	// Add CORS headers to all responses
 	if (event.url.pathname.startsWith('/api/')) {
 		response.headers.set('Access-Control-Allow-Origin', '*');
@@ -38,4 +52,4 @@ export async function handle({ event, resolve }) {
 	}
 
 	return response;
-}
+};

@@ -66,7 +66,7 @@
 		"@aws-sdk/client-s3": "^3.855.0",
 		"@aws-sdk/s3-request-presigner": "^3.855.0",
 		"@babel/core": "^7.28.0",
-		"@cloudflare/workers-types": "^4.20260317.1",
+		"@cloudflare/workers-types": "^4.20260329.1",
 		"@internationalized/date": "^3.10.0",
 		"@libsql/client": "^0.17.2",
 		"@lottiefiles/dotlottie-svelte": "^0.4.8",

@@ -157,7 +157,7 @@ export const verification = sqliteTable("verification", {
   id: text().primaryKey().notNull(),
   identifier: text().notNull(),
   value: text().notNull(),
-  expiresAt: text().notNull(),
+  expiresAt: integer({ mode: "timestamp" }).notNull(),
   createdAt: integer({ mode: "timestamp" }),
   updatedAt: integer({ mode: "timestamp" }),
 });
@@ -231,7 +231,7 @@ export const invitation = sqliteTable(
     email: text().notNull(),
     role: text(),
     status: text().notNull(),
-    expiresAt: text().notNull(),
+    expiresAt: integer({ mode: "timestamp" }).notNull(),
     inviterId: text().notNull(),
   },
   (table) => [
@@ -547,7 +547,7 @@ export const session = sqliteTable(
   "session",
   {
     id: text().primaryKey().notNull(),
-    expiresAt: text().notNull(),
+    expiresAt: integer({ mode: "timestamp" }).notNull(),
     token: text().notNull(),
     createdAt: integer({ mode: "timestamp" }).notNull(),
     updatedAt: integer({ mode: "timestamp" }).notNull(),

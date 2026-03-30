@@ -1,3 +1,5 @@
+/// <reference path="../worker-configuration.d.ts" />
+
 declare global {
 	namespace App {
 		// interface Error {}
@@ -6,12 +8,12 @@ declare global {
 		}
 		interface Locals {
 			ip?: string;
+			db: DrizzleD1Database<typeof schema>;
+			auth: Auth;
 		}
 		// interface PageState {}
 		interface Platform {
-			env?: {
-				DATABASE?: unknown;
-			};
+			env?: Env;
 		}
 	}
 }
@@ -33,6 +35,10 @@ declare module 'next-auth' {
 	interface Session {}
 }
 
+import type { Cloudflare } from '@cloudflare/workers-types';
+import { schema } from '@salora/database';
+import type { Auth } from 'better-auth';
+import type { DrizzleD1Database } from 'drizzle-orm/d1';
 // The `JWT` interface can be found in the `next-auth/jwt` submodule
 import { JWT } from 'next-auth/jwt';
 

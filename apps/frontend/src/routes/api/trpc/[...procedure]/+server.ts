@@ -1,30 +1,10 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
-const isWorkerTarget = process.env.DEPLOY_TARGET === 'worker';
-
-// For Workers, we provide a stub that tells clients to use the external backend API
-// The tRPC backend must run as a separate Node.js service (e.g., Docker)
-async function workersStub(event: any) {
-	return new Response(
-		JSON.stringify({
-			error: 'tRPC backend is not available on this Workers deployment. Please configure env.PUBLIC_BACKEND_URL  to point to your Node.js backend API.'
-		}),
-		{
-			status: 503,
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
-		}
-	);
-}
-
-// For Node runtime, use the real tRPC handler
 let realHandler: any = null;
 
-async function getNodeHandler() {
+async function getHandler() {
 	if (realHandler) return realHandler;
-	
+
 	const { createSvelteKitContext } = await import('$lib/server/trpc/context');
 	const { appRouter } = await import('$lib/server/trpc/router');
 	const { fetchRequestHandler } = await import('@trpc/server/adapters/fetch');
@@ -65,16 +45,16 @@ async function getNodeHandler() {
 }
 
 export const OPTIONS: RequestHandler = async (event) => {
-	const handler = await getNodeHandler();
+	const handler = await getHandler();
 	return handler.OPTIONS(event);
 };
 
 export const GET: RequestHandler = async (event) => {
-	const handler = await getNodeHandler();
+	const handler = await getHandler();
 	return handler.GET(event);
 };
 
 export const POST: RequestHandler = async (event) => {
-	const handler = await getNodeHandler();
+	const handler = await getHandler();
 	return handler.POST(event);
 };

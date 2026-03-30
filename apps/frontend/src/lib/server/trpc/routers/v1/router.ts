@@ -3,7 +3,7 @@ import { router as createRouter, publicProcedure } from '../../context';
 import { router as authenticatedRouter } from './authenticated/router';
 import { eq } from 'drizzle-orm';
 import { router as protectedRouter } from './protected/router';
-import { db, schema } from '$lib/server/db';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { CalendarDate } from '@internationalized/date';
 
@@ -64,7 +64,7 @@ export const router = createRouter({
 				)
 			})
 		)
-		.query(async ({ input: { id } }) => {
+		.query(async ({ input: { id }, ctx: { db } }) => {
 			const orgRows = await db
 				.select({
 					organization: schema.organization,

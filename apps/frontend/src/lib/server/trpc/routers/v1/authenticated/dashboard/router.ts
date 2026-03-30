@@ -58,7 +58,7 @@ export const router = createRouter({
 						lte(calendarItem.startTime, endTimeUTC)
 					),
 				with: {
-					member: {
+					employee: {
 						with: {
 							user: true
 						}
@@ -75,13 +75,14 @@ export const router = createRouter({
 
 			// Transform appointments to include customer info at the top level
 			const appointmentsWithCustomer = appointments.map((appointment) => {
-				const localStartTime = DateTime.fromJSDate(appointment.startTime).setZone(branch.timeZone);
-				const localEndTime = DateTime.fromJSDate(appointment.endTime).setZone(branch.timeZone);
+				const localStartTime = DateTime.fromJSDate(appointment.startTime).setZone(branch!.timeZone);
+				const localEndTime = DateTime.fromJSDate(appointment.endTime).setZone(branch!.timeZone);
 
 				return {
 					...appointment,
 					localStartTime: localStartTime.toISO(),
 					localEndTime: localEndTime.toISO(),
+					member: appointment.employee,
 					customer: appointment.booking?.customer || null
 				};
 			});

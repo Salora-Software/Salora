@@ -76,6 +76,7 @@
         "@aws-sdk/s3-request-presigner": "^3.855.0",
         "@babel/core": "^7.28.0",
         "@internationalized/date": "^3.10.0",
+        "@libsql/client": "^0.17.2",
         "@lottiefiles/dotlottie-svelte": "^0.4.8",
         "@neodrag/svelte": "^2.3.3",
         "@prisma/client": "^7.3.0",

@@ -1,8 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { db } from '$lib/server/db';
-import { schema } from '$lib/server/db';
 import type { AddTimeOffInput } from './add-time-off.schema';
-import { CalendarItemType } from '@salora/database';
+import { schema } from '@salora/database';
 
 export const addTimeOffHandler = async ({
 	input,
@@ -63,13 +62,15 @@ export const addTimeOffHandler = async ({
 			.then((r) => r[0]);
 
 		await tx.insert(schema.calendarItem).values({
+			id: crypto.randomUUID(),
 			organizationId: organizationId,
-			memberId: memberId,
+			employeeId: memberId,
 			startTime: startTime,
 			endTime: endTime,
-			type: CalendarItemType.TIME_OFF,
+			type: schema.CalendarItemTypes.TIME_OFF,
 			timeOffId: timeOffId,
-			notes: reason
+			notes: reason,
+			updatedAt: new Date()
 		});
 
 		return timeOff;

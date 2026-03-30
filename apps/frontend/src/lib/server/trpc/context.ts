@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { initTRPC, TRPCError } from '@trpc/server';
+import { initTRPC, TRPCError, type inferProcedureBuilderResolverOptions } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
 import { schema } from '@salora/database';
@@ -127,3 +127,5 @@ export const portalProcedure = t.procedure
 			}
 		});
 	});
+export type PrivateContext = inferProcedureBuilderResolverOptions<typeof privateProcedure>['ctx'];
+export type PortalContext = inferProcedureBuilderResolverOptions<typeof portalProcedure>['ctx'];

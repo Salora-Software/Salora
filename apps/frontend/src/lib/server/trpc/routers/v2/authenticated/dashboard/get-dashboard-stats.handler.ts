@@ -1,16 +1,18 @@
-import { TRPCError } from '@trpc/server';
+import { TRPCError, type inferProcedureBuilderResolverOptions } from '@trpc/server';
 
 import { schema } from '@salora/database';
 import { and, count, eq, exists, gte, lt, lte } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';
+import { type PrivateContext } from '$lib/server/trpc/context';
+import type { ProcedureResolverOptions } from '@trpc/server/unstable-core-do-not-import';
 
 export const getDashboardStatsHandler = async ({
 	input,
-	ctx: { session }
+	ctx: { session, db }
 }: {
 	input: GetDashboardStatsInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const organizationId = input.organizationId || session.session.activeOrganizationId;
 	const branch = await db.query.organization.findFirst({

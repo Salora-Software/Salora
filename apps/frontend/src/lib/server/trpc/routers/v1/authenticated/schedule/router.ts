@@ -3,6 +3,7 @@ import { router as createRouter, privateProcedure } from '../../../../context';
 import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { convertToLocal, convertToUtc } from '$lib/utils';
+import { eq, inArray } from 'drizzle-orm';
 
 export const router = createRouter({
 	getOpeningTimes: privateProcedure
@@ -21,7 +22,7 @@ export const router = createRouter({
 			const openingTimes = await db
 				.select()
 				.from(schema.openingTime)
-				.where(schema.openingTime.organizationId.eq(organizationId));
+				.where(eq(schema.openingTime.organizationId, organizationId));
 			return openingTimes.map((time) => ({
 				id: time.id,
 				dayOfWeek: time.dayOfWeek,
@@ -60,11 +61,13 @@ export const router = createRouter({
 		.mutation(async ({ ctx: { db }, input }) => {
 			const { organizationId, openingTimes, removeItems } = input;
 
+			console.log('updating');
+
 			// Get the organization's time zone
 			const organization = await db
 				.select({ timeZone: schema.organization.timeZone })
 				.from(schema.organization)
-				.where(schema.organization.id.eq(organizationId))
+				.where(eq(schema.organization.id, organizationId))
 				.limit(1);
 			if (!organization[0])
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'organization_not_found' });
@@ -86,53 +89,56 @@ export const router = createRouter({
 					});
 			}
 
-			await db.transaction(async (trx) => {
-				// Delete outdated opening times (only if removeItems has values)
-				if (removeItems && removeItems.length > 0) {
-					await trx.delete(schema.openingTime).where(schema.openingTime.id.in(removeItems));
-				}
+			// 1. Delete items
+			if (removeItems && removeItems.length > 0) {
+				await db.delete(schema.openingTime).where(inArray(schema.openingTime.id, removeItems));
+			}
 
-				// Upsert opening times (create/update)
-				for (const time of updatedTimes) {
-					if (time.id) {
-						const existing = await trx
-							.select()
-							.from(schema.openingTime)
-							.where(schema.openingTime.id.eq(time.id))
-							.limit(1);
-						if (existing.length > 0) {
-							await trx
-								.update(schema.openingTime)
-								.set({
-									dayOfWeek: time.dayOfWeek,
-									startTimeUtc: time.startTimeUtc,
-									endTimeUtc: time.endTimeUtc
-								})
-								.where(schema.openingTime.id.eq(time.id));
-						} else {
-							await trx.insert(schema.openingTime).values({
-								id: time.id,
-								organizationId,
+			// 2. Perform Upserts
+			for (const time of updatedTimes) {
+				if (time.id) {
+					// Using upsert (onConflictUpdate) if supported by your Drizzle/D1 setup
+					// or keeping the select/update logic if that's preferred for D1 stability
+					const [existing] = await db
+						.select()
+						.from(schema.openingTime)
+						.where(eq(schema.openingTime.id, time.id))
+						.limit(1);
+
+					if (existing) {
+						await db
+							.update(schema.openingTime)
+							.set({
 								dayOfWeek: time.dayOfWeek,
 								startTimeUtc: time.startTimeUtc,
 								endTimeUtc: time.endTimeUtc
-							});
-						}
+							})
+							.where(eq(schema.openingTime.id, time.id));
 					} else {
-						await trx.insert(schema.openingTime).values({
+						await db.insert(schema.openingTime).values({
+							id: time.id,
 							organizationId,
 							dayOfWeek: time.dayOfWeek,
 							startTimeUtc: time.startTimeUtc,
 							endTimeUtc: time.endTimeUtc
 						});
 					}
+				} else {
+					await db.insert(schema.openingTime).values({
+						id: crypto.randomUUID(),
+						organizationId,
+						dayOfWeek: time.dayOfWeek,
+						startTimeUtc: time.startTimeUtc,
+						endTimeUtc: time.endTimeUtc
+					});
 				}
-			});
+			}
+
 			// request the new opening times
 			const newOpeningTimes = await db
 				.select()
 				.from(schema.openingTime)
-				.where(schema.openingTime.organizationId.eq(organizationId));
+				.where(eq(schema.openingTime.organizationId, organizationId));
 			return newOpeningTimes.map((time) => ({
 				id: time.id,
 				dayOfWeek: time.dayOfWeek,

@@ -5,7 +5,8 @@ import { TRPCError } from '@trpc/server';
 import { auth } from '$lib/server/auth';
 import { convertToLocal, convertToSlug } from '$lib/utils';
 import { deleteImage, uploadImage } from '$lib/server/s3';
-import { eq } from 'drizzle-orm';
+import { eq, exists, and } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 
 export const router = createRouter({
 	updateLogo: privateProcedure
@@ -14,7 +15,7 @@ export const router = createRouter({
 		.mutation(async ({ input: { image, organizationId }, ctx: { headers } }) => {
 			const response = await fetch(image);
 			const imageBlob = await response.blob();
-			const imageId = crypto.randomUUID().replace(/-/g, '');
+			const imageId = randomUUID().replace(/-/g, '');
 			const org = await db.query.organization.findFirst({
 				where: (org, { eq }) => eq(org.id, organizationId),
 				columns: { logo: true }
@@ -164,12 +165,15 @@ export const router = createRouter({
 						message: 'slug_can_not_be_empty'
 					});
 				// check if user already is in a organization. If so throw a error
-				let userOrganization = await db.query.organization.findMany({
-					where: (org, { exists, select, eq }) =>
+				const userOrganization = await db.query.organization.findMany({
+					where: (org) =>
 						exists(
-							select()
+							db
+								.select()
 								.from(schema.member)
-								.where(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								.where(
+									and(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								)
 						)
 				});
 				console.log(userOrganization);
@@ -367,11 +371,14 @@ export const router = createRouter({
 				}
 			}) => {
 				const organizations = await db.query.organization.findMany({
-					where: (org, { exists, select, eq }) =>
+					where: (org) =>
 						exists(
-							select()
+							db
+								.select()
 								.from(schema.member)
-								.where(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								.where(
+									and(eq(schema.member.organizationId, org.id), eq(schema.member.userId, user.id))
+								)
 						),
 					with: {
 						members: {

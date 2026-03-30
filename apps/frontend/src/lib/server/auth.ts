@@ -7,13 +7,73 @@ import { createDb, schema, type DatabaseType } from '@salora/database';
 export const createAuth = (db: DatabaseType, origin: string) => {
 	// 3. Retourneer de Better Auth instance
 	return betterAuth({
+		emailAndPassword: {
+			enabled: true,
+			password: {
+				hash: async (password) => {
+					const encoder = new TextEncoder();
+					const salt = crypto.getRandomValues(new Uint8Array(16));
+					const keyMaterial = await crypto.subtle.importKey(
+						'raw',
+						encoder.encode(password),
+						{ name: 'PBKDF2' },
+						false,
+						['deriveBits']
+					);
+
+					// 100.000 iteraties is een redelijke balans tussen veiligheid en de Worker limieten
+					const hashBuffer = await crypto.subtle.deriveBits(
+						{
+							name: 'PBKDF2',
+							salt,
+							iterations: 100000,
+							hash: 'SHA-256'
+						},
+						keyMaterial,
+						256
+					);
+
+					const hashArray = Array.from(new Uint8Array(hashBuffer));
+					const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+					const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+
+					return `${saltHex}:${hashHex}`;
+				},
+				verify: async ({ hash, password }) => {
+					const [saltHex, originalHash] = hash.split(':');
+					const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+					const encoder = new TextEncoder();
+
+					const keyMaterial = await crypto.subtle.importKey(
+						'raw',
+						encoder.encode(password),
+						{ name: 'PBKDF2' },
+						false,
+						['deriveBits']
+					);
+
+					const hashBuffer = await crypto.subtle.deriveBits(
+						{
+							name: 'PBKDF2',
+							salt,
+							iterations: 100000,
+							hash: 'SHA-256'
+						},
+						keyMaterial,
+						256
+					);
+
+					const hashArray = Array.from(new Uint8Array(hashBuffer));
+					const newHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+					return newHashHex === originalHash;
+				}
+			}
+		},
 		database: drizzleAdapter(db, {
 			provider: 'sqlite',
 			schema
 		}),
-		emailAndPassword: {
-			enabled: true
-		},
 		advanced: {
 			ipAddress: {
 				ipAddressHeaders: ['x-forwarded-for', 'x-real-ip']

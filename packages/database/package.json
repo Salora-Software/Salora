@@ -4,6 +4,11 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./node": "./src/node.ts",
+    "./worker": "./index.worker.ts"
+  },
   "scripts": {
     "db:push": "bunx drizzle-kit push",
     "db:studio": "bunx drizzle-kit studio",

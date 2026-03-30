@@ -11,7 +11,6 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
 	});
 	return cookies;
 }
-import { createTrpcRedisLimiter, defaultFingerPrint } from '@trpc-limiter/redis';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';

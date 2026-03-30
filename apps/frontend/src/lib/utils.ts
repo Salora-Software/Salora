@@ -1,18 +1,26 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import moment from 'moment-timezone';
 import type { TimeSlot } from './types';
 import type { DateValue } from '@internationalized/date';
 import { DateTime } from 'luxon';
 
 export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZone: string): Date {
-	const value = new Date(
-		moment
-			.tz(`${dayOfWeek - 1} ${time}`, 'd HH:mm', organizationTimeZone)
-			.utc()
-			.toISOString()
-	);
-	return value;
+	// Replicate moment logic: `${dayOfWeek - 1}` where 'd' is 0-6 (Sun-Sat)
+	const momentDayIndex = dayOfWeek - 1;
+	const [hour, minute] = time.split(':').map(Number);
+	
+	let dt = DateTime.now().setZone(organizationTimeZone).set({ hour, minute, second: 0, millisecond: 0 });
+	
+	if (momentDayIndex === 0) {
+		// Moment '0' is Sunday (start of week). Luxon ISO week starts Monday.
+		// We want the Sunday before the current ISO week's Monday.
+		dt = dt.startOf('week').minus({ days: 1 });
+	} else {
+		// 1 (Monday) ... 6 (Saturday) match directly with Luxon weekday 1-6
+		dt = dt.set({ weekday: momentDayIndex });
+	}
+	
+	return dt.toJSDate();
 }
 export function convertCalendarDateToDayOfWeek(date: DateValue): number {
 	const dayOfWeek = date.day;
@@ -21,7 +29,7 @@ export function convertCalendarDateToDayOfWeek(date: DateValue): number {
 }
 
 export function convertToLocal(utcTime: Date, organizationTimeZone: string): string {
-	return moment(utcTime).tz(organizationTimeZone).format('HH:mm');
+	return DateTime.fromJSDate(utcTime).setZone(organizationTimeZone).toFormat('HH:mm');
 }
 export function convertToBase(date: Date, dayOfWeek: number): Date {
 	date.setFullYear(1970);

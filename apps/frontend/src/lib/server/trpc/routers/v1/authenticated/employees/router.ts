@@ -432,7 +432,7 @@ export const router = createRouter({
 
 // Helper function to send invitation emails
 async function sendInvitationEmail(organization: any, user: any, role: string) {
-	const emailWorkerUrl = env.EMAIL_WORKER_URL || 'http://localhost:3001';
+	const emailWorkerUrl = env?.EMAIL_WORKER_URL || 'http://localhost:3001';
 
 	const emailHtml = `
 		<!DOCTYPE html>
@@ -464,7 +464,7 @@ async function sendInvitationEmail(organization: any, user: any, role: string) {
 			</div>
 			
 			<div style="text-align: center; margin: 30px 0;">
-				<a href="${env.PUBLIC_FRONTEND_URL || 'http://localhost:5173'}/app" 
+				<a href="${env?.PUBLIC_FRONTEND_URL || 'http://localhost:5173'}/app" 
 				   style="display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
 					✨ Accepteer uitnodiging
 				</a>

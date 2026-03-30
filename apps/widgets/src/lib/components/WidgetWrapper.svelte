@@ -2,7 +2,6 @@
 	import { onMount, setContext } from 'svelte';
 	import { trpc } from '$lib/trpc';
 	import BookingWidget from './BookingWidget.svelte';
-	import type { Prisma } from '@salora/database';
 	import { BitsConfig } from 'bits-ui';
 	import type { RouterOutput } from '@salora/trpc-types';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';

@@ -44,7 +44,7 @@
 	import { page } from '$app/state';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { cn } from '$lib/utils';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	let accountSettings = $state(false);
 	let {
 		open = $bindable(false),
@@ -203,7 +203,7 @@
 											<div class="bg-muted flex h-8 min-w-8 items-center justify-center rounded-md">
 												{#if data.branches.find((branch) => branch.active)?.logo}
 													<img
-														src={PUBLIC_CDN_URL +
+														src={env.PUBLIC_CDN_URL +
 															data.branches.find((branch) => branch.active)?.logo}
 														alt="@shadcn"
 														class="h-full w-full rounded-md"
@@ -274,7 +274,7 @@
 										<div class="flex size-6 items-center justify-center rounded-sm border">
 											{#if branch.logo}
 												<img
-													src={PUBLIC_CDN_URL + branch.logo}
+													src={env.PUBLIC_CDN_URL + branch.logo}
 													alt="@shadcn"
 													class="h-full w-full rounded-md"
 												/>
@@ -469,7 +469,10 @@
 											' !p-0') + ' !h-12 cursor-pointer'}
 								>
 									<Avatar.Root class="h-8 w-8 rounded-md">
-										<Avatar.Image src={PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
+										<Avatar.Image
+											src={env.PUBLIC_CDN_URL + data.session.user.image}
+											alt="@shadcn"
+										/>
 
 										<Avatar.Fallback>
 											<img src="/images/placeholder-small.svg" alt="" />
@@ -501,7 +504,7 @@
 					<DropdownMenu.Label class="p-0 font-normal">
 						<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 							<Avatar.Root class="h-8 w-8 rounded-md">
-								<Avatar.Image src={PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
+								<Avatar.Image src={env.PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
 								<Avatar.Fallback>CN</Avatar.Fallback>
 							</Avatar.Root>
 							<div class="grid flex-1 text-left text-sm leading-tight">

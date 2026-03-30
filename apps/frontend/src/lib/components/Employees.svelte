@@ -26,9 +26,9 @@
 	import * as Select from './ui/select';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import Checkbox from './ui/checkbox/checkbox.svelte';
+	import { env } from '$env/dynamic/public';
 	import { Separator } from './ui/separator/';
 	import ComingSoon from './ComingSoon.svelte';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
 	import { cn } from '$lib/utils';
 	let {
 		employees,
@@ -174,7 +174,7 @@
 		values.email.value = employee.user.email;
 		values.role.value = employee.role;
 		values.assignServices.value = employee.services || [];
-		values.image = PUBLIC_CDN_URL + employee.user.image;
+		values.image = env.PUBLIC_CDN_URL + employee.user.image;
 		employeeAvailability = (employee.availability || []).map(
 			(time: { id: string; startTimeLocal: string; endTimeLocal: string; dayOfWeek: number }) => {
 				const [openHour, openMinute] = time.startTimeLocal.split(':');
@@ -404,7 +404,7 @@ md:grid-cols-1  `,
 									employee.invitationStatus === 'DECLINED' ? 'grayscale' : ''
 								)}
 							>
-								<Avatar.Image src={PUBLIC_CDN_URL + employee.user.image} alt="@shadcn" />
+								<Avatar.Image src={env.PUBLIC_CDN_URL + employee.user.image} alt="@shadcn" />
 
 								<Avatar.Fallback>
 									<img src="/images/user.svg" alt="" />

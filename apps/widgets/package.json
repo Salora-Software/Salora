@@ -5,8 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"start": "PORT=5173 node ./build",
+		"start:docker": "PORT=5173 node ./build",
 		"dev": "bunx --bun vite dev --host --port 5174",
 		"build": "bunx --bun vite build",
+		"build:docker": "DEPLOY_TARGET=docker bunx --bun vite build",
+		"build:worker": "DEPLOY_TARGET=worker bunx --bun vite build",
 		"build:embed": "vite build -c vite.embed.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -44,6 +47,7 @@
 	},
 	"dependencies": {
 		"@lottiefiles/dotlottie-svelte": "^0.6.2",
+		"@sveltejs/adapter-cloudflare-workers": "^2.8.0",
 		"@sveltejs/adapter-node": "^5.2.13",
 		"@trpc/client": "^11.4.3",
 		"@trpc/server": "^11.4.3",

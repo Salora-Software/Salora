@@ -5,22 +5,20 @@ import type { DateValue } from '@internationalized/date';
 import { DateTime } from 'luxon';
 
 export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZone: string): Date {
-	// Replicate moment logic: `${dayOfWeek - 1}` where 'd' is 0-6 (Sun-Sat)
 	const momentDayIndex = dayOfWeek - 1;
 	const [hour, minute] = time.split(':').map(Number);
-	
-	let dt = DateTime.now().setZone(organizationTimeZone).set({ hour, minute, second: 0, millisecond: 0 });
-	
+
+	// Initialiseer zonder tijd (zodat startOf('week') deze later niet overschrijft)
+	let dt = DateTime.now().setZone(organizationTimeZone);
+
 	if (momentDayIndex === 0) {
-		// Moment '0' is Sunday (start of week). Luxon ISO week starts Monday.
-		// We want the Sunday before the current ISO week's Monday.
 		dt = dt.startOf('week').minus({ days: 1 });
 	} else {
-		// 1 (Monday) ... 6 (Saturday) match directly with Luxon weekday 1-6
 		dt = dt.set({ weekday: momentDayIndex });
 	}
-	
-	return dt.toJSDate();
+
+	// Nu pas de exacte tijd instellen
+	return dt.set({ hour, minute, second: 0, millisecond: 0 }).toJSDate();
 }
 export function convertCalendarDateToDayOfWeek(date: DateValue): number {
 	const dayOfWeek = date.day;

@@ -1,12 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { generateUploadUrl } from '$lib/server/s3';
 import type { GenerateLogoUploadUrlInput } from './upload-logo.schema';
+import type { PrivateContext } from '$lib/server/trpc/context';
 
 export const generateLogoUploadUrlHandler = async ({
 	input: { organizationId, fileSize }
 }: {
 	input: GenerateLogoUploadUrlInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	// Validate file size if provided (max 2MB)
 	if (fileSize && fileSize > 2 * 1024 * 1024) {

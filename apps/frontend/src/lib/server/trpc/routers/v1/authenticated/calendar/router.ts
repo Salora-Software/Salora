@@ -49,7 +49,8 @@ export const router = createRouter({
 			async ({
 				input: { id, startTime, endTime },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// Get existing calendar item with booking details for comparison
@@ -80,7 +81,7 @@ export const router = createRouter({
 
 				// Check if user is a member of the organization
 				if (existingItem.organization) {
-					const organization = await getOrganization(existingItem.organization.id);
+					const organization = await getOrganization(db, existingItem.organization.id);
 					if (!organization?.members.some((member) => member.userId === user.id)) {
 						throw new TRPCError({
 							code: 'FORBIDDEN',
@@ -106,7 +107,7 @@ export const router = createRouter({
 					existingItem.booking.status !== 'CANCELLED'
 				) {
 					const booking = existingItem.booking;
-					const organization = await getOrganization(existingItem.organization.id);
+					const organization = await getOrganization(db, existingItem.organization.id);
 
 					if (organization && booking.customer) {
 						const dateStart = DateTime.fromJSDate(startTime, {
@@ -196,7 +197,7 @@ export const router = createRouter({
 				endDate: z.date()
 			})
 		)
-		.query(async ({ input: { organizationId, startDate, endDate } }) => {
+		.query(async ({ input: { organizationId, startDate, endDate }, ctx: { db } }) => {
 			let calendarItems = await db.query.calendarItem.findMany({
 				where: (calendarItem, { eq, and, lt, gt }) =>
 					and(
@@ -216,7 +217,7 @@ export const router = createRouter({
 							}
 						}
 					},
-					member: {
+					employee: {
 						with: {
 							user: true
 						}
@@ -227,7 +228,7 @@ export const router = createRouter({
 
 			//Alo per member calculate the disabledItems
 			// Get the operation hours for the organization
-			const org = await getOrganization(organizationId);
+			const org = await getOrganization(db, organizationId);
 			return {
 				items: calendarItems,
 				disabledItems: org.members.map((member) => {
@@ -281,13 +282,14 @@ export const router = createRouter({
 			async ({
 				input,
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				const { title, startTime, endTime, notes, type, organizationId } = input;
 				const id = 'id' in input ? input.id : undefined;
 				// Check if the user is a member of the organization
-				const organization = await getOrganization(organizationId);
+				const organization = await getOrganization(db, organizationId);
 				if (!organization)
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
@@ -424,14 +426,14 @@ export const router = createRouter({
 							const originalStartTime =
 								timeChanged && newStatus !== 'CANCELLED'
 									? DateTime.fromJSDate(existingItem.startTime, {
-											zone: organization.timeZone
-										})
+										zone: organization.timeZone
+									})
 									: null;
 							const originalEndTime =
 								timeChanged && newStatus !== 'CANCELLED'
 									? DateTime.fromJSDate(existingItem.endTime, {
-											zone: organization.timeZone
-										})
+										zone: organization.timeZone
+									})
 									: null;
 
 							// Get new member information if member changed
@@ -490,32 +492,32 @@ export const router = createRouter({
 											// Include original time information for rescheduling notifications
 											...(timeChanged && originalStartTime && originalEndTime
 												? {
-														originalStart: {
-															date: originalStartTime.toFormat('yyyy-MM-dd'),
-															year: originalStartTime.year,
-															month: originalStartTime.month,
-															day: originalStartTime.day,
-															hour: originalStartTime.hour.toString().padStart(2, '0'),
-															minute: originalStartTime.minute.toString().padStart(2, '0')
-														},
-														originalEnd: {
-															date: originalEndTime.toFormat('yyyy-MM-dd'),
-															year: originalEndTime.year,
-															month: originalEndTime.month,
-															day: originalEndTime.day,
-															hour: originalEndTime.hour.toString().padStart(2, '0'),
-															minute: originalEndTime.minute.toString().padStart(2, '0')
-														},
-														isRescheduled: true
-													}
+													originalStart: {
+														date: originalStartTime.toFormat('yyyy-MM-dd'),
+														year: originalStartTime.year,
+														month: originalStartTime.month,
+														day: originalStartTime.day,
+														hour: originalStartTime.hour.toString().padStart(2, '0'),
+														minute: originalStartTime.minute.toString().padStart(2, '0')
+													},
+													originalEnd: {
+														date: originalEndTime.toFormat('yyyy-MM-dd'),
+														year: originalEndTime.year,
+														month: originalEndTime.month,
+														day: originalEndTime.day,
+														hour: originalEndTime.hour.toString().padStart(2, '0'),
+														minute: originalEndTime.minute.toString().padStart(2, '0')
+													},
+													isRescheduled: true
+												}
 												: {}),
 											// Include member change information for staff reassignment notifications
 											...(memberChanged
 												? {
-														originalEmployee: booking.employee?.user.name,
-														newEmployee: newMember?.user.name,
-														isStaffReassigned: true
-													}
+													originalEmployee: booking.employee?.user.name,
+													newEmployee: newMember?.user.name,
+													isStaffReassigned: true
+												}
 												: {})
 										}
 									},
@@ -588,7 +590,8 @@ export const router = createRouter({
 			async ({
 				input: { id },
 				ctx: {
-					session: { user }
+					session: { user },
+					db
 				}
 			}) => {
 				// TODO: Add validation to ensure user is a member of the organization before deleting
@@ -620,7 +623,7 @@ export const router = createRouter({
 
 				// Check if user is a member of the organization
 				if (existingItem.organization) {
-					const organization = await getOrganization(existingItem.organization.id);
+					const organization = await getOrganization(db, existingItem.organization.id);
 					if (!organization?.members.some((member) => member.userId === user.id)) {
 						throw new TRPCError({
 							code: 'FORBIDDEN',
@@ -632,7 +635,7 @@ export const router = createRouter({
 				// If this is a booking, update the booking status to CANCELLED and notify customer
 				if (existingItem.booking && existingItem.organization) {
 					const booking = existingItem.booking;
-					const organization = await getOrganization(existingItem.organization.id);
+					const organization = await getOrganization(db, existingItem.organization.id);
 
 					// Update booking status to CANCELLED
 					await db

@@ -80,6 +80,7 @@ export const router = createRouter({
 				startTimeUtc: convertToUtc(time.startTimeLocal, time.dayOfWeek, timeZone),
 				endTimeUtc: convertToUtc(time.endTimeLocal, time.dayOfWeek, timeZone)
 			}));
+			console.log('updatedTimes', updatedTimes);
 			//check for each if the start time is before the end time
 			for (let time of updatedTimes) {
 				if (time.startTimeUtc > time.endTimeUtc)

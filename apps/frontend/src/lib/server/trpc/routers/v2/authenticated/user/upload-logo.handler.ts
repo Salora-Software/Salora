@@ -1,13 +1,14 @@
 import { TRPCError } from '@trpc/server';
 import { generateUploadUrl } from '$lib/server/s3';
 import type { GenerateLogoUploadUrlInput } from './upload-logo.schema';
+import type { PrivateContext } from '$lib/server/trpc/context';
 
 export const generateLogoUploadUrlHandler = async ({
 	input: { fileSize },
 	ctx: { session }
 }: {
 	input: GenerateLogoUploadUrlInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const userId = session.user.id;
 

@@ -263,38 +263,68 @@ export const router = createRouter({
 							message: 'start_time_must_be_before_end_time'
 						});
 				}
-				await db.transaction(async (tx) => {
-					// Delete outdated availability (only if removeItems has values)
-					if (removeItems && removeItems.length > 0) {
-						await tx
-							.delete(schema.availability)
-							.where(inArray(schema.availability.id, removeItems));
-					}
+				// Bereid alle queries voor in een array
+				const batchQueries = [];
 
-					// Handle availability updates/creates separately
-					for (const time of updatedTimes) {
-						if (time.id) {
-							// Update existing availability
-							await tx
-								.update(schema.availability)
+				// 1. Update de rol van de medewerker
+				batchQueries.push(
+					db.update(schema.member)
+						.set({ role })
+						.where(eq(schema.member.id, employeeId))
+				);
+
+				// 2. Update de gekoppelde user
+				batchQueries.push(
+					db.update(schema.user)
+						.set({ name, email })
+						.where(eq(schema.user.id, member.userId))
+				);
+
+				// 3. Update de availability
+				for (let time of updatedTimes) {
+					if (time.startTimeUtc > time.endTimeUtc) {
+						throw new TRPCError({
+							code: 'BAD_REQUEST',
+							message: 'start_time_must_be_before_end_time'
+						});
+					}
+				}
+
+				// 4. Verwijder oude availability
+				if (removeItems && removeItems.length > 0) {
+					batchQueries.push(
+						db.delete(schema.availability)
+							.where(inArray(schema.availability.id, removeItems))
+					);
+				}
+
+				// 5. Upsert nieuwe availability
+				for (const time of updatedTimes) {
+					if (time.id) {
+						batchQueries.push(
+							db.update(schema.availability)
 								.set({
 									dayOfWeek: time.dayOfWeek,
 									startTimeUtc: time.startTimeUtc,
 									endTimeUtc: time.endTimeUtc
 								})
-								.where(eq(schema.availability.id, time.id));
-						} else {
-							// Create new availability
-							await tx.insert(schema.availability).values({
+								.where(eq(schema.availability.id, time.id))
+						);
+					} else {
+						batchQueries.push(
+							db.insert(schema.availability).values({
 								id: crypto.randomUUID(),
 								dayOfWeek: time.dayOfWeek,
 								startTimeUtc: time.startTimeUtc,
 								endTimeUtc: time.endTimeUtc,
 								memberId: employeeId
-							});
-						}
+							})
+						);
 					}
-				});
+				}
+
+				// Voer alle queries als één D1 transactie uit
+				await db.batch(batchQueries as [any, ...any[]]);
 
 				// also update the user
 				const [user] = await db
@@ -326,8 +356,8 @@ export const router = createRouter({
 					services: fetchedMember.employeeServices.map((es) => es.serviceId),
 					availability: fetchedMember.availabilities.map((time) => ({
 						...time,
-						startTimeLocal: convertToLocal(new Date(time.startTimeUtc), organization.timeZone),
-						endTimeLocal: convertToLocal(new Date(time.endTimeUtc), organization.timeZone)
+						startTimeLocal: convertToLocal(time.startTimeUtc, organization.timeZone),
+						endTimeLocal: convertToLocal(time.endTimeUtc, organization.timeZone)
 					}))
 				};
 			}

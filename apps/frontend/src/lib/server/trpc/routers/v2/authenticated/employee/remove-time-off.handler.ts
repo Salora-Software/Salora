@@ -2,13 +2,15 @@ import { TRPCError } from '@trpc/server';
 
 import { schema } from '@salora/database';
 import type { RemoveTimeOffInput } from './remove-time-off.schema';
+import type { PrivateContext } from '$lib/server/trpc/context';
+import { eq } from 'drizzle-orm';
 
 export const removeTimeOffHandler = async ({
 	input,
-	ctx: { session }
+	ctx: { session, db }
 }: {
 	input: RemoveTimeOffInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const { organizationId, timeOffId } = input;
 
@@ -50,14 +52,15 @@ export const removeTimeOffHandler = async ({
 	}
 
 	// Delete both TimeOff and associated CalendarItem
-	return await db.transaction(async (tx) => {
-		// calendarItem is deleted automatically if defined with onDelete: Cascade in schema,
-		// but let's be explicit if needed.
-		await tx.delete(schema.calendarItem).where((ci, { eq }) => eq(ci.timeOffId, timeOffId));
-		return await tx
-			.delete(schema.timeOff)
-			.where((to, { eq }) => eq(to.id, timeOffId))
+	const results = await db.batch([
+		db.delete(schema.calendarItem)
+			.where(eq(schema.calendarItem.timeOffId, timeOffId)),
+		db.delete(schema.timeOff)
+			.where(eq(schema.timeOff.id, timeOffId))
 			.returning()
-			.then((r) => r[0]);
-	});
+	]);
+
+	// results[1] bevat het resultaat van de tweede query (de timeOff delete).
+	// Daarvan pakken we weer het eerste geretourneerde object.
+	return results[1][0];
 };

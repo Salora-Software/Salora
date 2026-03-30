@@ -146,8 +146,8 @@ export const router = createRouter({
 			emailer.sendEmail(
 				'',
 				(communication?.settings as { smtpEmail?: string })?.smtpEmail ||
-					formattedEmailCommunication.username ||
-					'',
+				formattedEmailCommunication.username ||
+				'',
 				input.email,
 				input.subject,
 				replaceVariables(input.body, {
@@ -275,38 +275,36 @@ export const router = createRouter({
 		)
 		.output(z.any())
 		.mutation(async ({ input, ctx: { db, session } }) => {
-			//use upsert and also use transactional so if 1 fails, all fail
-			// Drizzle transaction for bulk upsert
-			const orgId2 = session.session.activeOrganizationId!;
-			const results = await db.transaction(async (trx) => {
-				const upserts = await Promise.all(
-					input.communications.map(async (communication) => {
-						const { type, enabled, ...rest } = communication;
-						return trx
-							.insert(schema.communicationSetting)
-							.values({
-								id: crypto.randomUUID(),
-								type: type as any,
-								organizationId: orgId2,
-								enabled,
-								settings: rest,
-								updatedAt: new Date()
-							})
-							.onConflictDoUpdate({
-								target: [
-									schema.communicationSetting.type,
-									schema.communicationSetting.organizationId
-								],
-								set: {
-									enabled,
-									settings: rest,
-									updatedAt: new Date()
-								}
-							});
+			const orgId = session.session.activeOrganizationId!;
+
+			const batchQueries = input.communications.map((communication) => {
+				const { type, enabled, ...rest } = communication;
+
+				return db
+					.insert(schema.communicationSetting)
+					.values({
+						id: crypto.randomUUID(),
+						type: type as any,
+						organizationId: orgId,
+						enabled,
+						settings: rest,
+						updatedAt: new Date()
 					})
-				);
-				return upserts;
+					.onConflictDoUpdate({
+						target: [
+							schema.communicationSetting.type,
+							schema.communicationSetting.organizationId
+						],
+						set: {
+							enabled,
+							settings: rest,
+							updatedAt: new Date()
+						}
+					})
+					.returning();
 			});
+
+			const results = await db.batch(batchQueries);
 			return results;
 		})
 });

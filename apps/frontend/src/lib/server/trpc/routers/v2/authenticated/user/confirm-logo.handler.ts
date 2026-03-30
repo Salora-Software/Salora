@@ -2,13 +2,15 @@ import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { deleteImage, validateUploadedFileSize } from '$lib/server/s3';
 import type { ConfirmLogoUploadInput } from './confirm-logo.schema';
+import type { PrivateContext } from '$lib/server/trpc/context';
+import { eq } from 'drizzle-orm';
 
 export const confirmLogoUploadHandler = async ({
 	input: { imageId },
-	ctx: { session }
+	ctx: { session, db }
 }: {
 	input: ConfirmLogoUploadInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const userId = session.user.id;
 	const imageKey = `users/${userId}/profile_${imageId}.png`;
@@ -41,7 +43,7 @@ export const confirmLogoUploadHandler = async ({
 	await db
 		.update(schema.user)
 		.set({ image: `/${imageKey}` })
-		.where(schema.user.id.eq(userId));
+		.where(eq(schema.user.id, userId));
 
 	return `/${imageKey}`;
 };

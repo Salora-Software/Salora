@@ -2,13 +2,14 @@ import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and, desc } from 'drizzle-orm';
 import type { GetTimeOffsInput } from './get-time-offs.schema';
+import type { PrivateContext } from '$lib/server/trpc/context';
 
 export const getTimeOffsHandler = async ({
 	input,
-	ctx: { session }
+	ctx: { session, db }
 }: {
 	input: GetTimeOffsInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const { organizationId, memberId } = input;
 

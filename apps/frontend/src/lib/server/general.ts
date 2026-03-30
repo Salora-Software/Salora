@@ -1,3 +1,4 @@
+import type { DatabaseType } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 
 import { DateTime, Duration, Interval } from 'luxon';
@@ -124,7 +125,7 @@ export function generateTimeSlotsForEmployeesV2(
 	}
 	return { openingTimes, openingTimesTimeSlots, availabilityMap };
 }
-export async function getOrganization(id: string) {
+export async function getOrganization(db: DatabaseType, id: string) {
 	const organization = await db.query.organization.findFirst({
 		where: (table, { eq }) => eq(table.id, id),
 		with: {
@@ -344,12 +345,13 @@ export function generateAvailableTimeslots(
 	return slots;
 }
 export async function generateEmployeesTimeSlots(
+	db: DatabaseType,
 	branch: string | Branch,
 	serviceId: string,
 	employeeIds: string[],
 	date: Interval
 ) {
-	if (typeof branch === 'string') branch = await getOrganization(branch);
+	if (typeof branch === 'string') branch = await getOrganization(db, branch);
 	const service = getService(branch, serviceId);
 	const employees = getEmployees(branch, employeeIds).filter(
 		(employee) =>

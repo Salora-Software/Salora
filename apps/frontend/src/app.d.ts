@@ -1,6 +1,6 @@
 /// <reference path="../worker-configuration.d.ts" />
 import type { Auth } from '$lib/server/auth';
-import type { drizzleSchema } from '@salora/database';
+import type { DatabaseType } from '@salora/database';
 
 declare global {
 	namespace App {
@@ -10,7 +10,7 @@ declare global {
 		}
 		interface Locals {
 			ip?: string;
-			db: DrizzleD1Database<typeof drizzleSchema>;
+			db: DatabaseType;
 			auth: Auth;
 		}
 		// interface PageState {}
@@ -24,17 +24,17 @@ declare module 'next-auth' {
 	 * The shape of the user object returned in the OAuth providers' `profile` callback,
 	 * or the second parameter of the `session` callback, when using a database.
 	 */
-	interface User {}
+	interface User { }
 	/**
 	 * The shape of the account object returned in the OAuth providers' `account` callback,
 	 * Usually contains information about the provider being used, like OAuth tokens (`access_token`, etc).
 	 */
-	interface Account {}
+	interface Account { }
 
 	/**
 	 * Returned by `useSession`, `auth`, contains information about the active session.
 	 */
-	interface Session {}
+	interface Session { }
 }
 
 import type { Cloudflare } from '@cloudflare/workers-types';

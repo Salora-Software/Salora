@@ -2,13 +2,14 @@ import { TRPCError } from '@trpc/server';
 
 import type { AddTimeOffInput } from './add-time-off.schema';
 import { schema } from '@salora/database';
+import type { PrivateContext } from '$lib/server/trpc/context';
 
 export const addTimeOffHandler = async ({
 	input,
-	ctx: { session }
+	ctx: { session, db }
 }: {
 	input: AddTimeOffInput;
-	ctx: any;
+	ctx: PrivateContext;
 }) => {
 	const { organizationId, memberId, startTime, endTime, reason, type } = input;
 
@@ -20,7 +21,7 @@ export const addTimeOffHandler = async ({
 			organization: {
 				with: {
 					members: {
-						where: (m, { eq }) => eq(m.userId, session.user.id as string)
+						where: (m, { eq }) => eq(m.userId, session.user.id)
 					}
 				}
 			}
@@ -49,19 +50,16 @@ export const addTimeOffHandler = async ({
 	const timeOffId = crypto.randomUUID();
 
 	// Create TimeOff and CalendarItem in a transaction
-	return await db.transaction(async (tx) => {
-		const timeOff = await tx
-			.insert(schema.timeOff)
+	const results = await db.batch([
+		db.insert(schema.timeOff)
 			.values({
 				id: timeOffId,
 				memberId: memberId,
 				reason: reason,
 				type: type
 			})
-			.returning()
-			.then((r) => r[0]);
-
-		await tx.insert(schema.calendarItem).values({
+			.returning(),
+		db.insert(schema.calendarItem).values({
 			id: crypto.randomUUID(),
 			organizationId: organizationId,
 			employeeId: memberId,
@@ -71,8 +69,10 @@ export const addTimeOffHandler = async ({
 			timeOffId: timeOffId,
 			notes: reason,
 			updatedAt: new Date()
-		});
+		})
+	]);
 
-		return timeOff;
-	});
+	// db.batch retourneert een array met resultaten voor elke query.
+	// results[0] is de output van de timeOff insert. Daarvan pakken we het eerste geretourneerde object.
+	return results[0][0];
 };

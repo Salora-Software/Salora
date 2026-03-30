@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, setContext } from 'svelte';
-	import { trpc } from '$lib/trpc';
+	import { createTrpcClient } from '$lib/trpc';
 	import BookingWidget from './BookingWidget.svelte';
 	import { BitsConfig } from 'bits-ui';
 	import type { RouterOutput } from '@salora/trpc-types';
@@ -9,7 +9,7 @@
 	import Themer from '$lib/components/Themer.svelte';
 	import { LoaderCircle } from 'lucide-svelte';
 
-	let { variant = 'widget', branchId } = $props();
+	let { variant = 'widget', branchId, endpoint = 'https://app.salora.app' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
 
@@ -20,6 +20,7 @@
 	setContext('branch', () => branchData);
 
 	onMount(async () => {
+		const trpc = createTrpcClient(endpoint);
 		try {
 			// Gebruik v1.getBranch zoals in de originele layout.server.ts
 			branchData = await trpc.v1.getBranch.query({

@@ -37,10 +37,18 @@ script?.parentNode?.insertBefore(container, script);
 
 const urlParams = new URLSearchParams(window.location.search);
 const branchId = urlParams.get('branchId') || urlParams.get('id');
+const scriptEl = script instanceof HTMLScriptElement ? script : null;
+const endpoint =
+	urlParams.get('endpoint') ||
+	urlParams.get('backendUrl') ||
+	scriptEl?.dataset.endpoint ||
+	scriptEl?.dataset.backendUrl ||
+	'https://app.salora.app';
 
 mount(WidgetWrapper, {
 	target: targetDiv,
 	props: {
-		branchId: branchId
+		branchId: branchId,
+		endpoint
 	}
 });

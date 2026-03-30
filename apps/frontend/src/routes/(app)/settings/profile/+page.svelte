@@ -12,6 +12,7 @@
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { env } from '$env/dynamic/public';
 	import { compressImage } from '$lib/utils';
+	import { PUBLIC_CDN_URL } from '$env/static/public';
 	let { data } = $props();
 	let loading = $state({
 		name: false,

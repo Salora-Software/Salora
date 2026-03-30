@@ -3,14 +3,33 @@ import { createTRPCProxyClient, httpBatchLink, type TRPCLink } from '@trpc/clien
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
 import type { AppRouter, RouterOutput } from '@salora/trpc-types';
-import { env as publicEnv } from '$env/dynamic/public';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
 import { t } from './translation';
 import superjson from './superjson';
 
 type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
-const backendUrl = publicEnv.PUBLIC_BACKEND_URL ?? process.env.PUBLIC_BACKEND_URL ?? '';
+const DEFAULT_BACKEND_URL = 'https://app.salora.app';
+
+const normalizeBackendUrl = (url?: string | null): string => {
+	if (!url) return DEFAULT_BACKEND_URL;
+	return url.replace(/\/$/, '');
+};
+
+const resolvedBackendUrl = normalizeBackendUrl(
+	new URLSearchParams(window.location.search).get('endpoint')
+);
+
+export const createTrpcClient = (backendUrl?: string): TRPCClient =>
+	createTRPCProxyClient<AppRouter>({
+		links: [
+			customLink,
+			httpBatchLink({
+				url: `${normalizeBackendUrl(backendUrl)}/api/trpc`,
+				transformer: superjson
+			})
+		]
+	});
 
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {
@@ -46,29 +65,21 @@ export const customLink: TRPCLink<AppRouter> = () => {
 		});
 	};
 };
-export const trpc: TRPCClient = createTRPCProxyClient<AppRouter>({
-	links: [
-		customLink,
-		httpBatchLink({
-			url: backendUrl + '/api/trpc',
-			transformer: superjson
-		})
-	]
-});
+export const trpc: TRPCClient = createTrpcClient(resolvedBackendUrl);
 export const trpcS: TRPCClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: backendUrl + '/api/trpc',
+			url: `${resolvedBackendUrl}/api/trpc`,
 			transformer: superjson
 		})
 	]
 }); // Server fetch without toast
-export const trpcOnServer = (fetch: FetchEsque): TRPCClient =>
+export const trpcOnServer = (fetch: FetchEsque, backendUrl?: string): TRPCClient =>
 	createTRPCProxyClient<AppRouter>({
 		links: [
 			customLink,
 			httpBatchLink({
-				url: backendUrl + '/api/trpc',
+				url: `${normalizeBackendUrl(backendUrl ?? resolvedBackendUrl)}/api/trpc`,
 				fetch,
 				transformer: superjson
 			})

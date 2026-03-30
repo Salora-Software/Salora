@@ -213,7 +213,10 @@ export const router = createRouter({
 				}),
 				db.query.booking.findMany({
 					where: (booking, { and, eq, lt }) =>
-						and(eq(booking.organizationId, organizationId!), lt(booking.createdAt, startOfPeriodUTC)),
+						and(
+							eq(booking.organizationId, organizationId!),
+							lt(booking.createdAt, startOfPeriodUTC)
+						),
 					columns: {
 						customerId: true
 					},
@@ -229,8 +232,9 @@ export const router = createRouter({
 			const priorCustomerIds = new Set(
 				priorBookings.map((booking: { customerId: string | null }) => booking.customerId)
 			);
-			const returningCustomers = Array.from(uniqueCustomerIds).filter((id) => priorCustomerIds.has(id))
-				.length;
+			const returningCustomers = Array.from(uniqueCustomerIds).filter((id) =>
+				priorCustomerIds.has(id)
+			).length;
 
 			// Calculate unique customers last period efficiently
 			const lastPeriodUniqueCustomers = await db.query.booking.findMany({
@@ -242,7 +246,7 @@ export const router = createRouter({
 					),
 				columns: {
 					customerId: true
-				},
+				}
 				// Drizzle does not support distinct directly, so use Set below
 			});
 			const totalCustomersLastPeriod = Array.from(

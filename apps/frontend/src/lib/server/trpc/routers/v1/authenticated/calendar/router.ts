@@ -343,7 +343,7 @@ export const router = createRouter({
 					});
 
 					if (existingItem?.booking) {
-						oldStatus = existingItem.booking.status;
+						oldStatus = existingItem.booking.status as BookingStatus;
 					}
 
 					// Check if member (employee) has changed
@@ -534,26 +534,29 @@ export const router = createRouter({
 						const [createdCalendarItem] = await db
 							.insert(schema.calendarItem)
 							.values({
+								id: crypto.randomUUID(),
 								title: data.title,
 								startTime: data.startTime,
 								endTime: data.endTime,
 								notes: data.notes,
 								type: data.type as CalendarItemType,
 								organizationId: input.organizationId,
-								memberId: 'memberId' in input && input.memberId ? input.memberId : undefined
+								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
+								updatedAt: new Date(),
+								bookingId: crypto.randomUUID()
 							})
 							.returning();
 
 						if (createdCalendarItem) {
 							await db.insert(schema.booking).values({
+								id: createdCalendarItem.bookingId!,
 								status: (data.status as BookingStatus) || 'PENDING',
 								notes: data.notes,
 								serviceId: input.serviceId,
 								employeeId: 'memberId' in input && input.memberId ? input.memberId : undefined,
 								customerId: null, // This would need to be provided for actual bookings
 								organizationId: input.organizationId,
-								duration: 60, // Default duration, should be calculated from service
-								id: createdCalendarItem.bookingId || undefined
+								duration: 60 // Default duration, should be calculated from service
 							});
 						}
 					} else {
@@ -562,12 +565,14 @@ export const router = createRouter({
 							await db
 								.insert(schema.calendarItem)
 								.values({
+									id: crypto.randomUUID(),
 									title: data.title,
 									startTime: data.startTime,
 									endTime: data.endTime,
 									notes: data.notes,
 									type: data.type as CalendarItemType,
-									organizationId: input.organizationId
+									organizationId: input.organizationId,
+									updatedAt: new Date()
 								})
 								.returning()
 						)[0];

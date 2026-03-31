@@ -426,14 +426,14 @@ export const router = createRouter({
 							const originalStartTime =
 								timeChanged && newStatus !== 'CANCELLED'
 									? DateTime.fromJSDate(existingItem.startTime, {
-										zone: organization.timeZone
-									})
+											zone: organization.timeZone
+										})
 									: null;
 							const originalEndTime =
 								timeChanged && newStatus !== 'CANCELLED'
 									? DateTime.fromJSDate(existingItem.endTime, {
-										zone: organization.timeZone
-									})
+											zone: organization.timeZone
+										})
 									: null;
 
 							// Get new member information if member changed
@@ -492,32 +492,32 @@ export const router = createRouter({
 											// Include original time information for rescheduling notifications
 											...(timeChanged && originalStartTime && originalEndTime
 												? {
-													originalStart: {
-														date: originalStartTime.toFormat('yyyy-MM-dd'),
-														year: originalStartTime.year,
-														month: originalStartTime.month,
-														day: originalStartTime.day,
-														hour: originalStartTime.hour.toString().padStart(2, '0'),
-														minute: originalStartTime.minute.toString().padStart(2, '0')
-													},
-													originalEnd: {
-														date: originalEndTime.toFormat('yyyy-MM-dd'),
-														year: originalEndTime.year,
-														month: originalEndTime.month,
-														day: originalEndTime.day,
-														hour: originalEndTime.hour.toString().padStart(2, '0'),
-														minute: originalEndTime.minute.toString().padStart(2, '0')
-													},
-													isRescheduled: true
-												}
+														originalStart: {
+															date: originalStartTime.toFormat('yyyy-MM-dd'),
+															year: originalStartTime.year,
+															month: originalStartTime.month,
+															day: originalStartTime.day,
+															hour: originalStartTime.hour.toString().padStart(2, '0'),
+															minute: originalStartTime.minute.toString().padStart(2, '0')
+														},
+														originalEnd: {
+															date: originalEndTime.toFormat('yyyy-MM-dd'),
+															year: originalEndTime.year,
+															month: originalEndTime.month,
+															day: originalEndTime.day,
+															hour: originalEndTime.hour.toString().padStart(2, '0'),
+															minute: originalEndTime.minute.toString().padStart(2, '0')
+														},
+														isRescheduled: true
+													}
 												: {}),
 											// Include member change information for staff reassignment notifications
 											...(memberChanged
 												? {
-													originalEmployee: booking.employee?.user.name,
-													newEmployee: newMember?.user.name,
-													isStaffReassigned: true
-												}
+														originalEmployee: booking.employee?.user.name,
+														newEmployee: newMember?.user.name,
+														isStaffReassigned: true
+													}
 												: {})
 										}
 									},

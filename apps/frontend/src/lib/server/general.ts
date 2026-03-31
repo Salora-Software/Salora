@@ -2,82 +2,91 @@ import type { DatabaseType } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 
 import { DateTime, Duration, Interval } from 'luxon';
+import { IntervalUtils } from '@salora/scheduler';
 
 export type Branch = Awaited<ReturnType<typeof getOrganization>>;
 
 // Returns the availability intervals for a single employee within the allowed booking window
+
 export function getEmployeeAvailabilityV2(
 	branch: Branch,
 	employeeId: string,
 	intervalRange: Interval,
 	includeBooked: boolean = true
 ) {
-	if (!intervalRange.start || !intervalRange.end) {
+	if (!intervalRange.isValid || !intervalRange.start || !intervalRange.end) {
 		return [];
 	}
 
-	// Find the employee (member) object
 	const member = branch.members.find((m) => m.id === employeeId);
-	if (!member) {
+	if (!member || !member.availabilities.length) {
 		return [];
 	}
 
-	// Build employee availability intervals for the requested intervalRange
+	// 1. Cache het weekschema vooraf. Parse de uren/minuten slechts 1x per weekdag.
+	const weeklySchedule = new Map<
+		number,
+		{ startH: number; startM: number; endH: number; endM: number }[]
+	>();
+
+	for (const avail of member.availabilities) {
+		const refStart = DateTime.fromJSDate(new Date(avail.startTimeUtc), { zone: branch.timeZone });
+		const refEnd = DateTime.fromJSDate(new Date(avail.endTimeUtc), { zone: branch.timeZone });
+
+		const slots = weeklySchedule.get(avail.dayOfWeek) || [];
+		slots.push({
+			startH: refStart.hour,
+			startM: refStart.minute,
+			endH: refEnd.hour,
+			endM: refEnd.minute
+		});
+		weeklySchedule.set(avail.dayOfWeek, slots);
+	}
+
 	const employeeAvailabilities: Interval[] = [];
-	let current = intervalRange.start.startOf('day');
-	while (current <= intervalRange.end) {
-		const weekday = current.weekday; // 1 = Monday, 7 = Sunday
-		const availabilities = member.availabilities.filter((a) => a.dayOfWeek === weekday);
-		for (const avail of availabilities) {
-			const refStart = DateTime.fromJSDate(new Date(avail.startTimeUtc), { zone: branch.timeZone });
-			const refEnd = DateTime.fromJSDate(new Date(avail.endTimeUtc), { zone: branch.timeZone });
-			const start = current.setZone(branch.timeZone).set({
-				hour: refStart.hour,
-				minute: refStart.minute,
-				second: 0,
-				millisecond: 0
-			});
-			const end = current.setZone(branch.timeZone).set({
-				hour: refEnd.hour,
-				minute: refEnd.minute,
-				second: 0,
-				millisecond: 0
-			});
-			if (end > start) {
-				employeeAvailabilities.push(Interval.fromDateTimes(start, end));
+	let current = intervalRange.start.setZone(branch.timeZone).startOf('day');
+	const endLimit = intervalRange.end.setZone(branch.timeZone).endOf('day');
+
+	// 2. Loop door de dagen en pas puur de gecachte uren/minuten toe
+	while (current <= endLimit) {
+		const dailySlots = weeklySchedule.get(current.weekday);
+
+		if (dailySlots) {
+			for (const slot of dailySlots) {
+				const start = current.set({
+					hour: slot.startH,
+					minute: slot.startM,
+					second: 0,
+					millisecond: 0
+				});
+
+				const end = current.set({
+					hour: slot.endH,
+					minute: slot.endM,
+					second: 0,
+					millisecond: 0
+				});
+
+				if (end > start) {
+					employeeAvailabilities.push(Interval.fromDateTimes(start, end));
+				}
 			}
 		}
+
 		current = current.plus({ days: 1 });
 	}
 
-	// Intersect employee availability with org opening times
+	// 3. Intersect met openingstijden via de snelle utils
 	const openingTimes = getOpeningTimesV2(branch, intervalRange);
-	const allowedIntervals: Interval[] = [];
-	for (const avail of employeeAvailabilities) {
-		for (const open of openingTimes) {
-			const intersection = avail.intersection(open);
-			if (
-				intersection &&
-				intersection.isValid &&
-				intersection.start &&
-				intersection.end &&
-				intersection.start < intersection.end
-			) {
-				allowedIntervals.push(intersection);
-			}
-		}
-	}
+	const allowedIntervals = IntervalUtils.intersect(employeeAvailabilities, openingTimes);
 
 	if (!includeBooked) {
 		return allowedIntervals;
 	}
-	// Subtract bookings only (no out-of-bounds intervals)
+
+	// 4. Optioneel: trek de reeds geboekte afspraken eraf
 	const bookings = getBookingsForEmployeeV2(branch, employeeId, intervalRange);
-	const busyIntervals = bookings;
-	const available = subtractIntervals(allowedIntervals, busyIntervals).filter(
-		(interval) => interval.start !== null && interval.end !== null
-	);
-	return available;
+	return IntervalUtils.subtract(allowedIntervals, bookings);
 }
 
 export function generateTimeSlotsForEmployeesV2(

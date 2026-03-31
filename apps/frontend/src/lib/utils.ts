@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { TimeSlot } from './types';
 import type { DateValue } from '@internationalized/date';
-import { DateTime } from 'luxon';
+import { DateTime, type WeekdayNumbers } from 'luxon';
 
 export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZone: string): Date {
 	const momentDayIndex = dayOfWeek - 1;
@@ -14,7 +14,7 @@ export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZo
 	if (momentDayIndex === 0) {
 		dt = dt.startOf('week').minus({ days: 1 });
 	} else {
-		dt = dt.set({ weekday: momentDayIndex });
+		dt = dt.set({ weekday: momentDayIndex as WeekdayNumbers });
 	}
 
 	// Nu pas de exacte tijd instellen

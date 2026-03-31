@@ -9,6 +9,7 @@ const handleRequest = async (event: any) => {
 		req: event.request,
 		router: appRouter,
 		endpoint: '/api/trpc',
+		allowBatching: false,
 		// Zorg dat deze functie zelf niet te zwaar is!
 		createContext: createSvelteKitContext(event.locals)
 	});

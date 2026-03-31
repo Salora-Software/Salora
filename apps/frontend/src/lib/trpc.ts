@@ -1,5 +1,5 @@
 // src/lib/trpc.ts
-import { createTRPCProxyClient, httpBatchLink, type TRPCLink } from '@trpc/client';
+import { createTRPCProxyClient, httpLink, type TRPCLink } from '@trpc/client';
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
 import type { AppRouter } from '$lib/server/trpc/router';
@@ -53,7 +53,7 @@ export const customLink: TRPCLink<AppRouter> = () => {
 export const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		customLink,
-		httpBatchLink({
+		httpLink({
 			url: '/api/trpc',
 			transformer: SuperJSON
 		})
@@ -64,7 +64,7 @@ export const trpcQuery = createTrpcQueryProxy<AppRouter>(trpc);
 
 export const trpcS = createTRPCProxyClient<AppRouter>({
 	links: [
-		httpBatchLink({
+		httpLink({
 			url: '/api/trpc',
 			transformer: SuperJSON
 		})
@@ -74,7 +74,7 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 	createTRPCProxyClient<AppRouter>({
 		links: [
 			customLink,
-			httpBatchLink({
+			httpLink({
 				url: '/api/trpc',
 				transformer: SuperJSON
 			})

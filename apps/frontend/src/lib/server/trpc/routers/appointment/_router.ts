@@ -10,18 +10,18 @@ import { env } from '$lib/server/env';
 import { getAvailabilitySchema } from './availability.schema';
 import { getOccupancySchema } from './occupancy.schema';
 import { createBookingSchema } from './booking.schema';
+import { createBookingHandler } from './booking.handler';
+import { getOccupancyHandler } from './occupancy.handler';
+import { getAvailabilityHandler } from './availability.handler';
 
 export const router = createRouter({
 	getAvailability: portalProcedure.input(getAvailabilitySchema).query(async (opts) => {
-		const { getAvailabilityHandler } = await import('./availability.handler');
 		return await getAvailabilityHandler(opts);
 	}),
 	getOccupancy: portalProcedure.input(getOccupancySchema).query(async (opts) => {
-		const { getOccupancyHandler } = await import('./occupancy.handler');
 		return await getOccupancyHandler(opts);
 	}),
 	createBooking: portalProcedure.input(createBookingSchema).mutation(async (opts) => {
-		const { createBookingHandler } = await import('./booking.handler');
 		return await createBookingHandler(opts);
 	}),
 

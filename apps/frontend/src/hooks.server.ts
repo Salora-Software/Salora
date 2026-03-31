@@ -4,6 +4,7 @@ import type { Handle } from '@sveltejs/kit';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	console.log(`Handler loaded`);
 	if (!event.platform?.env?.DB) {
 		throw new Error('Geen database binding gevonden voor dit request.');
 	}

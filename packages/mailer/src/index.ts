@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 
+export * from './queue';
+
 export interface MailCredential {
   provider_name: string;
   priority: number;

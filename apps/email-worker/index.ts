@@ -1,41 +1,129 @@
-import { RedisClient } from "bun";
+import { createDb, schema } from '@salora/database';
 import {
+  isEmailQueueMessage,
+  isRetryableEmailError,
   sendEmailWithFailover,
-  QUEUE_NAME,
-  type EmailJobData,
-} from "@salora/mailer";
+  type MailCredential
+} from '@salora/mailer';
 
-const connection = new RedisClient(
-  process.env.REDIS_URL || "redis://localhost:6379",
-);
-
-// @ts-ignore
-connection.onconnect = () => {
-  console.log("✅ Successfully connected to Redis (Bun)");
-};
-
-// @ts-ignore
-connection.onclose = (err) => {
-  if (err) console.error("❌ Redis connection error:", err);
-};
-
-console.log("📧 Email worker with failover running (Bun native)...");
-
-// Worker loop
-async function runWorker() {
-  while (true) {
-    try {
-      // BRPOP returns [key, value] or null
-      const result = await connection.brpop(QUEUE_NAME, 0);
-      if (result && Array.isArray(result) && result.length === 2) {
-        const jobData: EmailJobData = JSON.parse(result[1]);
-        await sendEmailWithFailover(jobData, connection);
-      }
-    } catch (error) {
-      console.error("❌ Worker loop error:", error);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
+interface Env {
+  DB: unknown;
+  MAIL_FALLBACK_SERVER?: string;
+  MAIL_FALLBACK_PORT?: string;
+  MAIL_FALLBACK_USERNAME?: string;
+  MAIL_FALLBACK_PASSWORD?: string;
+  MAIL_EMAIL_SENDER?: string;
 }
 
-runWorker();
+interface QueueMessage {
+  body: unknown;
+  ack: () => void;
+  retry: () => void;
+}
+
+interface QueueBatch {
+  messages: QueueMessage[];
+}
+
+const toPort = (value?: string): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 587;
+};
+
+const getCredentials = async (env: Env, organizationId: string): Promise<MailCredential[]> => {
+  const db = createDb(env.DB as any);
+  const allCommunications = await db.select().from(schema.communicationSetting);
+  const communication = allCommunications.find(
+    (item) => item.organizationId === organizationId && item.type === 'EMAIL'
+  );
+
+  const settings = (communication?.settings ?? {}) as {
+    smtpServer?: string;
+    smtpPort?: number;
+    smtpUsername?: string;
+    smtpPassword?: string;
+    smtpEmail?: string;
+  };
+
+  const orgCredential: MailCredential | null =
+    settings.smtpServer && settings.smtpUsername && settings.smtpPassword
+      ? {
+          provider_name: 'Organization SMTP',
+          priority: 10,
+          smtp_host: settings.smtpServer,
+          smtp_port: Number(settings.smtpPort ?? 587),
+          username: settings.smtpUsername,
+          password: settings.smtpPassword
+        }
+      : null;
+
+  const fallbackCredential: MailCredential | null =
+    env.MAIL_FALLBACK_SERVER && env.MAIL_FALLBACK_USERNAME && env.MAIL_FALLBACK_PASSWORD
+      ? {
+          provider_name: 'Fallback SMTP',
+          priority: 100,
+          smtp_host: env.MAIL_FALLBACK_SERVER,
+          smtp_port: toPort(env.MAIL_FALLBACK_PORT),
+          username: env.MAIL_FALLBACK_USERNAME,
+          password: env.MAIL_FALLBACK_PASSWORD
+        }
+      : null;
+
+  const credentials = [orgCredential, fallbackCredential].filter(
+    (value): value is MailCredential => Boolean(value)
+  );
+
+  return credentials;
+};
+
+export default {
+  async queue(batch: QueueBatch, env: Env): Promise<void> {
+    for (const message of batch.messages) {
+      const payload = message.body;
+
+      if (!isEmailQueueMessage(payload)) {
+        console.error('Dropping invalid queue payload', payload);
+        message.ack();
+        continue;
+      }
+
+      try {
+        const credentials = await getCredentials(env, payload.organizationId);
+        if (credentials.length === 0) {
+          console.error('No SMTP credentials available', {
+            jobId: payload.jobId,
+            organizationId: payload.organizationId
+          });
+          message.ack();
+          continue;
+        }
+
+        await sendEmailWithFailover({
+          senderName: payload.senderName,
+          from: payload.from || env.MAIL_EMAIL_SENDER || 'noreply@salora.app',
+          to: payload.to,
+          subject: payload.subject,
+          body: payload.body,
+          credentials
+        });
+
+        message.ack();
+      } catch (error) {
+        const retryable = isRetryableEmailError(error);
+        console.error('Email delivery failed', {
+          jobId: payload.jobId,
+          organizationId: payload.organizationId,
+          retryable,
+          error
+        });
+
+        if (!retryable) {
+          message.ack();
+          continue;
+        }
+
+        message.retry();
+      }
+    }
+  }
+};

@@ -18,6 +18,14 @@
 			"database_id": "e948003e-f342-4674-a065-4c47c48174ef",
 		}
 	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "EMAIL_QUEUE",
+				"queue": "email-jobs"
+			}
+		]
+	},
 	"observability": {
 		"logs": {
 			"enabled": true,

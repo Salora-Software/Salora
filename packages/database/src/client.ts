@@ -1,4 +1,5 @@
-import { AnyD1Database, drizzle } from "drizzle-orm/d1";
+import { drizzle } from "drizzle-orm/d1";
+import type { AnyD1Database } from "drizzle-orm/d1";
 import * as schema from "./db/schema";
 import * as relations from "./db/relations";
 

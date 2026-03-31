@@ -25,7 +25,7 @@
 		},
 		"traces": {
 			"enabled": true,
-		}
+		},
 	},
 	"vars": {
 		"DEPLOY_TARGET": "worker",

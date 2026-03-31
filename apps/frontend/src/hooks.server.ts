@@ -12,6 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Initialiseer db en auth één keer per request
 	event.locals.db = createDb(event.platform.env.DB);
 	event.locals.auth = createAuth(event.locals.db, event.url.origin);
+	console.log(`DB en Auth geïnitialiseerd`);
 
 	// Handle CORS preflight requests
 	if (event.request.method === 'OPTIONS') {

@@ -63,81 +63,55 @@ export const router = createRouter({
 			})
 		)
 		.query(async ({ input: { id }, ctx: { db } }) => {
-			console.log('Fetching branch with ID:', id);
-			const orgRows = await db
-				.select({
-					organization: schema.organization,
-					service: schema.service,
+			// Haal de data parallel en plat op (voorkomt Cartesian product)
+			const [orgResult, servicesResult, membersResult] = await Promise.all([
+				db.select().from(schema.organization).where(eq(schema.organization.id, id)).limit(1),
+				db.select().from(schema.service).where(eq(schema.service.organizationId, id)),
+				db.select({
 					member: schema.member,
 					user: schema.user
 				})
-				.from(schema.organization)
-				.leftJoin(schema.service, eq(schema.service.organizationId, schema.organization.id))
-				.leftJoin(schema.member, eq(schema.member.organizationId, schema.organization.id))
-				.leftJoin(schema.user, eq(schema.user.id, schema.member.userId))
-				.where(eq(schema.organization.id, id));
-			console.log("fetched orgs")
+					.from(schema.member)
+					.innerJoin(schema.user, eq(schema.user.id, schema.member.userId))
+					.where(eq(schema.member.organizationId, id))
+			]);
 
-			if (!orgRows.length || !orgRows[0].organization) {
+			if (!orgResult.length) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'branch_not_found'
 				});
 			}
 
-			// Flatten and group services and members
-			const org = orgRows[0].organization;
-			const servicesMap = new Map();
-			const membersMap = new Map();
-
-			for (const row of orgRows) {
-				if (row.service && row.service.id) {
-					servicesMap.set(row.service.id, row.service);
-				}
-				if (row.member && row.member.id) {
-					const memberId = row.member.id;
-					if (!membersMap.has(memberId)) {
-						membersMap.set(memberId, {
-							...row.member,
-							user: row.user && row.user.id ? row.user : null
-						});
-					}
-				}
-			}
-			console.log("processed org rows, constructing branch object")
+			// Bouw het object direct op en pas de sorteringen toe
 			const branch = {
-				...org,
-				services: Array.from(servicesMap.values()),
-				members: Array.from(membersMap.values())
+				...orgResult[0],
+
+				services: servicesResult.sort((a, b) => {
+					if (a.sortingIndex === null && b.sortingIndex === null) return 0;
+					if (a.sortingIndex === null) return 1;
+					if (b.sortingIndex === null) return -1;
+					return a.sortingIndex - b.sortingIndex;
+				}),
+
+				members: membersResult.map(row => ({
+					...row.member,
+					user: row.user
+				})).sort((a, b) => {
+					const roleOrder: Record<string, number> = { owner: 0, admin: 1, employee: 2 };
+					const roleA = roleOrder[a.role] ?? 3;
+					const roleB = roleOrder[b.role] ?? 3;
+
+					if (roleA !== roleB) {
+						return roleA - roleB;
+					}
+
+					const createdA = new Date(a.createdAt!).getTime();
+					const createdB = new Date(b.createdAt!).getTime();
+					return createdA - createdB;
+				})
 			};
 
-			//sort branch.services by sortingIndex
-			branch.services = branch.services.sort((a, b) => {
-				if (a.sortingIndex === null && b.sortingIndex === null) {
-					return 0;
-				}
-				if (a.sortingIndex === null) {
-					return 1;
-				}
-				if (b.sortingIndex === null) {
-					return -1;
-				}
-				return a.sortingIndex - b.sortingIndex;
-			});
-			//also sort branch.members by their role and creation date so the owner is first, then admins, then employees and the oldest member is first
-			const roleOrder = { owner: 0, admin: 1, employee: 2 };
-			branch.members = branch.members.sort((a, b) => {
-				const roleA = roleOrder[a.role as keyof typeof roleOrder] ?? 3;
-				const roleB = roleOrder[b.role as keyof typeof roleOrder] ?? 3;
-				if (roleA !== roleB) {
-					return roleA - roleB;
-				}
-				const createdA = new Date(a.createdAt).getTime();
-				const createdB = new Date(b.createdAt).getTime();
-				return createdA - createdB;
-			});
-
-			console.log('Finished fetching branch:', branch);
 			return branch;
 		}),
 	getTimeSlots: publicProcedure

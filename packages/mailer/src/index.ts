@@ -1,8 +1,4 @@
-import nodemailer from "nodemailer";
-
-export interface RedisQueueClient {
-  lpush: (key: string, value: string) => Promise<unknown>;
-}
+import nodemailer from 'nodemailer';
 
 export interface MailCredential {
   provider_name: string;
@@ -13,118 +9,86 @@ export interface MailCredential {
   password: string;
 }
 
-export interface EmailJobData {
+export interface EmailSendData {
   senderName: string;
   from: string;
   to: string;
   subject: string;
   body: string;
   credentials: MailCredential[];
-  attempt: number;
 }
 
-export const QUEUE_NAME = "emailQueue";
-
-export class Emailer {
-  constructor(
-    private redis: RedisQueueClient | null = null,
-    private credentials: MailCredential[],
-  ) {}
-
-  public async sendEmail(
-    senderName: string,
-    from: string,
-    to: string,
-    subject: string,
-    body: string,
-  ) {
-    if (!this.redis) {
-      console.error(
-        "❌ Emailer has not been initialized. Please make sure the 'init' method is called.",
-      );
-      return;
-    }
-
-    const data: EmailJobData = {
-      senderName,
-      from,
-      to,
-      subject,
-      body,
-      credentials: this.credentials,
-      attempt: 0,
-    };
-
-    await this.redis.lpush(QUEUE_NAME, JSON.stringify(data));
-
-    console.log(`📩 Email job queued for ${to} from ${senderName}`);
-  }
+export interface SendResult {
+  success: boolean;
+  provider: string;
 }
 
-export async function sendEmailWithFailover(
-  jobData: EmailJobData,
-  redis: RedisQueueClient,
-) {
-  const {
-    senderName,
-    from,
-    to,
-    subject,
-    body,
-    credentials,
-    attempt = 0,
-  } = jobData;
+const RETRYABLE_ERROR_CODES = new Set([
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'EAI_AGAIN',
+  'ESOCKET'
+]);
 
-  if (!credentials || attempt >= credentials.length) {
-    console.error(`❌ All email providers failed for ${to}.`);
-    throw new Error("All email providers exhausted");
+export const isRetryableEmailError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { code?: string }).code;
+  if (code && RETRYABLE_ERROR_CODES.has(code)) return true;
+
+  const responseCode = (error as { responseCode?: number }).responseCode;
+  if (typeof responseCode === 'number') {
+    return responseCode >= 400 && responseCode < 500;
   }
 
-  const sortedCredentials = [...credentials].sort(
-    (a, b) => a.priority - b.priority,
+  const message = (error as { message?: string }).message;
+  if (!message) return false;
+  return /timeout|temporar|rate|throttl|network/i.test(message);
+};
+
+const isCredentialUsable = (credential: MailCredential) =>
+  Boolean(
+    credential.smtp_host?.trim() &&
+      credential.smtp_port &&
+      credential.username?.trim() &&
+      credential.password?.trim()
   );
-  const provider = sortedCredentials[attempt];
 
-  try {
-    console.log(
-      `📨 Attempting to send email to ${to} using ${provider.provider_name} (Priority ${provider.priority} with ${provider.smtp_host}, attempts: ${attempt})`,
-    );
-    const transporter = nodemailer.createTransport({
-      host: provider.smtp_host,
-      port: provider.smtp_port,
-      secure: false,
-      auth: { user: provider.username, pass: provider.password },
-    });
-    await transporter.sendMail({
-      from: `${senderName} <${from}>`,
-      to,
-      subject,
-      html: body,
-    });
+export async function sendEmailWithFailover(data: EmailSendData): Promise<SendResult> {
+  const { senderName, from, to, subject, body, credentials } = data;
+  const sortedCredentials = [...credentials]
+    .filter(isCredentialUsable)
+    .sort((a, b) => a.priority - b.priority);
 
-    console.log(`✅ Email sent to ${to} using ${provider.provider_name}`);
-  } catch (error) {
-    let errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(
-      `❌ Failed to send email using ${provider.provider_name}, retrying... Error:`,
-      errorMsg,
-    );
+  if (sortedCredentials.length === 0) {
+    throw new Error('No valid SMTP credentials configured');
+  }
 
-    if (attempt + 1 < credentials.length) {
-      console.log(
-        `🔄 Re-queuing email to ${to} for next provider (attempt ${attempt + 1})`,
-      );
-      // In a real production system with delay, we'd use a separate delayed queue or ZSET.
-      // For simplicity and to match the request, we re-queue.
-      const nextJobData: EmailJobData = { ...jobData, attempt: attempt + 1 };
+  let lastError: unknown;
+  for (const provider of sortedCredentials) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: provider.smtp_host,
+        port: provider.smtp_port,
+        secure: false,
+        auth: { user: provider.username, pass: provider.password }
+      });
 
-      // Simple delay before re-queuing
-      setTimeout(async () => {
-        await redis.lpush(QUEUE_NAME, JSON.stringify(nextJobData));
-      }, 5000);
-    } else {
-      console.error(`❌ All email providers exhausted for ${to}.`);
-      throw new Error("All email providers exhausted");
+      await transporter.sendMail({
+        from: `${senderName} <${from}>`,
+        to,
+        subject,
+        html: body
+      });
+
+      return {
+        success: true,
+        provider: provider.provider_name
+      };
+    } catch (error) {
+      lastError = error;
     }
   }
+
+  throw lastError instanceof Error ? lastError : new Error('All email providers exhausted');
 }

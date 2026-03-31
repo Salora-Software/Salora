@@ -40,7 +40,7 @@ export const router = createRouter({
 			if (!customer) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'customer_not_found' });
 			}
-			const organization = await getOrganization(branchId);
+			const organization = await getOrganization(db, branchId);
 			if (!organization) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'branch_not_found' });
 			}
@@ -140,7 +140,7 @@ export const router = createRouter({
 				});
 			}
 			//get branch
-			const organization = await getOrganization(branchId);
+			const organization = await getOrganization(db, branchId);
 			if (!organization) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'branch_not_found' });
 			}

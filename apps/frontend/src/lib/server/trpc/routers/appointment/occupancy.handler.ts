@@ -7,10 +7,10 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { GetOccupancyInput } from './occupancy.schema'; // Vervang met jouw daadwerkelijke schema
-import type { PrivateContext } from '../../context';
+import type { PortalContext } from '../../context';
 
 type GetOccupancyOpts = {
-	ctx: PrivateContext;
+	ctx: PortalContext;
 	input: GetOccupancyInput;
 };
 
@@ -32,6 +32,9 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 		serviceId,
 		fullSearchSpan
 	);
+
+	//const starttime
+	const processStart = Date.now();
 
 	const timeZone = organization.timeZone || 'UTC';
 	const start = range.start.setZone(timeZone, { keepLocalTime: true }).startOf('day');
@@ -97,5 +100,7 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 		currentDay = currentDay.plus({ days: 1 });
 	}
 
+	const processEnd = Date.now();
+	console.log(`Occupancy berekend in ${processEnd - processStart}ms`);
 	return { days: daysResult };
 };

@@ -8,14 +8,14 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { CreateBookingInput } from './booking.schema';
-import type { Context } from '../../context';
+import type { PortalContext } from '../../context';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
 import { env } from '$lib/server/env';
 import { notificationService } from '$lib/server/NotificationService';
 
 type CreateBookingOpts = {
-	ctx: Context;
+	ctx: PortalContext;
 	input: CreateBookingInput;
 };
 
@@ -34,6 +34,7 @@ export const createBookingHandler = async ({
 	);
 
 	const { organization, service, employees } = await fetchBookingData(
+		db,
 		organizationId,
 		serviceId,
 		fullSearchSpan

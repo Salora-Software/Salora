@@ -12,10 +12,10 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { GetAvailabilityInput } from './availability.schema';
-import type { PrivateContext } from '../../context';
+import type { PortalContext } from '../../context';
 
 type getAvailabilityOpts = {
-	ctx: PrivateContext;
+	ctx: PortalContext;
 	input: GetAvailabilityInput;
 };
 // ... (imports blijven hetzelfde)

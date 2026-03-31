@@ -2,66 +2,89 @@ import { Interval } from "luxon";
 
 export class IntervalUtils {
   static merge(intervals: Interval[]): Interval[] {
-    const validIntervals = intervals.filter((i) => i.isValid && !i.isEmpty());
-    if (validIntervals.length === 0) return [];
-    
-    const sorted = [...validIntervals].sort(
-      (a, b) => (a.start?.toMillis() || 0) - (b.start?.toMillis() || 0),
-    );
-    const merged: Interval[] = [];
+    if (!intervals || intervals.length === 0) return [];
 
-    for (const current of sorted) {
-      const last = merged[merged.length - 1];
-      if (!last) {
-        merged.push(current);
-      } else if (last.overlaps(current) || last.abutsStart(current)) {
-        const newEnd =
-          last.end && current.end && last.end > current.end
-            ? last.end
-            : current.end;
-        if (last.start && newEnd) {
-          merged[merged.length - 1] = Interval.fromDateTimes(
-            last.start,
-            newEnd,
+    const valid = intervals.filter((i) => i.isValid && !i.isEmpty());
+    if (valid.length <= 1) return valid;
+
+    // Cache milliseconden voor snellere sortering en vergelijking
+    const withMillis = valid
+      .map((i) => ({
+        interval: i,
+        s: i.start!.toMillis(),
+        e: i.end!.toMillis(),
+      }))
+      .sort((a, b) => a.s - b.s);
+
+    const merged: Interval[] = [];
+    let current = withMillis[0];
+
+    for (let i = 1; i < withMillis.length; i++) {
+      const next = withMillis[i];
+
+      if (current.e >= next.s) {
+        // Overlap of sluit direct aan
+        if (next.e > current.e) {
+          current.e = next.e;
+          current.interval = Interval.fromDateTimes(
+            current.interval.start!,
+            next.interval.end!,
           );
         }
       } else {
-        merged.push(current);
+        merged.push(current.interval);
+        current = next;
       }
     }
+    merged.push(current.interval);
     return merged;
   }
 
   static subtract(source: Interval[], toRemove: Interval[]): Interval[] {
-    let result = source.filter((i) => i.isValid && !i.isEmpty());
-    const validToRemove = this.merge(toRemove);
+    let currentSource = source.filter((i) => i.isValid && !i.isEmpty());
+    const blocks = this.merge(toRemove);
 
-    for (const remove of validToRemove) {
-      const newResult: Interval[] = [];
-      for (const sourceInterval of result) {
-        if (sourceInterval.overlaps(remove)) {
-          newResult.push(
-            ...sourceInterval
-              .difference(remove)
-              .filter((i) => i.isValid && !i.isEmpty()),
-          );
+    for (const block of blocks) {
+      const bs = block.start!.toMillis();
+      const be = block.end!.toMillis();
+      const nextSource: Interval[] = [];
+
+      for (const src of currentSource) {
+        const ss = src.start!.toMillis();
+        const se = src.end!.toMillis();
+
+        if (se <= bs || ss >= be) {
+          // Geen overlap, behoud het originele interval
+          nextSource.push(src);
         } else {
-          newResult.push(sourceInterval);
+          // Overlap: knip het interval handmatig op via milliseconden
+          if (ss < bs)
+            nextSource.push(Interval.fromDateTimes(src.start!, block.start!));
+          if (se > be)
+            nextSource.push(Interval.fromDateTimes(block.end!, src.end!));
         }
       }
-      result = newResult;
+      currentSource = nextSource;
     }
-    return result;
+    return currentSource;
   }
 
   static intersect(listA: Interval[], listB: Interval[]): Interval[] {
     const intersections: Interval[] = [];
+
     for (const a of listA) {
+      const as = a.start!.toMillis();
+      const ae = a.end!.toMillis();
+
       for (const b of listB) {
-        const intersection = a.intersection(b);
-        if (intersection && intersection.isValid && !intersection.isEmpty()) {
-          intersections.push(intersection);
-        }
+        const bs = b.start!.toMillis();
+        const be = b.end!.toMillis();
+
+        if (ae <= bs || as >= be) continue; // Skip als er geen overlap is
+
+        const start = as > bs ? a.start! : b.start!;
+        const end = ae < be ? a.end! : b.end!;
+        intersections.push(Interval.fromDateTimes(start, end));
       }
     }
     return this.merge(intersections);

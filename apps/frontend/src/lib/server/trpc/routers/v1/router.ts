@@ -18,7 +18,7 @@ export const router = createRouter({
 	ping: publicProcedure
 		.input(z.void())
 		.output(z.any())
-		.query(async ({}) => {
+		.query(async ({ }) => {
 			return ' pong';
 		}),
 	getBranch: publicProcedure
@@ -76,6 +76,7 @@ export const router = createRouter({
 				.leftJoin(schema.member, eq(schema.member.organizationId, schema.organization.id))
 				.leftJoin(schema.user, eq(schema.user.id, schema.member.userId))
 				.where(eq(schema.organization.id, id));
+			console.log("fetched orgs")
 
 			if (!orgRows.length || !orgRows[0].organization) {
 				throw new TRPCError({
@@ -103,7 +104,7 @@ export const router = createRouter({
 					}
 				}
 			}
-
+			console.log("processed org rows, constructing branch object")
 			const branch = {
 				...org,
 				services: Array.from(servicesMap.values()),

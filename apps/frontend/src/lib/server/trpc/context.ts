@@ -4,6 +4,9 @@ import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import SuperJSON from '$lib/superjson';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
+import pino from 'pino';
+
+const logger = pino({ browser: { asObject: true } });
 
 // 1. Zorg dat de SvelteKit context alles correct doorgeeft
 export const createSvelteKitContext =
@@ -37,11 +40,34 @@ const t = initTRPC.context<Context>().create({
 	transformer: SuperJSON
 });
 
+const loggerMiddleware = t.middleware(async (opts) => {
+	const start = Date.now();
+	const result = await opts.next();
+	const durationMs = Date.now() - start;
+
+	const logData = {
+		path: opts.path,
+		type: opts.type,
+		durationMs
+	};
+
+	if (result.ok) {
+		logger.info(logData, `request to ${opts.path} took ${durationMs}ms`);
+	} else {
+		logger.error(
+			{ ...logData, error: result.error },
+			`request to ${opts.path} failed after ${durationMs}ms`
+		);
+	}
+
+	return result;
+});
+
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(loggerMiddleware);
 
 // 3. privateProcedure (Beveiligd voor medewerkers)
-export const privateProcedure = t.procedure
+export const privateProcedure = publicProcedure
 	.input(
 		z.object({
 			organizationId: z.string().optional()
@@ -90,7 +116,7 @@ export const privateProcedure = t.procedure
 	});
 
 // 4. portalProcedure (Voor klanten)
-export const portalProcedure = t.procedure
+export const portalProcedure = publicProcedure
 	.input(z.object({ branchId: z.string() }))
 	.use(async (opts) => {
 		const headers = new Headers(opts.ctx.headers);

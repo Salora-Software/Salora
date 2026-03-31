@@ -470,7 +470,7 @@
 								>
 									<Avatar.Root class="h-8 w-8 rounded-md">
 										<Avatar.Image
-											src={env.PUBLIC_CDN_URL + data.session.user.image}
+											src={env.PUBLIC_CDN_URL + data.session?.user?.image}
 											alt="@shadcn"
 										/>
 
@@ -480,10 +480,10 @@
 									</Avatar.Root>
 									<div class="flex max-w-36.25 flex-col gap-1">
 										<h3 class="text-foreground truncate text-sm font-semibold">
-											{data.session.user.name}
+											{data.session?.user?.name}
 										</h3>
 										<h4 class="text-muted-foreground truncate text-xs">
-											{data.session.user.email}
+											{data.session?.user?.email}
 										</h4>
 									</div>
 									<Sidebar.MenuBadge>
@@ -504,12 +504,12 @@
 					<DropdownMenu.Label class="p-0 font-normal">
 						<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 							<Avatar.Root class="h-8 w-8 rounded-md">
-								<Avatar.Image src={env.PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
+								<Avatar.Image src={env.PUBLIC_CDN_URL + data.session?.user?.image} alt="@shadcn" />
 								<Avatar.Fallback>CN</Avatar.Fallback>
 							</Avatar.Root>
 							<div class="grid flex-1 text-left text-sm leading-tight">
-								<span class="truncate font-semibold">{data.session.user.name}</span>
-								<span class="truncate text-xs">{data.session.user.email}</span>
+								<span class="truncate font-semibold">{data.session?.user?.name}</span>
+								<span class="truncate text-xs">{data.session?.user?.email}</span>
 							</div>
 						</div>
 					</DropdownMenu.Label>

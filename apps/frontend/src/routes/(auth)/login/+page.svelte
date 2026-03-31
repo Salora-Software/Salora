@@ -3,23 +3,21 @@
 	import { page } from '$app/state';
 	import { signIn, signUp } from '$lib/auth-client';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input';
 	import { t } from '$lib/translation';
-	import { trpc } from '$lib/trpc';
 	import { onMount } from 'svelte';
-	let loginState: 'login' | 'signup' = 'login';
+	let loginState: 'login' | 'signup' = $state('login');
 	let authError = {
 		message: '',
 		errored: false,
 		loading: false
 	};
-	$: isRegister = loginState === 'signup';
-	let name = '';
-	let email = '';
-	let password = '';
+	let isRegister = $derived(loginState === ('signup' as const));
+	let name = $state('');
+	let email = $state('');
+	let password = $state('');
 	const errorMessage = page.url.searchParams.get('error');
 	if (errorMessage) {
 		authError.errored = true;

@@ -58,7 +58,7 @@
 	let servicesQuery = $derived(
 		trpcQuery.v1.authenticated.services.getServices.createQuery(
 			{
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId
+				organizationId: activeBranch?.id || data.session?.session?.activeOrganizationId
 			},
 			{
 				queryKey: ['getServices', activeBranch?.id || '']
@@ -149,7 +149,7 @@
 	let packagesQuery = $derived(
 		trpcQuery.v1.authenticated.services.getPackages.createQuery(
 			{
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId
+				organizationId: activeBranch?.id || data.session?.session?.activeOrganizationId
 			},
 			{
 				queryKey: ['getPackages', activeBranch?.id || '']

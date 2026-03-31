@@ -4,12 +4,10 @@ import { BranchesState, SessionUserState, BranchWizardState } from '$lib/runes.s
 
 export const load: LayoutLoad = async ({ parent, url, data }) => {
 	let session = (await parent()).session;
-	// if (!session) redirect(307, '/login');
-	let sessionState = new SessionUserState();
+	if (!session) redirect(307, '/login');
+	let sessionState = new SessionUserState(session);
 	let branchesState = new BranchesState();
 	let branchWizardState = new BranchWizardState();
-
-	// ...existing code...
 
 	return {
 		session: sessionState.value,

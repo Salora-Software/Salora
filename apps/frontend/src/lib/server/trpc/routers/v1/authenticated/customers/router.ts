@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
 import { schema } from '@salora/database';
-import { count, and, or, ilike, desc, eq, gte, lte } from 'drizzle-orm';
+import { count, and, or, ilike, desc, eq, gte, lte, type SQL } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
@@ -40,14 +40,14 @@ export const router = createRouter({
 				}
 			}) => {
 				// Build the where clause for search
-				const whereClause = [
+				const whereClause: SQL[] = [
 					eq(schema.customer.organizationId, organizationId),
 					...(search && search.trim() !== ''
 						? [
 								or(
 									ilike(schema.customer.name, `%${search}%`),
 									ilike(schema.customer.email, `%${search}%`)
-								)
+								) as SQL
 							]
 						: [])
 				];
@@ -87,7 +87,7 @@ export const router = createRouter({
 
 				return {
 					customers: transformedCustomers,
-					totalCount
+					totalCount: Number(totalCount)
 				};
 			}
 		),
@@ -197,7 +197,7 @@ export const router = createRouter({
 						bookings: customer.bookings.map((booking) => ({
 							id: booking.id,
 							createdAt: booking.createdAt,
-							status: booking.status as any,
+							status: booking.status as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
 							service: {
 								name: booking.service.name,
 								price: booking.service.price
@@ -577,7 +577,7 @@ export const router = createRouter({
 				const recentActivity = customer.bookings.slice(0, 10).map((booking) => ({
 					date: booking.createdAt.toISOString().split('T')[0],
 					service: booking.service.name,
-					status: booking.status as any,
+					status: booking.status as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
 					amount: booking.service.price
 				}));
 
@@ -658,15 +658,9 @@ export const router = createRouter({
 				}
 
 				// Build search filter for bookings
-				const searchConditions = [eq(schema.booking.customerId, customerId)];
+				const searchConditions: SQL[] = [eq(schema.booking.customerId, customerId)];
 				if (search && search.trim() !== '') {
-					searchConditions.push(
-						or(
-							ilike(schema.booking.notes, `%${search}%`)
-							// Note: Searching nested service/employee name via findMany 'where' is limited in Drizzle-ORM findMany.
-							// Usually requires join for complex search, but keeping it simple for now if possible or just searching notes.
-						) as any
-					);
+					searchConditions.push(ilike(schema.booking.notes, `%${search}%`) as SQL);
 				}
 
 				const [bookings, totalCount] = await Promise.all([
@@ -695,9 +689,9 @@ export const router = createRouter({
 				const transformedBookings = bookings.map((booking) => ({
 					id: booking.id,
 					createdAt: booking.createdAt,
-					status: booking.status as any,
+					status: booking.status as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
 					duration: booking.duration,
-					notes: booking.notes,
+					notes: booking.notes ?? null,
 					service: {
 						id: booking.service.id,
 						name: booking.service.name,
@@ -713,7 +707,7 @@ export const router = createRouter({
 
 				return {
 					bookings: transformedBookings,
-					totalCount
+					totalCount: Number(totalCount)
 				};
 			}
 		),

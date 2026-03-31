@@ -6,6 +6,20 @@ import {
   integer,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { createId } from "@paralleldrive/cuid2";
+
+const commonColumns = {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  createdAt: integer({ mode: "timestamp" })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer({ mode: "timestamp" })
+    .default(sql`(unixepoch())`)
+    .$onUpdateFn(() => new Date())
+    .notNull(),
+};
 
 // 1. Definieer je enums als constante arrays
 export const calendarItemTypes = [
@@ -81,7 +95,7 @@ export enum InvitationStatuses {
 export const account = sqliteTable(
   "account",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     accountId: text().notNull(),
     providerId: text().notNull(),
     userId: text().notNull(),
@@ -92,8 +106,6 @@ export const account = sqliteTable(
     refreshTokenExpiresAt: text(),
     scope: text(),
     password: text(),
-    createdAt: integer({ mode: "timestamp" }).notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -109,11 +121,10 @@ export const account = sqliteTable(
 export const organization = sqliteTable(
   "organization",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     name: text().notNull(),
     slug: text(),
     logo: text(),
-    createdAt: integer({ mode: "timestamp" }).notNull(),
     metadata: text(),
     maxMembers: integer(),
     location: text(),
@@ -133,14 +144,11 @@ export const organization = sqliteTable(
 export const openingTime = sqliteTable(
   "opening_time",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     dayOfWeek: integer().notNull(),
     startTimeUtc: integer({ mode: "timestamp" }).notNull(),
     endTimeUtc: integer({ mode: "timestamp" }).notNull(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -154,23 +162,20 @@ export const openingTime = sqliteTable(
 );
 
 export const verification = sqliteTable("verification", {
-  id: text().primaryKey().notNull(),
+  ...commonColumns,
   identifier: text().notNull(),
   value: text().notNull(),
   expiresAt: integer({ mode: "timestamp" }).notNull(),
-  createdAt: integer({ mode: "timestamp" }),
-  updatedAt: integer({ mode: "timestamp" }),
 });
 
 export const member = sqliteTable(
   "member",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     userId: text().notNull(),
     role: text().notNull(),
     invitationStatus: text().default("ACTIVE").notNull(),
-    createdAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -193,16 +198,13 @@ export const member = sqliteTable(
 export const customer = sqliteTable(
   "customer",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     authToken: text(),
     name: text().notNull(),
     email: text().notNull(),
     phone: text(),
     address: text(),
     organizationId: text().notNull(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
     userId: text(),
   },
   (table) => [
@@ -226,7 +228,7 @@ export const customer = sqliteTable(
 export const invitation = sqliteTable(
   "invitation",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     email: text().notNull(),
     role: text(),
@@ -253,20 +255,18 @@ export const invitation = sqliteTable(
 );
 
 export const user = sqliteTable("user", {
-  id: text().primaryKey().notNull(),
+  ...commonColumns,
   name: text().notNull(),
   email: text().notNull(),
   emailVerified: integer({ mode: "boolean" }).notNull(),
   image: text(),
-  createdAt: integer({ mode: "timestamp" }).notNull(),
-  updatedAt: integer({ mode: "timestamp" }).notNull(),
   phone: text(),
 });
 
 export const employeeService = sqliteTable(
   "employee_service",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     memberId: text().notNull(),
     serviceId: text().notNull(),
   },
@@ -291,7 +291,7 @@ export const employeeService = sqliteTable(
 export const service = sqliteTable(
   "service",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     name: text().notNull(),
     description: text(),
     sortingIndex: integer().default(-1).notNull(),
@@ -314,7 +314,7 @@ export const service = sqliteTable(
 export const calendarItem = sqliteTable(
   "calendar_item",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     title: text(),
     employeeId: text(),
@@ -324,10 +324,6 @@ export const calendarItem = sqliteTable(
     notes: text(),
     bookingId: text(),
     timeOffId: text(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -364,7 +360,7 @@ export const calendarItem = sqliteTable(
 export const availability = sqliteTable(
   "availability",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     memberId: text().notNull(),
     dayOfWeek: integer().notNull(),
     startTimeUtc: integer({ mode: "timestamp" }).notNull(),
@@ -384,15 +380,12 @@ export const availability = sqliteTable(
 export const booking = sqliteTable(
   "booking",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     serviceId: text().notNull(),
     employeeId: text(),
     organizationId: text().notNull(),
     userId: text(),
     customerId: text(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
     duration: integer().notNull(),
     notes: text(),
     status: text().notNull(),
@@ -439,17 +432,13 @@ export const booking = sqliteTable(
 export const packageItem = sqliteTable(
   "package",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     name: text().notNull(),
     description: text(),
     sortingIndex: integer().default(-1).notNull(),
     price: real().notNull(),
     organizationId: text().notNull(),
     visible: integer({ mode: "boolean" }).default(true),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -465,7 +454,7 @@ export const packageItem = sqliteTable(
 export const packageService = sqliteTable(
   "package_service",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     packageId: text().notNull(),
     serviceId: text().notNull(),
   },
@@ -490,14 +479,10 @@ export const packageService = sqliteTable(
 export const note = sqliteTable(
   "note",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     content: text().notNull(),
     customerId: text().notNull(),
     authorId: text().notNull(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -520,17 +505,13 @@ export const note = sqliteTable(
 export const template = sqliteTable(
   "template",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     type: text().notNull(),
     target: text().notNull(),
     subject: text(),
     body: text().notNull(),
     enabled: integer().default(1).notNull(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({
@@ -546,11 +527,9 @@ export const template = sqliteTable(
 export const session = sqliteTable(
   "session",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     expiresAt: integer({ mode: "timestamp" }).notNull(),
     token: text().notNull(),
-    createdAt: integer({ mode: "timestamp" }).notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
     ipAddress: text(),
     userAgent: text(),
     userId: text().notNull(),
@@ -570,7 +549,7 @@ export const session = sqliteTable(
 export const timeOff = sqliteTable(
   "time_off",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     memberId: text().notNull(),
     reason: text(),
     type: text().notNull(),
@@ -589,7 +568,7 @@ export const timeOff = sqliteTable(
 export const communicationSetting = sqliteTable(
   "communication_setting",
   {
-    id: text().primaryKey().notNull(),
+    ...commonColumns,
     organizationId: text().notNull(),
     settings: text({ mode: "json" })
       .$type<{
@@ -604,10 +583,6 @@ export const communicationSetting = sqliteTable(
       .notNull(),
     type: text().notNull(),
     enabled: integer({ mode: "boolean" }).notNull(),
-    createdAt: integer({ mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: integer({ mode: "timestamp" }).notNull(),
   },
   (table) => [
     foreignKey({

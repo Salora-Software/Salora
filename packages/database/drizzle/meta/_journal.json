@@ -36,6 +36,13 @@
       "when": 1774873742151,
       "tag": "0004_secret_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1774962960550,
+      "tag": "0005_freezing_hardball",
+      "breakpoints": true
     }
   ]
 }

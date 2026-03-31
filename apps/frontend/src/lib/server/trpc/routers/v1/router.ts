@@ -52,8 +52,6 @@ export const router = createRouter({
 					z.object({
 						id: z.string(),
 						userId: z.string(),
-						name: z.string(),
-						image: z.string().nullable(),
 						user: z.object({
 							id: z.string(),
 							name: z.string(),

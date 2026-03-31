@@ -43,10 +43,17 @@ export class ConfiguredEngine<TConfig> {
       input,
       intervals: [input.searchSpan],
     };
+    const processStart = Date.now();
 
     for (const module of this.modules) {
       context = module.run(context);
+      if (context.intervals.length === 0) {
+        break;
+      }
     }
+
+    const processEnd = Date.now();
+    console.log(`Occupancy berekend in ${processEnd - processStart}ms`);
 
     return { intervals: context.intervals };
   }

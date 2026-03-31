@@ -1,12 +1,8 @@
 import { TRPCError } from '@trpc/server';
-import { Interval } from 'luxon';
-import { AvailabilityEngine, IntervalUtils } from '@salora/scheduler';
-import {
-	fetchBookingData,
-	calculateEmployeeSlots,
-	getIntervalsForDate
-} from '$lib/services/availability.service';
-import type { GetOccupancyInput } from './occupancy.schema'; // Vervang met jouw daadwerkelijke schema
+import { Interval, DateTime, type WeekdayNumbers } from 'luxon';
+import { IntervalUtils } from '@salora/scheduler';
+import { fetchBookingData, getIntervalsForDate } from '$lib/services/availability.service';
+import type { GetOccupancyInput } from './occupancy.schema';
 import type { PortalContext } from '../../context';
 
 type GetOccupancyOpts = {
@@ -21,86 +17,86 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 		throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ongeldig bereik' });
 	}
 
-	// 1. Data ophalen voor de volledige periode in één query
 	const initialStart = range.start.setZone('UTC', { keepLocalTime: true }).startOf('day');
 	const initialEnd = range.end.setZone('UTC', { keepLocalTime: true }).endOf('day');
 	const fullSearchSpan = Interval.fromDateTimes(initialStart, initialEnd);
 
-	const { organization, service, employees } = await fetchBookingData(
+	// Zorg dat fetchBookingData de relations `calendarItems` meelaadt voor de members
+	const { organization, employees } = await fetchBookingData(
 		db,
 		branchId,
 		serviceId,
 		fullSearchSpan
 	);
 
-	//const starttime
-	const processStart = Date.now();
-
 	const timeZone = organization.timeZone || 'UTC';
 	const start = range.start.setZone(timeZone, { keepLocalTime: true }).startOf('day');
 	const end = range.end.setZone(timeZone, { keepLocalTime: true }).endOf('day');
 
-	// 2. Engine eenmalig initialiseren
-	const engine = new AvailabilityEngine().useDefaultPipeline().withConfig({
-		slotDurationMinutes: service.duration,
-		bufferMinutes: 0,
-		gridStrategy: organization.autoShiftTimeSlot ? 'flexible' : 'fixed'
-	});
+	// 1. Groepeer geboekte minuten per datum op basis van calendarItems
+	const bookedMinutesPerDate = new Map<string, number>();
 
-	const daysResult = [];
-	let currentDay = start;
+	for (const employee of employees) {
+		// Fallback naar een lege array als er geen kalenderitems zijn geladen
+		const items = employee.member.calendarItems || [];
 
-	// 3. Loop per dag en hergebruik de logica van de availability service
-	while (currentDay < end) {
-		const daySpan = Interval.fromDateTimes(currentDay, currentDay.endOf('day'));
-		const dayString = currentDay.toISODate()!;
+		for (const item of items) {
+			// Tel alleen daadwerkelijke boekingen mee voor de bezettingsgraad
+			if (item.type !== 'BOOKING') continue;
 
-		const orgIntervals = getIntervalsForDate(organization.openingTimes, currentDay, timeZone);
+			const startMs = item.startTime.getTime();
+			const endMs = item.endTime.getTime();
+			const durationMinutes = (endMs - startMs) / 60000;
 
-		let totalDaySlots = 0;
-		let availableDaySlots = 0;
+			const dateStr = DateTime.fromJSDate(item.startTime).setZone(timeZone).toISODate()!;
 
-		// Haal de beschikbare slots op voor deze specifieke dag
-		const employeeResults = calculateEmployeeSlots(
-			employees,
-			engine,
-			daySpan,
-			orgIntervals,
-			currentDay,
-			timeZone
-		);
+			bookedMinutesPerDate.set(dateStr, (bookedMinutesPerDate.get(dateStr) || 0) + durationMinutes);
+		}
+	}
 
-		// Bereken theorethische capaciteit versus daadwerkelijk overgebleven slots
-		for (let i = 0; i < employees.length; i++) {
-			const member = employees[i].member;
+	// 2. Cache werkcapaciteit per weekdag
+	const capacityPerWeekday = new Map<number, number>();
+	for (let i = 1; i <= 7; i++) {
+		const refDay = start.set({ weekday: i as WeekdayNumbers });
+		const orgIntervals = getIntervalsForDate(organization.openingTimes, refDay, timeZone);
 
-			// Theorethisch maximum bepalen op basis van roosters en openingstijden
-			const empIntervals = getIntervalsForDate(member.availabilities, currentDay, timeZone);
+		let weekdayMinutes = 0;
+		for (const employee of employees) {
+			const empIntervals = getIntervalsForDate(employee.member.availabilities, refDay, timeZone);
 			const workingIntervals = IntervalUtils.intersect(orgIntervals, empIntervals);
 
 			for (const interval of workingIntervals) {
-				totalDaySlots += Math.floor(interval.length('minutes') / service.duration);
+				weekdayMinutes += (interval.end!.toMillis() - interval.start!.toMillis()) / 60000;
 			}
-
-			// Daadwerkelijke vrije gaten optellen uit de engine resultaten
-			availableDaySlots += employeeResults[i].intervals.length;
 		}
+		capacityPerWeekday.set(i, weekdayMinutes);
+	}
 
-		const occupancyPercentage =
-			totalDaySlots > 0
-				? Math.round(((totalDaySlots - availableDaySlots) / totalDaySlots) * 100)
-				: 0;
+	// 3. Bouw de output
+	const daysResult = [];
+	let currentDay = start;
+
+	while (currentDay < end) {
+		const dayString = currentDay.toISODate()!;
+		const weekday = currentDay.weekday;
+
+		const totalWorkingMinutes = capacityPerWeekday.get(weekday) || 0;
+		const totalBookedMinutes = bookedMinutesPerDate.get(dayString) || 0;
+
+		let occupancyPercentage = 0;
+		if (totalWorkingMinutes > 0) {
+			occupancyPercentage = Math.round((totalBookedMinutes / totalWorkingMinutes) * 100);
+			occupancyPercentage = Math.min(occupancyPercentage, 100);
+		}
 
 		daysResult.push({
 			date: dayString,
 			occupancyPercentage,
-			available: availableDaySlots > 0
+			available: occupancyPercentage < 100 && totalWorkingMinutes > 0
 		});
 
 		currentDay = currentDay.plus({ days: 1 });
 	}
 
-	const processEnd = Date.now();
-	console.log(`Occupancy berekend in ${processEnd - processStart}ms`);
 	return { days: daysResult };
 };

@@ -9,7 +9,7 @@ export const createBookingSchema = z.object({
 		firstName: z.string(),
 		lastName: z.string(),
 		email: z.string().email(),
-		phone: z.any().optional(),
+		phone: z.string().optional(),
 		notes: z.string().default('')
 	})
 });

@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
 import { schema } from '@salora/database';
+import { eq, and } from 'drizzle-orm';
 import { AvailabilityEngine } from '@salora/scheduler';
 import {
 	fetchBookingData,
@@ -21,10 +22,9 @@ type CreateBookingOpts = {
 
 export const createBookingHandler = async ({
 	input,
-	ctx: { db, headers, auth }
+	ctx: { db, headers, auth, url }
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
-
 	// 1. Haal de globale organisatie- en service data op voor deze dag
 	// Gebruik UTC als tussenstap om de juiste dag-span op te halen
 	const initialTargetDate = DateTime.fromJSDate(date).setZone('UTC', { keepLocalTime: true });
@@ -121,7 +121,7 @@ export const createBookingHandler = async ({
 		user = await ctxAuth.internalAdapter.createUser({
 			email: contact.email,
 			name: `${contact.firstName} ${contact.lastName}`,
-			phone: contact.phone?.number?.toString() || '',
+			phone: contact.phone || '',
 			organizationId: organizationId
 		});
 	}
@@ -135,11 +135,14 @@ export const createBookingHandler = async ({
 			.update(schema.customer)
 			.set({
 				name: `${contact.firstName} ${contact.lastName}`,
-				phone: contact.phone?.formattedNumber ?? '',
+				phone: contact.phone || '',
 				userId: user.id
 			})
-			.where((c, { and, eq }) =>
-				and(eq(c.email, contact.email), eq(c.organizationId, organizationId))
+			.where(
+				and(
+					eq(schema.customer.email, contact.email),
+					eq(schema.customer.organizationId, organizationId)
+				)
 			);
 		// re-fetch to get updated
 		customer = await db.query.customer.findFirst({
@@ -150,9 +153,10 @@ export const createBookingHandler = async ({
 		const inserted = await db
 			.insert(schema.customer)
 			.values({
+				id: crypto.randomUUID(),
 				name: `${contact.firstName} ${contact.lastName}`,
 				email: contact.email,
-				phone: contact.phone?.formattedNumber ?? '',
+				phone: contact.phone || '',
 				organizationId,
 				userId: user.id
 			})
@@ -166,7 +170,7 @@ export const createBookingHandler = async ({
 			headers,
 			body: {
 				email: contact.email,
-				callbackURL: `${env?.PUBLIC_BACKEND_URL}/appointments/${organization.id}`
+				callbackURL: `/appointments/${organization.id}`
 			}
 		})
 		.catch((e) => {
@@ -195,35 +199,38 @@ export const createBookingHandler = async ({
 	const [booking] = await db
 		.insert(schema.booking)
 		.values({
+			id: crypto.randomUUID(),
 			organizationId,
 			serviceId,
 			employeeId: bestEmployee.id,
-			customerId: customer?.id,
+			customerId: customer?.id ?? '',
 			duration: service.duration,
 			notes: contact.notes,
-			status: organization.appointmentStatus || 'PENDING'
+			status: (organization.appointmentStatus as string) || 'PENDING'
 		})
 		.returning();
 
 	const [calendarItem] = await db
 		.insert(schema.calendarItem)
 		.values({
+			id: crypto.randomUUID(),
 			organizationId,
 			title: `${customer?.name} - ${service.name}`,
-			memberId: bestEmployee.id,
+			employeeId: bestEmployee.id,
 			startTime: requestedStart.toJSDate(),
 			endTime: requestedEnd.toJSDate(),
 			type: 'BOOKING',
 			notes: contact.notes,
-			bookingId: booking.id
+			bookingId: booking.id,
+			updatedAt: new Date()
 		})
 		.returning();
 
 	// 8. Notificatie (Originele logica)
 	const encode = encodeURIComponent;
 	const panel = {
-		url: `${env?.PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
-		cancel: `${env?.PUBLIC_BACKEND_URL}/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env?.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
+		url: `${url}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
+		cancel: `${url}/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env?.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
 	};
 
 	// Haal user email van employee op via de meegeleverde include in fetchBookingData (als je die daar hebt, anders extra query nodig)
@@ -231,11 +238,11 @@ export const createBookingHandler = async ({
 		where: (u, { eq }) => eq(u.id, bestEmployee.userId)
 	});
 
-	const membersForNotification = employeesToUse.map((emp) => ({
+	const membersForNotification = (employeesToUse as any[]).map((emp) => ({
 		...emp.member,
 		services: [],
 		calendarItems: emp.member.calendarItems,
-		availability: emp.member.availability,
+		availabilities: emp.member.availabilities,
 		// @ts-ignore
 		user: emp.user
 	}));

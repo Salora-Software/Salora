@@ -7,6 +7,7 @@ import { createDb, schema, type DatabaseType } from '@salora/database';
 export const createAuth = (db: DatabaseType, origin: string) => {
 	// 3. Retourneer de Better Auth instance
 	return betterAuth({
+		baseURL: origin,
 		emailAndPassword: {
 			enabled: true,
 			password: {
@@ -34,14 +35,16 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 					);
 
 					const hashArray = Array.from(new Uint8Array(hashBuffer));
-					const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-					const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+					const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+					const saltHex = Array.from(salt)
+						.map((b) => b.toString(16).padStart(2, '0'))
+						.join('');
 
 					return `${saltHex}:${hashHex}`;
 				},
 				verify: async ({ hash, password }) => {
 					const [saltHex, originalHash] = hash.split(':');
-					const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+					const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
 					const encoder = new TextEncoder();
 
 					const keyMaterial = await crypto.subtle.importKey(
@@ -64,7 +67,7 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 					);
 
 					const hashArray = Array.from(new Uint8Array(hashBuffer));
-					const newHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+					const newHashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
 					return newHashHex === originalHash;
 				}
@@ -79,10 +82,7 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 				ipAddressHeaders: ['x-forwarded-for', 'x-real-ip']
 			}
 		},
-		trustedOrigins: [
-			'http://localhost:5173',
-			origin,
-		],
+		trustedOrigins: ['http://localhost:5173', origin],
 		rateLimit: {
 			enabled: true
 		},

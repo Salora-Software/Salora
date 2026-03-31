@@ -35,10 +35,8 @@
 <Label class="widget-content-text mb-2">Telefoonnummer</Label>
 <TelInput
 	class="widget-input widget-content-text mb-2"
-	type="tel"
 	placeholder="+31 612345678"
-	bind:detailedValue={bookingState.contact.phone}
-	value={bookingState.contact.phone?.phoneNumber || ''}
+	bind:value={bookingState.contact.phone}
 />
 <Label class="widget-content-text mb-2">Opmerking</Label>
 <Textarea

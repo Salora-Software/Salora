@@ -85,19 +85,7 @@
 			firstName: '',
 			lastName: '',
 			email: '',
-			phone: {
-				isValid: false,
-				phoneNumber: '',
-				countryCallingCode: '31',
-				countryCode: 'NL',
-				formattedNumber: '',
-				formatOriginal: ' ',
-				formatInternational: '',
-				nationalNumber: '',
-				formatNational: '',
-				uri: '',
-				e164: ''
-			},
+			phone: '',
 			notes: ''
 		}
 	});

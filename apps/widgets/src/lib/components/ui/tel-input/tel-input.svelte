@@ -2,12 +2,12 @@
 	import { cn } from '$lib/utils.js';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import type { WithElementRef } from 'bits-ui';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import Phone from 'lucide-svelte/icons/phone';
+	import { AsYouType } from 'libphonenumber-js';
 
 	let {
 		ref = $bindable(null),
-		value = $bindable(''),
+		value = $bindable('+31'),
 		class: className,
 		error = false,
 		disabled = false,
@@ -21,12 +21,14 @@
 		const input = e.target as HTMLInputElement;
 		// Simple regex: allow +, digits, and spaces
 		let val = input.value.replace(/[^0-9+ ]/g, '');
+		const formatter = new AsYouType('NL');
+		val = formatter.input(val);
 		value = val;
 		input.value = val;
 	}
 </script>
 
-<div class="flex rounded-md shadow-sm shadow-black/[.04]">
+<div class="flex rounded-md shadow-sm shadow-black/4">
 	<div
 		class={cn(
 			'border-input bg-background/50 text-muted-foreground ring-offset-background relative inline-flex items-center self-stretch rounded-l-lg rounded-r-none border border-r-0 py-2 pe-2 ps-3 transition-shadow has-[:disabled]:pointer-events-none has-[:disabled]:opacity-50',
@@ -43,9 +45,9 @@
 		id="input-46"
 		required
 		placeholder="Telefoonnummer"
-		value={value}
+		{value}
 		oninput={handleInput}
-		disabled={disabled}
+		{disabled}
 		class={cn(
 			'border-input bg-background ring-offset-background placeholder:text-muted-foreground flex h-10 w-full rounded-l-none rounded-r-lg border px-3 py-2 text-base focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
 			className,

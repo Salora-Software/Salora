@@ -9,16 +9,14 @@ import { t } from './translation';
 import superjson from './superjson';
 
 type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
-const DEFAULT_BACKEND_URL = 'https://app.salora.app';
+const DEFAULT_BACKEND_URL = 'http://localhost:5173';
 
 const normalizeBackendUrl = (url?: string | null): string => {
 	if (!url) return DEFAULT_BACKEND_URL;
 	return url.replace(/\/$/, '');
 };
 
-const resolvedBackendUrl = normalizeBackendUrl(
-	new URLSearchParams(window.location.search).get('endpoint')
-);
+const resolvedBackendUrl = normalizeBackendUrl();
 
 export const createTrpcClient = (backendUrl?: string): TRPCClient =>
 	createTRPCProxyClient<AppRouter>({

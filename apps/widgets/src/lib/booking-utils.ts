@@ -2,8 +2,8 @@ import { trpc } from '$lib/trpc.js';
 import { toast } from 'svelte-sonner';
 import type { DateValue } from '@internationalized/date';
 import { DateTime, Interval } from 'luxon';
-import type { DetailedValue } from 'svelte-tel-input/types';
 import type { RouterOutput } from '@salora/trpc-types';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 export interface BookingValues {
 	appointment: {
@@ -20,7 +20,7 @@ export interface BookingValues {
 		firstName: string;
 		lastName: string;
 		email: string;
-		phone: DetailedValue;
+		phone: string;
 		notes: string;
 	};
 }
@@ -91,7 +91,8 @@ export async function createBooking(
 	values: BookingValues,
 	branch: any
 ): Promise<{ success: boolean; employeeId?: string }> {
-	if (!values.contact.phone.phoneNumber || values.contact.phone.phoneNumber === '') {
+	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
+	if (!parsedPhone || !parsedPhone.isValid()) {
 		toast.error('Please provide a valid phone number.');
 		return { success: false };
 	}
@@ -108,7 +109,7 @@ export async function createBooking(
 			date: date.toJSDate(),
 			contact: {
 				email: values.contact.email,
-				phone: values.contact.phone,
+				phone: parsedPhone.number,
 				firstName: values.contact.firstName,
 				lastName: values.contact.lastName,
 				notes: values.contact.notes

@@ -12,17 +12,17 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { GetAvailabilityInput } from './availability.schema';
-import type { PortalProcedureContext } from '../../context';
+import type { PrivateContext } from '../../context';
 
 type getAvailabilityOpts = {
-	ctx: PortalProcedureContext;
+	ctx: PrivateContext;
 	input: GetAvailabilityInput;
 };
 // ... (imports blijven hetzelfde)
 
 export const getAvailabilityHandler = async ({
 	input: { branchId, serviceId, date },
-	ctx
+	ctx: { db }
 }: getAvailabilityOpts) => {
 	const initialTargetDate = date.setZone('UTC', { keepLocalTime: true });
 	const initialSearchSpan = Interval.fromDateTimes(
@@ -31,6 +31,7 @@ export const getAvailabilityHandler = async ({
 	);
 
 	const { organization, service, employees } = await fetchBookingData(
+		db,
 		branchId,
 		serviceId,
 		initialSearchSpan

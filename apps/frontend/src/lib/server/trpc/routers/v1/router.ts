@@ -176,11 +176,11 @@ export const router = createRouter({
 				})
 			)
 		)
-		.query(async ({ input: { branchId, serviceId, dates, employeeIds } }) => {
+		.query(async ({ input: { branchId, serviceId, dates, employeeIds }, ctx: { db } }) => {
 			const calendarDates: CalendarDate[] = dates.map((date) => {
 				return new CalendarDate(date.year, date.month, date.day);
 			});
-			const branch = await getOrganization(branchId);
+			const branch = await getOrganization(db, branchId);
 			//New:
 			const intervals: Interval[] = calendarDates.map((date) => {
 				return Interval.fromDateTimes(
@@ -200,6 +200,7 @@ export const router = createRouter({
 			for (const date of calendarDates) {
 				//TODO: Fix having to loop instead of putting it in the interval timespan
 				const generated = await generateEmployeesTimeSlots(
+					db,
 					branch,
 					serviceId,
 					employeeIds || [],

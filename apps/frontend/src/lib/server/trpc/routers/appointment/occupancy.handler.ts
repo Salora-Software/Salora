@@ -7,14 +7,14 @@ import {
 	getIntervalsForDate
 } from '$lib/services/availability.service';
 import type { GetOccupancyInput } from './occupancy.schema'; // Vervang met jouw daadwerkelijke schema
-import type { PortalProcedureContext } from '../../context';
+import type { PrivateContext } from '../../context';
 
 type GetOccupancyOpts = {
-	ctx: PortalProcedureContext;
+	ctx: PrivateContext;
 	input: GetOccupancyInput;
 };
 
-export const getOccupancyHandler = async ({ input, ctx }: GetOccupancyOpts) => {
+export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOpts) => {
 	const { branchId, serviceId, range } = input;
 
 	if (!range.isValid || !range.start || !range.end) {
@@ -27,6 +27,7 @@ export const getOccupancyHandler = async ({ input, ctx }: GetOccupancyOpts) => {
 	const fullSearchSpan = Interval.fromDateTimes(initialStart, initialEnd);
 
 	const { organization, service, employees } = await fetchBookingData(
+		db,
 		branchId,
 		serviceId,
 		fullSearchSpan
@@ -71,7 +72,7 @@ export const getOccupancyHandler = async ({ input, ctx }: GetOccupancyOpts) => {
 			const member = employees[i].member;
 
 			// Theorethisch maximum bepalen op basis van roosters en openingstijden
-			const empIntervals = getIntervalsForDate(member.availability, currentDay, timeZone);
+			const empIntervals = getIntervalsForDate(member.availabilities, currentDay, timeZone);
 			const workingIntervals = IntervalUtils.intersect(orgIntervals, empIntervals);
 
 			for (const interval of workingIntervals) {

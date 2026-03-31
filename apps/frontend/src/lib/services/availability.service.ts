@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import { schema } from '@salora/database';
+import { schema, type DatabaseType } from '@salora/database';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import {
 	mapToBlockedPeriods,
@@ -33,6 +33,7 @@ export const getIntervalsForDate = (
 
 // 2. Data ophalen geïsoleerd
 export const fetchBookingData = async (
+	db: DatabaseType,
 	branchId: string,
 	serviceId: string,
 	searchSpan: Interval
@@ -51,12 +52,12 @@ export const fetchBookingData = async (
 		throw new TRPCError({ code: 'NOT_FOUND', message: 'Organisatie of dienst niet gevonden' });
 	}
 
-	const employees = (await db.query.employeeService.findMany({
+	const employees = await db.query.employeeService.findMany({
 		where: eq(schema.employeeService.serviceId, serviceId),
 		with: {
 			member: {
 				with: {
-					availability: true,
+					availabilities: true,
 					calendarItems: {
 						// Using where closure for dates (assuming string format in SQLite)
 						where: (items, { and, lt, gt }) =>
@@ -68,7 +69,7 @@ export const fetchBookingData = async (
 				}
 			}
 		}
-	})) as any[];
+	});
 
 	return { organization, service, employees };
 };
@@ -83,7 +84,7 @@ export const calculateEmployeeSlots = (
 	timeZone: string
 ) => {
 	return employees.map(({ member }) => {
-		const empIntervals = getIntervalsForDate(member.availability, targetDate, timeZone);
+		const empIntervals = getIntervalsForDate(member.availabilities, targetDate, timeZone);
 		const workingIntervals = IntervalUtils.intersect(orgIntervals, empIntervals);
 
 		const unavailabilityBlocks: BlockedPeriod[] = IntervalUtils.subtract(

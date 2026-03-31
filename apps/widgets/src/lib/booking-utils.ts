@@ -92,10 +92,7 @@ export async function createBooking(
 	branch: any
 ): Promise<{ success: boolean; employeeId?: string }> {
 	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
-	if (!parsedPhone || !parsedPhone.isValid()) {
-		toast.error('Please provide a valid phone number.');
-		return { success: false };
-	}
+	
 	let date = values.date.timeValue?.start;
 	if (!date) {
 		toast.error('Please select a valid date and time.');
@@ -109,7 +106,7 @@ export async function createBooking(
 			date: date.toJSDate(),
 			contact: {
 				email: values.contact.email,
-				phone: parsedPhone.number,
+				phone: parsedPhone?.number,
 				firstName: values.contact.firstName,
 				lastName: values.contact.lastName,
 				notes: values.contact.notes

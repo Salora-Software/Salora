@@ -43,6 +43,13 @@
       "when": 1774962960550,
       "tag": "0005_freezing_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1775028631518,
+      "tag": "0006_add_comm_setting_unique",
+      "breakpoints": true
     }
   ]
 }

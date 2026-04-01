@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `communication_setting_org_type_idx` ON `communication_setting` (`organizationId`,`type`);

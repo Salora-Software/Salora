@@ -1,16 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
 import {
-	AvailabilityEngine,
 	aggregateAvailability,
 	IntervalUtils,
 	generateTimeGrid
 } from '@salora/scheduler';
-import {
-	fetchBookingData,
-	calculateEmployeeSlots,
-	getIntervalsForDate
-} from '$lib/services/availability.service';
+import { getDaySpanForDateTime, getIntervalsForDate } from '@salora/availability';
+import { calculateEmployeeSlots } from '$lib/services/availability.service';
+import { createAppointmentContext } from '$lib/services/appointment-context.service';
 import type { GetAvailabilityInput } from './availability.schema';
 import type { PortalContext } from '../../context';
 
@@ -24,32 +21,20 @@ export const getAvailabilityHandler = async ({
 	input: { branchId, serviceId, date },
 	ctx: { db }
 }: getAvailabilityOpts) => {
-	const initialTargetDate = date.setZone('UTC', { keepLocalTime: true });
-	const initialSearchSpan = Interval.fromDateTimes(
-		initialTargetDate.startOf('day'),
-		initialTargetDate.endOf('day')
-	);
+	const initialSpan = getDaySpanForDateTime(date);
 
-	const { organization, service, employees } = await fetchBookingData(
+	const { organization, service, employees, timeZone, engine } = await createAppointmentContext(
 		db,
 		branchId,
 		serviceId,
-		initialSearchSpan
+		initialSpan.utcSpan
 	);
 
-	const timeZone = organization.timeZone || 'UTC';
-	const targetDate = date.setZone(timeZone, { keepLocalTime: true });
-	const searchSpan = Interval.fromDateTimes(targetDate.startOf('day'), targetDate.endOf('day'));
+	const localSpan = getDaySpanForDateTime(date, timeZone);
+	const targetDate = localSpan.localStart;
+	const searchSpan = localSpan.localSpan;
 
 	const orgIntervals = getIntervalsForDate(organization.openingTimes, targetDate, timeZone);
-
-	// De Engine gebruikt nu de juiste volgorde (Buffer -> Subtraction -> Chunking)
-	// Zorg dat je SlotChunkingModule de 'shiftSlotsAfterBooking' check heeft die we eerder bespraken.
-	const engine = new AvailabilityEngine().useDefaultPipeline().withConfig({
-		slotDurationMinutes: service.duration,
-		bufferMinutes: 0,
-		gridStrategy: organization.autoShiftTimeSlot ? 'flexible' : 'fixed'
-	});
 
 	const employeeResults = calculateEmployeeSlots(
 		employees,

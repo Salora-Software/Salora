@@ -23,7 +23,7 @@ export const luxonInterval = z.preprocess(
 );
 
 export const getOccupancySchema = z.object({
-	branchId: z.string(),
+	organizationId: z.string(),
 	serviceId: z.string(),
 	range: luxonInterval
 });

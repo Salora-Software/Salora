@@ -68,7 +68,7 @@ export const router = createRouter({
 					//@ts-ignore
 					minimumBookingTime,
 					bookingPeriod,
-					autoShiftTimeSlot: autoShiftTimeSlot ? 1 : 0,
+					autoShiftTimeSlot: autoShiftTimeSlot,
 					timeZone
 				})
 				.where(eq(schema.organization.id, organizationId))

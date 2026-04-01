@@ -136,7 +136,7 @@ export const organization = sqliteTable(
     appointmentStatus: text().default("PENDING").notNull(),
     minimumBookingTime: real().default(0.5).notNull(),
     bookingPeriod: integer().default(365).notNull(),
-    autoShiftTimeSlot: integer().default(0).notNull(),
+    autoShiftTimeSlot: integer({ mode: "boolean" }).default(false).notNull(),
     onboardingStep: integer().default(0),
   },
   (table) => [],
@@ -512,7 +512,7 @@ export const template = sqliteTable(
     target: text().notNull(),
     subject: text(),
     body: text().notNull(),
-    enabled: integer().default(1).notNull(),
+    enabled: integer({ mode: "boolean" }).default(true).notNull(),
   },
   (table) => [
     foreignKey({

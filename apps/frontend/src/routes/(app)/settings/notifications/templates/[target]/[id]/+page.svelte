@@ -167,7 +167,9 @@
 						class="mt-2 w-full"
 						placeholder="Voer een e-mailadres in"
 						type="email"
+						name="email"
 						bind:value={testEmail}
+						autocomplete="email"
 						disabled={loading}
 					/>
 					<p class="text-muted-foreground mt-2 text-sm">

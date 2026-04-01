@@ -1,6 +1,6 @@
-import { WorkerMailer } from 'worker-mailer';
+import { WorkerMailer } from "worker-mailer";
 
-export * from './queue';
+export * from "./queue";
 
 export interface MailCredential {
   provider_name: string;
@@ -26,20 +26,20 @@ export interface SendResult {
 }
 
 const RETRYABLE_ERROR_CODES = new Set([
-  'ETIMEDOUT',
-  'ECONNRESET',
-  'ECONNREFUSED',
-  'EAI_AGAIN',
-  'ESOCKET'
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "ESOCKET",
 ]);
 
 export const isRetryableEmailError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false;
+  if (!error || typeof error !== "object") return false;
   const code = (error as { code?: string }).code;
   if (code && RETRYABLE_ERROR_CODES.has(code)) return true;
 
   const responseCode = (error as { responseCode?: number }).responseCode;
-  if (typeof responseCode === 'number') {
+  if (typeof responseCode === "number") {
     return responseCode >= 400 && responseCode < 500;
   }
 
@@ -51,19 +51,21 @@ export const isRetryableEmailError = (error: unknown): boolean => {
 const isCredentialUsable = (credential: MailCredential) =>
   Boolean(
     credential.smtp_host?.trim() &&
-      credential.smtp_port &&
-      credential.username?.trim() &&
-      credential.password?.trim()
+    credential.smtp_port &&
+    credential.username?.trim() &&
+    credential.password?.trim(),
   );
 
-export async function sendEmailWithFailover(data: EmailSendData): Promise<SendResult> {
+export async function sendEmailWithFailover(
+  data: EmailSendData,
+): Promise<SendResult> {
   const { senderName, from, to, subject, body, credentials } = data;
   const sortedCredentials = [...credentials]
     .filter(isCredentialUsable)
     .sort((a, b) => a.priority - b.priority);
 
   if (sortedCredentials.length === 0) {
-    throw new Error('No valid SMTP credentials configured');
+    throw new Error("No valid SMTP credentials configured");
   }
 
   let lastError: unknown;
@@ -72,29 +74,31 @@ export async function sendEmailWithFailover(data: EmailSendData): Promise<SendRe
       const mailer = await WorkerMailer.connect({
         credentials: {
           username: provider.username,
-          password: provider.password
+          password: provider.password,
         },
-        authType: 'plain',
+        authType: "plain",
         host: provider.smtp_host,
         port: provider.smtp_port,
-        secure: provider.smtp_port === 465
+        secure: provider.smtp_port === 465,
       });
 
       await mailer.send({
         from: { name: senderName, email: from },
         to: { email: to },
         subject,
-        html: body
+        html: body,
       });
 
       return {
         success: true,
-        provider: provider.provider_name
+        provider: provider.provider_name,
       };
     } catch (error) {
       lastError = error;
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('All email providers exhausted');
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("All email providers exhausted");
 }

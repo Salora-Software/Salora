@@ -511,7 +511,7 @@ export const template = sqliteTable(
     type: text().notNull(),
     target: text().notNull(),
     subject: text(),
-    body: text().notNull(),
+    body: text({ mode: "json" }).notNull(),
     enabled: integer({ mode: "boolean" }).default(true).notNull(),
   },
   (table) => [

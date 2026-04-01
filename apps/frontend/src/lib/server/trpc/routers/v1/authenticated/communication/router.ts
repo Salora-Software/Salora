@@ -3,7 +3,6 @@ import { router as createRouter, privateProcedure, publicProcedure } from '../..
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
-import { replaceVariables } from '$lib/templateReplacer';
 import type { EmailQueueMessage } from '@salora/mailer';
 
 export const router = createRouter({
@@ -62,7 +61,7 @@ export const router = createRouter({
 				.insert(schema.template)
 				.values({
 					id: crypto.randomUUID(),
-					type: input.type as any,
+					type: input.type,
 					target: input.target,
 					organizationId: orgId,
 					subject: input.subject,
@@ -83,8 +82,7 @@ export const router = createRouter({
 	sendTestEmail: privateProcedure
 		.input(
 			z.object({
-				subject: z.string(),
-				body: z.string(),
+				templateType: z.string(),
 				email: z.string().email()
 			})
 		)
@@ -98,51 +96,22 @@ export const router = createRouter({
 			}
 
 			const organizationId = session.session.activeOrganizationId;
-			// Drizzle: get organization and members (no include, need two queries)
-			let branch = await db.query.organization.findFirst({
+			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId!)
 			});
-			// TODO: If members are needed, fetch separately (not used in this code)
-			if (!branch) {
+			if (!organization) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'branch_not_found'
 				});
 			}
-			const content = replaceVariables(input.body, {
-				branch,
-				date: {
-					now: new Date().toLocaleString('nl-NL', { timeZone: branch.timeZone }),
-					year: new Date().getFullYear(),
-					month: new Date().getMonth(),
-					day: new Date().getDate()
-				},
-				customer: {
-					name: 'John Doe',
-					firstName: 'John',
-					lastName: 'Doe',
-					email: 'johndoe@example.com',
-					phone: '0612345678'
-				},
-				booking: {
-					name: 'Knippen',
-					price: '€ 20,00',
-					date: new Date().toLocaleString('nl-NL', { timeZone: branch.timeZone })
-				}
-			});
 
 			const job: EmailQueueMessage = {
-				version: 'v1',
-				jobId: crypto.randomUUID(),
+				version: 'v2',
+				eventType: 'TEST_TEMPLATE',
+				templateType: input.templateType,
 				organizationId: organizationId!,
-				senderName: branch.name || 'Salora',
-				from: '',
-				to: input.email,
-				subject: input.subject,
-				body: content,
-				createdAt: new Date().toISOString(),
-				idempotencyKey: `${organizationId}:${input.email}:${input.subject}`,
-				source: 'frontend-trpc'
+				recipientEmail: input.email
 			};
 
 			await emailQueue.send(job);
@@ -258,7 +227,7 @@ export const router = createRouter({
 					.insert(schema.communicationSetting)
 					.values({
 						id: crypto.randomUUID(),
-						type: type as any,
+						type: type,
 						organizationId: orgId,
 						enabled,
 						settings: rest,

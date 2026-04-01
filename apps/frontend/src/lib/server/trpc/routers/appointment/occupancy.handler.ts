@@ -15,7 +15,7 @@ type GetOccupancyOpts = {
 };
 
 export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOpts) => {
-	const { organizationId, serviceId, range } = input;
+	const { branchId, serviceId, range } = input;
 
 	if (!range.isValid || !range.start || !range.end) {
 		throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ongeldig bereik' });
@@ -26,7 +26,7 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 	// Zorg dat fetchBookingData de relations `calendarItems` meelaadt voor de members
 	const { organization, employees, timeZone } = await createAppointmentContext(
 		db,
-		organizationId,
+		branchId,
 		serviceId,
 		utcRangeSpan.utcSpan
 	);

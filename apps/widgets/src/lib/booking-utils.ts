@@ -53,7 +53,7 @@ export async function loadOccupancy(
 
 	try {
 		const response = await trpc.appointment.getOccupancy.query({
-			branchId,
+			branchId: branchId,
 			serviceId,
 			range: Interval.fromDateTimes(start, end).toISO()
 		});
@@ -92,7 +92,7 @@ export async function createBooking(
 	branch: any
 ): Promise<{ success: boolean; employeeId?: string }> {
 	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
-	
+
 	let date = values.date.timeValue?.start;
 	if (!date) {
 		toast.error('Please select a valid date and time.');

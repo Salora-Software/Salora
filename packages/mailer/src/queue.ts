@@ -1,33 +1,35 @@
-export const EMAIL_QUEUE_NAME = 'email-jobs';
+export const EMAIL_QUEUE_NAME = "email-jobs";
 
-export interface EmailQueueMessage {
-	version: 'v1';
-	jobId: string;
-	organizationId: string;
-	senderName: string;
-	from: string;
-	to: string;
-	subject: string;
-	body: string;
-	createdAt: string;
-	idempotencyKey: string;
-	source: 'frontend-trpc';
+export interface TemplateEmailQueueMessage {
+  version?: "v2";
+  eventType?: "TEST_TEMPLATE" | string;
+  templateType: string;
+  organizationId: string;
+  recipientEmail?: string;
+  bookingId?: string;
 }
 
-export const isEmailQueueMessage = (value: unknown): value is EmailQueueMessage => {
-	if (!value || typeof value !== 'object') return false;
-	const msg = value as Partial<EmailQueueMessage>;
-	return (
-		msg.version === 'v1' &&
-		typeof msg.jobId === 'string' &&
-		typeof msg.organizationId === 'string' &&
-		typeof msg.senderName === 'string' &&
-		typeof msg.from === 'string' &&
-		typeof msg.to === 'string' &&
-		typeof msg.subject === 'string' &&
-		typeof msg.body === 'string' &&
-		typeof msg.createdAt === 'string' &&
-		typeof msg.idempotencyKey === 'string' &&
-		msg.source === 'frontend-trpc'
-	);
+export type EmailQueueMessage = TemplateEmailQueueMessage;
+
+export const isTemplateEmailQueueMessage = (
+  value: unknown,
+): value is TemplateEmailQueueMessage => {
+  if (!value || typeof value !== "object") return false;
+  const msg = value as Partial<TemplateEmailQueueMessage>;
+
+  if (typeof msg.templateType !== "string") return false;
+  if (typeof msg.organizationId !== "string") return false;
+  if (msg.eventType === "TEST_TEMPLATE") {
+    return typeof msg.recipientEmail === "string";
+  }
+
+  return (
+    typeof msg.recipientEmail === "string" || typeof msg.bookingId === "string"
+  );
+};
+
+export const isEmailQueueMessage = (
+  value: unknown,
+): value is EmailQueueMessage => {
+  return isTemplateEmailQueueMessage(value);
 };

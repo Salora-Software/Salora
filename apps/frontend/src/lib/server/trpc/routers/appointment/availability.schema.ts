@@ -35,7 +35,7 @@ export const luxonInterval = z.preprocess(
 );
 
 export const getAvailabilitySchema = z.object({
-	organizationId: z.string(),
+	branchId: z.string(),
 	serviceId: z.string(),
 	date: luxonDate
 });

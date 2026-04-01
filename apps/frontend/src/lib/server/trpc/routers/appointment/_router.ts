@@ -25,7 +25,6 @@ export const router = createRouter({
 	}),
 
 	sendMagicLink: portalProcedure
-
 		.input(
 			z.object({
 				email: z.string().email(),
@@ -93,40 +92,6 @@ export const router = createRouter({
 			// Send magic link email using custom template
 			const encode = encodeURIComponent;
 			const url = `${env?.PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
-			// await notificationService.sendEmailNotification({
-			// 	to: email,
-			// 	branch: organization,
-			// 	variables: {
-			// 		magicLink: url,
-			// 		customer: {
-			// 			name: customer.name || '',
-			// 			email: customer.email || ''
-			// 		}
-			// 	},
-			// 	customTemplate: {
-			// 		subject: 'Je verificatie link',
-			// 		body: `
-			// 			<html>
-			// 				<body style="font-family: Arial, sans-serif; color: #222;">
-			// 					<div style="max-width: 480px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 32px; background: #fafbfc;">
-			// 						<h2 style="color: #2d7ff9;">Hallo {{customer.name}},</h2>
-			// 						<p>
-			// 							Klik op de onderstaande knop om je e-mailadres te verifiëren en in te loggen op je account:
-			// 						</p>
-			// 						<p style="text-align: center; margin: 32px 0;">
-			// 							<a href="{{magicLink}}" style="background: #2d7ff9; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-			// 								Verifieer &amp; Log in
-			// 							</a>
-			// 						</p>
-			// 						<p style="font-size: 14px; color: #888;">
-			// 							Heb je deze aanvraag niet gedaan? Negeer deze e-mail dan gerust.
-			// 						</p>
-			// 					</div>
-			// 				</body>
-			// 			</html>
-			// 		`
-			// 	}
-			// });
 			return { success: true };
 		}),
 	cancelAppointment: portalProcedure

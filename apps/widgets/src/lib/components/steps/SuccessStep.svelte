@@ -4,27 +4,35 @@
 	import { onMount } from 'svelte';
 	// Remove writable, use Svelte 5 runes
 	import type { BookingValues } from '$lib/booking-utils.js';
+	import Button from '../ui/button/button.svelte';
+	import SuccessAnimation from '../SuccessAnimation.svelte';
+	import { backOut } from 'svelte/easing';
 
 	interface Props {
 		bookingState: BookingValues;
 		branch: any;
+		resetWidget: () => void;
 	}
 
-	let { bookingState, branch }: Props = $props();
+	let { bookingState, branch, resetWidget }: Props = $props();
 	let showConfetti = $state(true);
 </script>
 
 <div class="relative grid h-full grid-rows-[1fr_auto] gap-2">
 	{#if showConfetti}
 		<div class="pointer-events-none absolute inset-0 z-10 flex h-full w-full justify-between">
-			<Confetti delay={[0, 250]} x={[-0.15, 1.25]} y={[0.3, -0.8]} />
-			<Confetti delay={[0, 250]} x={[0.15, -1.25]} y={[0.3, -0.8]} />
+			<Confetti delay={[300, 550]} x={[-0.15, 1.25]} y={[0.3, -0.8]} />
+			<Confetti delay={[300, 550]} x={[0.15, -1.25]} y={[0.3, -0.8]} />
 		</div>
 	{/if}
 	<div class="flex h-max flex-col justify-center text-center">
-		<div class="h-[150px]">
+		<div class="mx-auto mt-4">
+			<SuccessAnimation />
 		</div>
-		<h1 class="widget-content-text mt-[-15px] text-2xl" in:scale={{ duration: 500, start: 0.7 }}>
+		<h1
+			class="widget-content-text -mt-4 text-3xl font-bold"
+			in:scale={{ duration: 500, start: 1.4, delay: 500, easing: backOut }}
+		>
 			Bedankt voor uw afspraak!
 		</h1>
 	</div>
@@ -71,5 +79,8 @@
 				</p>
 			</div>
 		{/await}
+		<Button onclick={resetWidget} class="w-full widget-button z-10 relative mt-4" size="lg"
+			>Maak nog een afspraak</Button
+		>
 	</div>
 </div>

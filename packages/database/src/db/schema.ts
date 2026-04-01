@@ -511,7 +511,7 @@ export const template = sqliteTable(
     target: text().notNull(),
     subject: text(),
     body: text().notNull(),
-    enabled: integer().default(1).notNull(),
+    enabled: integer({ mode: "boolean" }).default(true).notNull(),
   },
   (table) => [
     foreignKey({

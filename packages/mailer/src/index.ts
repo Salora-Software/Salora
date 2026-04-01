@@ -1,5 +1,3 @@
-import { WorkerMailer } from "worker-mailer";
-
 export * from "./queue";
 
 export interface MailCredential {
@@ -59,6 +57,7 @@ const isCredentialUsable = (credential: MailCredential) =>
 export async function sendEmailWithFailover(
   data: EmailSendData,
 ): Promise<SendResult> {
+  const { WorkerMailer } = await import("worker-mailer");
   const { senderName, from, to, subject, body, credentials } = data;
   const sortedCredentials = [...credentials]
     .filter(isCredentialUsable)

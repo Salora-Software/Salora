@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	build: {
 		rollupOptions: {
-			external: ['cloudflare:sockets']
+			external: [/^cloudflare:/, /^node:/]
 		}
 	},
 	server: {
@@ -19,6 +19,6 @@ export default defineConfig({
 		exclude: ['fingerprint'] // exclude your package from optimization
 	},
 	ssr: {
-		external: ['@libsql/client', 'cloudflare:sockets']
+		external: ['@libsql/client']
 	}
 }); //

@@ -8,6 +8,7 @@
 	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
 	import Themer from '$lib/components/Themer.svelte';
 	import { LoaderCircle } from 'lucide-svelte';
+	import { cn } from '$lib/utils';
 
 	let { variant = 'widget', branchId, endpoint = 'https://app.salora.app' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
@@ -44,6 +45,8 @@
 	});
 
 	let container = $state<HTMLElement | undefined>(undefined);
+	let collapsed = $state(false);
+	let cardWidth = $state(0);
 </script>
 
 <ModeWatcher
@@ -55,7 +58,10 @@
 
 <BitsConfig defaultPortalTo={container}>
 	<div bind:this={container} class="salora-widget-root">
-		<div class="w-4xl h-125 max-w-full">
+		<div
+			class={cn('w-4xl max-w-full h-125 transition-all duration-300')}
+			style:width={collapsed ? `${cardWidth}px` : ''}
+		>
 			<Toaster position={'top-right'} richColors />
 			{#if loading}
 				<div
@@ -67,7 +73,7 @@
 			{:else}
 				<Themer colorTheme={theme.current}>
 					{#if branchData}
-						<BookingWidget branch={branchData} />
+						<BookingWidget branch={branchData} bind:collapsed bind:cardWidth />
 					{:else}
 						<div
 							class="bg-widget-content-bg flex h-full w-full flex-col items-center justify-center rounded-md p-4 shadow-sm"

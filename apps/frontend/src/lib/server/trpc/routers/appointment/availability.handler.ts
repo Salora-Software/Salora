@@ -1,10 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
-import {
-	aggregateAvailability,
-	IntervalUtils,
-	generateTimeGrid
-} from '@salora/scheduler';
+import { aggregateAvailability, IntervalUtils, generateTimeGrid } from '@salora/scheduler';
 import { getDaySpanForDateTime, getIntervalsForDate } from '@salora/availability';
 import { calculateEmployeeSlots } from '$lib/services/availability.service';
 import { createAppointmentContext } from '$lib/services/appointment-context.service';

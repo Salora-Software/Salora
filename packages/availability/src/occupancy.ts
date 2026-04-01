@@ -1,100 +1,120 @@
-import { DateTime, type WeekdayNumbers } from 'luxon';
-import { IntervalUtils } from '@salora/scheduler';
-import { getIntervalsForDate, type WeekShift } from './intervals';
+import { DateTime, type WeekdayNumbers } from "luxon";
+import { IntervalUtils } from "@salora/scheduler";
+import { getIntervalsForDate, type WeekShift } from "./intervals";
 
 type EmployeeAvailabilityInput = {
-	member: {
-		availabilities: WeekShift[];
-		calendarItems: Array<{
-			type: string;
-			startTime: Date;
-			endTime: Date;
-		}>;
-	};
+  member: {
+    availabilities: WeekShift[];
+    calendarItems: Array<{
+      type: string;
+      startTime: Date;
+      endTime: Date;
+    }>;
+  };
 };
 
 export const buildBookedMinutesPerDate = (
-	employees: EmployeeAvailabilityInput[],
-	timeZone: string
+  employees: EmployeeAvailabilityInput[],
+  timeZone: string,
 ) => {
-	const bookedMinutesPerDate = new Map<string, number>();
+  const bookedMinutesPerDate = new Map<string, number>();
 
-	for (const employee of employees) {
-		const items = employee.member.calendarItems || [];
+  for (const employee of employees) {
+    const items = employee.member.calendarItems || [];
 
-		for (const item of items) {
-			if (item.type !== 'BOOKING') continue;
+    for (const item of items) {
+      if (item.type !== "BOOKING") continue;
 
-			const durationMinutes = (item.endTime.getTime() - item.startTime.getTime()) / 60000;
-			const dateStr = DateTime.fromJSDate(item.startTime).setZone(timeZone).toISODate()!;
+      const durationMinutes =
+        (item.endTime.getTime() - item.startTime.getTime()) / 60000;
+      const dateStr = DateTime.fromJSDate(item.startTime)
+        .setZone(timeZone)
+        .toISODate()!;
 
-			bookedMinutesPerDate.set(dateStr, (bookedMinutesPerDate.get(dateStr) || 0) + durationMinutes);
-		}
-	}
+      bookedMinutesPerDate.set(
+        dateStr,
+        (bookedMinutesPerDate.get(dateStr) || 0) + durationMinutes,
+      );
+    }
+  }
 
-	return bookedMinutesPerDate;
+  return bookedMinutesPerDate;
 };
 
 export const buildCapacityPerWeekday = (
-	openingTimes: WeekShift[],
-	employees: EmployeeAvailabilityInput[],
-	referenceDay: DateTime,
-	timeZone: string
+  openingTimes: WeekShift[],
+  employees: EmployeeAvailabilityInput[],
+  referenceDay: DateTime,
+  timeZone: string,
 ) => {
-	const capacityPerWeekday = new Map<number, number>();
+  const capacityPerWeekday = new Map<number, number>();
 
-	for (let i = 1; i <= 7; i++) {
-		const refDay = referenceDay.set({ weekday: i as WeekdayNumbers });
-		const orgIntervals = getIntervalsForDate(openingTimes, refDay, timeZone);
+  for (let i = 1; i <= 7; i++) {
+    const refDay = referenceDay.set({ weekday: i as WeekdayNumbers });
+    const orgIntervals = getIntervalsForDate(openingTimes, refDay, timeZone);
 
-		let weekdayMinutes = 0;
-		for (const employee of employees) {
-			const empIntervals = getIntervalsForDate(employee.member.availabilities, refDay, timeZone);
-			const workingIntervals = IntervalUtils.intersect(orgIntervals, empIntervals);
+    let weekdayMinutes = 0;
+    for (const employee of employees) {
+      const empIntervals = getIntervalsForDate(
+        employee.member.availabilities,
+        refDay,
+        timeZone,
+      );
+      const workingIntervals = IntervalUtils.intersect(
+        orgIntervals,
+        empIntervals,
+      );
 
-			for (const interval of workingIntervals) {
-				weekdayMinutes += (interval.end!.toMillis() - interval.start!.toMillis()) / 60000;
-			}
-		}
+      for (const interval of workingIntervals) {
+        weekdayMinutes +=
+          (interval.end!.toMillis() - interval.start!.toMillis()) / 60000;
+      }
+    }
 
-		capacityPerWeekday.set(i, weekdayMinutes);
-	}
+    capacityPerWeekday.set(i, weekdayMinutes);
+  }
 
-	return capacityPerWeekday;
+  return capacityPerWeekday;
 };
 
 export const buildOccupancyDays = (
-	start: DateTime,
-	end: DateTime,
-	capacityPerWeekday: Map<number, number>,
-	bookedMinutesPerDate: Map<string, number>
+  start: DateTime,
+  end: DateTime,
+  capacityPerWeekday: Map<number, number>,
+  bookedMinutesPerDate: Map<string, number>,
 ) => {
-	const daysResult: Array<{ date: string; occupancyPercentage: number; available: boolean }> = [];
-	let currentDay = start;
+  const daysResult: Array<{
+    date: string;
+    occupancyPercentage: number;
+    available: boolean;
+  }> = [];
+  let currentDay = start;
 
-	while (currentDay <= end) {
-		const dayString = currentDay.toISODate()!;
-		const weekday = currentDay.weekday;
+  while (currentDay <= end) {
+    const dayString = currentDay.toISODate()!;
+    const weekday = currentDay.weekday;
 
-		const totalWorkingMinutes = capacityPerWeekday.get(weekday) || 0;
-		const totalBookedMinutes = bookedMinutesPerDate.get(dayString) || 0;
+    const totalWorkingMinutes = capacityPerWeekday.get(weekday) || 0;
+    const totalBookedMinutes = bookedMinutesPerDate.get(dayString) || 0;
 
-		let occupancyPercentage = 0;
-		if (totalWorkingMinutes > 0) {
-			occupancyPercentage = Math.round((totalBookedMinutes / totalWorkingMinutes) * 100);
-			occupancyPercentage = Math.min(occupancyPercentage, 100);
-		}
+    let occupancyPercentage = 0;
+    if (totalWorkingMinutes > 0) {
+      occupancyPercentage = Math.round(
+        (totalBookedMinutes / totalWorkingMinutes) * 100,
+      );
+      occupancyPercentage = Math.min(occupancyPercentage, 100);
+    }
 
-		daysResult.push({
-			date: dayString,
-			occupancyPercentage,
-			available: occupancyPercentage < 100 && totalWorkingMinutes > 0
-		});
+    daysResult.push({
+      date: dayString,
+      occupancyPercentage,
+      available: occupancyPercentage < 100 && totalWorkingMinutes > 0,
+    });
 
-		currentDay = currentDay.plus({ days: 1 });
-	}
+    currentDay = currentDay.plus({ days: 1 });
+  }
 
-	return daysResult;
+  return daysResult;
 };
 
 export type { EmployeeAvailabilityInput };

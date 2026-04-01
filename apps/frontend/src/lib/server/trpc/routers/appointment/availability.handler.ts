@@ -1,16 +1,10 @@
-import { TRPCError } from '@trpc/server';
-import { DateTime, Interval } from 'luxon';
+import { aggregateAvailability } from '@salora/scheduler';
+import { getDaySpanForDateTime, getIntervalsForDate } from '@salora/availability';
+import { calculateEmployeeSlots } from '$lib/services/availability.service';
 import {
-	AvailabilityEngine,
-	aggregateAvailability,
-	IntervalUtils,
-	generateTimeGrid
-} from '@salora/scheduler';
-import {
-	fetchBookingData,
-	calculateEmployeeSlots,
-	getIntervalsForDate
-} from '$lib/services/availability.service';
+	createAppointmentContext,
+	getBookingCutoffDateTime
+} from '$lib/services/appointment-context.service';
 import type { GetAvailabilityInput } from './availability.schema';
 import type { PortalContext } from '../../context';
 
@@ -21,35 +15,24 @@ type getAvailabilityOpts = {
 // ... (imports blijven hetzelfde)
 
 export const getAvailabilityHandler = async ({
-	input: { branchId, serviceId, date },
+	input: { organizationId, serviceId, date },
 	ctx: { db }
 }: getAvailabilityOpts) => {
-	const initialTargetDate = date.setZone('UTC', { keepLocalTime: true });
-	const initialSearchSpan = Interval.fromDateTimes(
-		initialTargetDate.startOf('day'),
-		initialTargetDate.endOf('day')
-	);
+	const initialSpan = getDaySpanForDateTime(date);
 
-	const { organization, service, employees } = await fetchBookingData(
+	const { organization, service, employees, timeZone, engine } = await createAppointmentContext(
 		db,
-		branchId,
+		organizationId,
 		serviceId,
-		initialSearchSpan
+		initialSpan.utcSpan
 	);
 
-	const timeZone = organization.timeZone || 'UTC';
-	const targetDate = date.setZone(timeZone, { keepLocalTime: true });
-	const searchSpan = Interval.fromDateTimes(targetDate.startOf('day'), targetDate.endOf('day'));
+	const localSpan = getDaySpanForDateTime(date, timeZone);
+	const targetDate = localSpan.localStart;
+	const searchSpan = localSpan.localSpan;
+	const bookingCutoff = getBookingCutoffDateTime(timeZone, organization.minimumBookingTime);
 
 	const orgIntervals = getIntervalsForDate(organization.openingTimes, targetDate, timeZone);
-
-	// De Engine gebruikt nu de juiste volgorde (Buffer -> Subtraction -> Chunking)
-	// Zorg dat je SlotChunkingModule de 'shiftSlotsAfterBooking' check heeft die we eerder bespraken.
-	const engine = new AvailabilityEngine().useDefaultPipeline().withConfig({
-		slotDurationMinutes: service.duration,
-		bufferMinutes: 0,
-		gridStrategy: organization.autoShiftTimeSlot ? 'flexible' : 'fixed'
-	});
 
 	const employeeResults = calculateEmployeeSlots(
 		employees,
@@ -68,10 +51,12 @@ export const getAvailabilityHandler = async ({
 	// Voor de simpele 'slots' array mapping:
 	const slots = fullTimeline.map((aggregated) => {
 		const interval = aggregated.interval;
+		const startsAfterCutoff = interval.start ? interval.start >= bookingCutoff : false;
+		const availableCapacity = startsAfterCutoff ? aggregated.availableCapacity : 0;
 		return {
 			interval,
-			availableCapacity: aggregated.availableCapacity,
-			available: aggregated.availableCapacity > 0,
+			availableCapacity,
+			available: availableCapacity > 0,
 			availableEmployees: aggregated.availableEmployees
 		};
 	});

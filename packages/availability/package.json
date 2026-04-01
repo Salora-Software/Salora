@@ -1,0 +1,16 @@
+{
+  "name": "@salora/availability",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@salora/scheduler": "workspace:*",
+    "luxon": "^3.7.1"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.0",
+    "typescript": "^5.8.2"
+  }
+}

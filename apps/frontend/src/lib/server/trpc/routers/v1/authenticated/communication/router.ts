@@ -35,7 +35,7 @@ export const router = createRouter({
 		.mutation(async ({ ctx: { db, session }, input }) => {
 			const updated = await db
 				.update(schema.template)
-				.set({ enabled: input.enabled ? 1 : 0 })
+				.set({ enabled: input.enabled })
 				.where(
 					and(
 						eq(schema.template.type, input.type),
@@ -74,7 +74,7 @@ export const router = createRouter({
 					organizationId: orgId,
 					subject: input.subject,
 					body: input.body,
-					enabled: 1,
+					enabled: true,
 					updatedAt: new Date()
 				})
 				.onConflictDoUpdate({
@@ -146,8 +146,8 @@ export const router = createRouter({
 			emailer.sendEmail(
 				'',
 				(communication?.settings as { smtpEmail?: string })?.smtpEmail ||
-				formattedEmailCommunication.username ||
-				'',
+					formattedEmailCommunication.username ||
+					'',
 				input.email,
 				input.subject,
 				replaceVariables(input.body, {
@@ -291,10 +291,7 @@ export const router = createRouter({
 						updatedAt: new Date()
 					})
 					.onConflictDoUpdate({
-						target: [
-							schema.communicationSetting.type,
-							schema.communicationSetting.organizationId
-						],
+						target: [schema.communicationSetting.type, schema.communicationSetting.organizationId],
 						set: {
 							enabled,
 							settings: rest,

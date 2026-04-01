@@ -2,12 +2,12 @@ import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
-import { AvailabilityEngine } from '@salora/scheduler';
+import { getDaySpanForJsDate, getIntervalsForDate } from '@salora/availability';
+import { calculateEmployeeSlots } from '$lib/services/availability.service';
 import {
-	fetchBookingData,
-	calculateEmployeeSlots,
-	getIntervalsForDate
-} from '$lib/services/availability.service';
+	createAppointmentContext,
+	getBookingCutoffDateTime
+} from '$lib/services/appointment-context.service';
 import type { CreateBookingInput } from './booking.schema';
 import type { PortalContext } from '../../context';
 
@@ -26,29 +26,27 @@ export const createBookingHandler = async ({
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
 	// 1. Haal de globale organisatie- en service data op voor deze dag
-	// Gebruik UTC als tussenstap om de juiste dag-span op te halen
-	const initialTargetDate = DateTime.fromJSDate(date).setZone('UTC', { keepLocalTime: true });
-	const fullSearchSpan = Interval.fromDateTimes(
-		initialTargetDate.startOf('day'),
-		initialTargetDate.endOf('day')
-	);
+	const initialSpan = getDaySpanForJsDate(date);
 
-	const { organization, service, employees } = await fetchBookingData(
+	const { organization, service, employees, timeZone, engine } = await createAppointmentContext(
 		db,
 		organizationId,
 		serviceId,
-		fullSearchSpan
+		initialSpan.utcSpan
 	);
-
-	const timeZone = organization.timeZone || 'UTC';
 
 	// 2. Definieer het specifieke gezochte interval
 	const requestedStart = DateTime.fromJSDate(date, { zone: timeZone });
 	const requestedEnd = requestedStart.plus({ minutes: service.duration });
 	const requestedInterval = Interval.fromDateTimes(requestedStart, requestedEnd);
+	const bookingCutoff = getBookingCutoffDateTime(timeZone, organization.minimumBookingTime);
 
 	if (!requestedInterval.isValid) {
 		throw new TRPCError({ code: 'BAD_REQUEST', message: 'ongeldige_datum' });
+	}
+
+	if (requestedStart < bookingCutoff) {
+		throw new TRPCError({ code: 'BAD_REQUEST', message: 'slot_too_soon' });
 	}
 
 	// Filter specifieke medewerker als deze is meegegeven
@@ -62,11 +60,6 @@ export const createBookingHandler = async ({
 
 	// 3. Bereken beschikbaarheid via de Engine
 	const orgIntervals = getIntervalsForDate(organization.openingTimes, requestedStart, timeZone);
-	const engine = new AvailabilityEngine().useDefaultPipeline().withConfig({
-		slotDurationMinutes: service.duration,
-		bufferMinutes: 0,
-		gridStrategy: organization.autoShiftTimeSlot ? 'flexible' : 'fixed'
-	});
 
 	const targetDaySpan = Interval.fromDateTimes(
 		requestedStart.startOf('day'),

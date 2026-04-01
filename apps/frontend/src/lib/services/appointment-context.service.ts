@@ -10,10 +10,7 @@ export const getMinimumBookingLeadHours = (minimumBookingTime?: number | null) =
 	return Math.max(0, minimumBookingTime);
 };
 
-export const getBookingCutoffDateTime = (
-	timeZone: string,
-	minimumBookingTime?: number | null
-) => {
+export const getBookingCutoffDateTime = (timeZone: string, minimumBookingTime?: number | null) => {
 	const leadHours = getMinimumBookingLeadHours(minimumBookingTime);
 	return DateTime.now().setZone(timeZone).plus({ hours: leadHours });
 };

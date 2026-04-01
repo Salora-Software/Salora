@@ -4,6 +4,11 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	build: {
+		rollupOptions: {
+			external: ['cloudflare:sockets']
+		}
+	},
 	server: {
 		allowedHosts: ['salora.hexidev.nl', 'dev.salora.app'],
 		fs: {
@@ -14,6 +19,6 @@ export default defineConfig({
 		exclude: ['fingerprint'] // exclude your package from optimization
 	},
 	ssr: {
-		external: ['@libsql/client']
+		external: ['@libsql/client', 'cloudflare:sockets']
 	}
 }); //

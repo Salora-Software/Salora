@@ -88,7 +88,7 @@ export async function sendEmailWithFailover(
         subject,
         html: body,
       });
-
+      console.log("send email success");
       return {
         success: true,
         provider: provider.provider_name,

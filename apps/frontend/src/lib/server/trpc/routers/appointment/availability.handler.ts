@@ -15,14 +15,14 @@ type getAvailabilityOpts = {
 // ... (imports blijven hetzelfde)
 
 export const getAvailabilityHandler = async ({
-	input: { branchId, serviceId, date },
+	input: { organizationId, serviceId, date },
 	ctx: { db }
 }: getAvailabilityOpts) => {
 	const initialSpan = getDaySpanForDateTime(date);
 
 	const { organization, service, employees, timeZone, engine } = await createAppointmentContext(
 		db,
-		branchId,
+		organizationId,
 		serviceId,
 		initialSpan.utcSpan
 	);

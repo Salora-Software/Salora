@@ -13,13 +13,13 @@ import {
 // 2. Data ophalen geïsoleerd
 export const fetchBookingData = async (
 	db: DatabaseType,
-	branchId: string,
+	organizationId: string,
 	serviceId: string,
 	searchSpan: Interval
 ) => {
 	const [organization, service] = await Promise.all([
 		db.query.organization.findFirst({
-			where: eq(schema.organization.id, branchId),
+			where: eq(schema.organization.id, organizationId),
 			with: { openingTimes: true }
 		}),
 		db.query.service.findFirst({

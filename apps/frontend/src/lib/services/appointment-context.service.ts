@@ -35,13 +35,13 @@ export const createAvailabilityEngine = (
 
 export const createAppointmentContext = async (
 	db: DatabaseType,
-	branchId: string,
+	organizationId: string,
 	serviceId: string,
 	searchSpan: Interval
 ): Promise<AppointmentContext> => {
 	const { organization, service, employees } = await fetchBookingData(
 		db,
-		branchId,
+		organizationId,
 		serviceId,
 		searchSpan
 	);

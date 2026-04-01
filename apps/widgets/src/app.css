@@ -158,7 +158,7 @@
 		outline-color: rgba(var(--widget-accent-rgb), 0.5);
 	}
 	#svelte-root {
-		background-color: var(--widget-content-bg);
+		max-width: fit-content;
 		color: var(--widget-content-text);
 		font-family: var(--widget-font-family, 'Inter', system-ui, sans-serif);
 	}

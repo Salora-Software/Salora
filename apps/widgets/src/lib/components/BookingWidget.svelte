@@ -29,6 +29,7 @@
 	import type { RouterOutput } from '@salora/trpc-types';
 	import { DateTime, type Interval } from 'luxon';
 	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	// Calendar value for binding
 	let calendarValue = $state<DateValue | undefined>(undefined);
@@ -50,10 +51,11 @@
 	interface Props {
 		branch: RouterOutput['v1']['getBranch'];
 		collapsed?: boolean;
+		cardWidth?: number;
 		onCollapsedChange?: (collapsed: boolean) => void;
 	}
 
-	let { branch, collapsed = $bindable(false) }: Props = $props();
+	let { branch, collapsed = $bindable(false), cardWidth = $bindable(0) }: Props = $props();
 
 	const monthOptions = [
 		'Januari',
@@ -261,12 +263,29 @@
 		const dayData = occupancyData.days.find((d) => d.date === date.toString());
 		return dayData ? dayData.occupancyPercentage : 0;
 	}
+
+	function updateCardWidth(): Attachment {
+		return (element) => {
+			if (element) {
+				const resizeObserver = new ResizeObserver((entries) => {
+					for (let entry of entries) {
+						if (!collapsed) cardWidth = entry.contentRect.width;
+					}
+				});
+				resizeObserver.observe(element);
+
+				return () => {
+					resizeObserver.unobserve(element);
+				};
+			}
+		};
+	}
 </script>
 
 <svelte:window bind:innerWidth />
 <div
 	class={cn(
-		`widget-container animationContainer grid h-full w-full grid-cols-1 grid-rows-[1fr] overflow-hidden`
+		`widget-container animationContainer grid h-full w-full grid-cols-1 grid-rows-[1fr] overflow-hidden max-w-content`
 	)}
 >
 	{#if !collapsed && !isMobile}
@@ -274,10 +293,12 @@
 	{/if}
 	<div
 		class={cn(
-			'widget-content right col-start-1 row-start-1 ml-auto w-[65%] max-w-full',
-			collapsed ? 'w-[546px] !rounded-[5px] p-0' : '',
-			isMobile ? '!w-[100%]' : ''
+			'widget-content right col-start-1 row-start-1 ml-auto w-[65%]',
+			collapsed ? 'rounded-[5px]! p-0 w-full!' : '',
+			isMobile ? 'w-full!' : ''
 		)}
+		style:max-width={collapsed ? `${cardWidth}px` : '100%'}
+		{@attach updateCardWidth()}
 	>
 		{#if bookingSteps.find((step) => step.selected)}
 			{@const selectedStep = bookingSteps.find((step) => step.selected)}
@@ -487,7 +508,7 @@
 				</div>
 			</div>
 		{:else}
-			<SuccessStep {bookingState} {branch} />
+			<SuccessStep {bookingState} {branch} {resetWidget} />
 		{/if}
 	</div>
 </div>

@@ -1,10 +1,10 @@
-import { createDb, schema } from '@salora/database';
+import { createDb, schema } from "@salora/database";
 import {
   isEmailQueueMessage,
   isRetryableEmailError,
   sendEmailWithFailover,
-  type MailCredential
-} from '@salora/mailer';
+  type MailCredential,
+} from "@salora/mailer";
 
 interface Env {
   DB: unknown;
@@ -30,50 +30,45 @@ const toPort = (value?: string): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 587;
 };
 
-const getCredentials = async (env: Env, organizationId: string): Promise<MailCredential[]> => {
+const getCredentials = async (env: Env, organizationId: string) => {
   const db = createDb(env.DB as any);
   const allCommunications = await db.select().from(schema.communicationSetting);
   const communication = allCommunications.find(
-    (item) => item.organizationId === organizationId && item.type === 'EMAIL'
+    (item) => item.organizationId === organizationId && item.type === "EMAIL",
   );
 
-  const settings = (communication?.settings ?? {}) as {
-    smtpServer?: string;
-    smtpPort?: number;
-    smtpUsername?: string;
-    smtpPassword?: string;
-    smtpEmail?: string;
-  };
+  const settings = communication?.settings ?? {};
 
   const orgCredential: MailCredential | null =
     settings.smtpServer && settings.smtpUsername && settings.smtpPassword
       ? {
-          provider_name: 'Organization SMTP',
+          provider_name: "Organization SMTP",
           priority: 10,
+          from: settings.smtpEmail,
           smtp_host: settings.smtpServer,
           smtp_port: Number(settings.smtpPort ?? 587),
           username: settings.smtpUsername,
-          password: settings.smtpPassword
+          password: settings.smtpPassword,
         }
       : null;
 
   const fallbackCredential: MailCredential | null =
-    env.MAIL_FALLBACK_SERVER && env.MAIL_FALLBACK_USERNAME && env.MAIL_FALLBACK_PASSWORD
+    env.MAIL_FALLBACK_SERVER &&
+    env.MAIL_FALLBACK_USERNAME &&
+    env.MAIL_FALLBACK_PASSWORD
       ? {
-          provider_name: 'Fallback SMTP',
+          provider_name: "Fallback SMTP",
           priority: 100,
           smtp_host: env.MAIL_FALLBACK_SERVER,
           smtp_port: toPort(env.MAIL_FALLBACK_PORT),
           username: env.MAIL_FALLBACK_USERNAME,
-          password: env.MAIL_FALLBACK_PASSWORD
+          password: env.MAIL_FALLBACK_PASSWORD,
         }
       : null;
 
-  const credentials = [orgCredential, fallbackCredential].filter(
-    (value): value is MailCredential => Boolean(value)
+  return [orgCredential, fallbackCredential].filter(
+    (cred): cred is MailCredential => cred !== null,
   );
-
-  return credentials;
 };
 
 export default {
@@ -82,7 +77,7 @@ export default {
       const payload = message.body;
 
       if (!isEmailQueueMessage(payload)) {
-        console.error('Dropping invalid queue payload', payload);
+        console.error("Dropping invalid queue payload", payload);
         message.ack();
         continue;
       }
@@ -90,9 +85,9 @@ export default {
       try {
         const credentials = await getCredentials(env, payload.organizationId);
         if (credentials.length === 0) {
-          console.error('No SMTP credentials available', {
+          console.error("No SMTP credentials available", {
             jobId: payload.jobId,
-            organizationId: payload.organizationId
+            organizationId: payload.organizationId,
           });
           message.ack();
           continue;
@@ -100,21 +95,21 @@ export default {
 
         await sendEmailWithFailover({
           senderName: payload.senderName,
-          from: payload.from || env.MAIL_EMAIL_SENDER || 'noreply@salora.app',
+          from: payload.from || env.MAIL_EMAIL_SENDER || "noreply@salora.app",
           to: payload.to,
           subject: payload.subject,
           body: payload.body,
-          credentials
+          credentials,
         });
 
         message.ack();
       } catch (error) {
         const retryable = isRetryableEmailError(error);
-        console.error('Email delivery failed', {
+        console.error("Email delivery failed", {
           jobId: payload.jobId,
           organizationId: payload.organizationId,
           retryable,
-          error
+          error,
         });
 
         if (!retryable) {
@@ -125,5 +120,5 @@ export default {
         message.retry();
       }
     }
-  }
+  },
 };

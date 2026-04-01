@@ -1,8 +1,11 @@
+import { WorkerMailer } from "worker-mailer";
+
 export * from "./queue";
 
 export interface MailCredential {
   provider_name: string;
   priority: number;
+  from?: string;
   smtp_host: string;
   smtp_port: number;
   username: string;
@@ -57,7 +60,6 @@ const isCredentialUsable = (credential: MailCredential) =>
 export async function sendEmailWithFailover(
   data: EmailSendData,
 ): Promise<SendResult> {
-  const { WorkerMailer } = await import("worker-mailer");
   const { senderName, from, to, subject, body, credentials } = data;
   const sortedCredentials = [...credentials]
     .filter(isCredentialUsable)
@@ -82,7 +84,7 @@ export async function sendEmailWithFailover(
       });
 
       await mailer.send({
-        from: { name: senderName, email: from },
+        from: { name: senderName, email: provider.from || from },
         to: { email: to },
         subject,
         html: body,

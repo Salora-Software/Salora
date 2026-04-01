@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { WorkerMailer } from 'worker-mailer';
 
 export * from './queue';
 
@@ -69,16 +69,20 @@ export async function sendEmailWithFailover(data: EmailSendData): Promise<SendRe
   let lastError: unknown;
   for (const provider of sortedCredentials) {
     try {
-      const transporter = nodemailer.createTransport({
+      const mailer = await WorkerMailer.connect({
+        credentials: {
+          username: provider.username,
+          password: provider.password
+        },
+        authType: 'plain',
         host: provider.smtp_host,
         port: provider.smtp_port,
-        secure: false,
-        auth: { user: provider.username, pass: provider.password }
+        secure: provider.smtp_port === 465
       });
 
-      await transporter.sendMail({
-        from: `${senderName} <${from}>`,
-        to,
+      await mailer.send({
+        from: { name: senderName, email: from },
+        to: { email: to },
         subject,
         html: body
       });

@@ -3,7 +3,10 @@ import { DateTime, Interval } from 'luxon';
 import { aggregateAvailability, IntervalUtils, generateTimeGrid } from '@salora/scheduler';
 import { getDaySpanForDateTime, getIntervalsForDate } from '@salora/availability';
 import { calculateEmployeeSlots } from '$lib/services/availability.service';
-import { createAppointmentContext } from '$lib/services/appointment-context.service';
+import {
+	createAppointmentContext,
+	getBookingCutoffDateTime
+} from '$lib/services/appointment-context.service';
 import type { GetAvailabilityInput } from './availability.schema';
 import type { PortalContext } from '../../context';
 
@@ -29,6 +32,7 @@ export const getAvailabilityHandler = async ({
 	const localSpan = getDaySpanForDateTime(date, timeZone);
 	const targetDate = localSpan.localStart;
 	const searchSpan = localSpan.localSpan;
+	const bookingCutoff = getBookingCutoffDateTime(timeZone, organization.minimumBookingTime);
 
 	const orgIntervals = getIntervalsForDate(organization.openingTimes, targetDate, timeZone);
 
@@ -49,10 +53,12 @@ export const getAvailabilityHandler = async ({
 	// Voor de simpele 'slots' array mapping:
 	const slots = fullTimeline.map((aggregated) => {
 		const interval = aggregated.interval;
+		const startsAfterCutoff = interval.start ? interval.start >= bookingCutoff : false;
+		const availableCapacity = startsAfterCutoff ? aggregated.availableCapacity : 0;
 		return {
 			interval,
-			availableCapacity: aggregated.availableCapacity,
-			available: aggregated.availableCapacity > 0,
+			availableCapacity,
+			available: availableCapacity > 0,
 			availableEmployees: aggregated.availableEmployees
 		};
 	});

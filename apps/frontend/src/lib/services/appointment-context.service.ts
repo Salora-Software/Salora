@@ -1,14 +1,34 @@
-import { AvailabilityEngine } from '@salora/scheduler';
+import { AvailabilityEngine, type ConfiguredEngine, type SchedulerConfig } from '@salora/scheduler';
 import type { DatabaseType } from '@salora/database';
 import { fetchBookingData } from '$lib/services/availability.service';
-import type { Interval } from 'luxon';
+import { DateTime, type Interval } from 'luxon';
 
 export const getTimeZoneOrDefault = (timeZone?: string | null) => timeZone || 'UTC';
+
+export const getMinimumBookingLeadHours = (minimumBookingTime?: number | null) => {
+	if (typeof minimumBookingTime !== 'number' || Number.isNaN(minimumBookingTime)) return 0;
+	return Math.max(0, minimumBookingTime);
+};
+
+export const getBookingCutoffDateTime = (
+	timeZone: string,
+	minimumBookingTime?: number | null
+) => {
+	const leadHours = getMinimumBookingLeadHours(minimumBookingTime);
+	return DateTime.now().setZone(timeZone).plus({ hours: leadHours });
+};
+
+type AppointmentData = Awaited<ReturnType<typeof fetchBookingData>>;
+
+export type AppointmentContext = AppointmentData & {
+	timeZone: string;
+	engine: ConfiguredEngine<SchedulerConfig>;
+};
 
 export const createAvailabilityEngine = (
 	slotDurationMinutes: number,
 	autoShiftTimeSlot?: boolean | null
-) => {
+): ConfiguredEngine<SchedulerConfig> => {
 	return new AvailabilityEngine().useDefaultPipeline().withConfig({
 		slotDurationMinutes,
 		bufferMinutes: 0,
@@ -21,7 +41,7 @@ export const createAppointmentContext = async (
 	branchId: string,
 	serviceId: string,
 	searchSpan: Interval
-) => {
+): Promise<AppointmentContext> => {
 	const { organization, service, employees } = await fetchBookingData(
 		db,
 		branchId,

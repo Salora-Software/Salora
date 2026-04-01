@@ -4,7 +4,10 @@ import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
 import { getDaySpanForJsDate, getIntervalsForDate } from '@salora/availability';
 import { calculateEmployeeSlots } from '$lib/services/availability.service';
-import { createAppointmentContext } from '$lib/services/appointment-context.service';
+import {
+	createAppointmentContext,
+	getBookingCutoffDateTime
+} from '$lib/services/appointment-context.service';
 import type { CreateBookingInput } from './booking.schema';
 import type { PortalContext } from '../../context';
 
@@ -36,9 +39,14 @@ export const createBookingHandler = async ({
 	const requestedStart = DateTime.fromJSDate(date, { zone: timeZone });
 	const requestedEnd = requestedStart.plus({ minutes: service.duration });
 	const requestedInterval = Interval.fromDateTimes(requestedStart, requestedEnd);
+	const bookingCutoff = getBookingCutoffDateTime(timeZone, organization.minimumBookingTime);
 
 	if (!requestedInterval.isValid) {
 		throw new TRPCError({ code: 'BAD_REQUEST', message: 'ongeldige_datum' });
+	}
+
+	if (requestedStart < bookingCutoff) {
+		throw new TRPCError({ code: 'BAD_REQUEST', message: 'slot_too_soon' });
 	}
 
 	// Filter specifieke medewerker als deze is meegegeven

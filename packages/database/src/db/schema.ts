@@ -135,7 +135,7 @@ export const organization = sqliteTable(
     appointmentStatus: text().default("PENDING").notNull(),
     minimumBookingTime: real().default(0.5).notNull(),
     bookingPeriod: integer().default(365).notNull(),
-    autoShiftTimeSlot: integer().default(0).notNull(),
+    autoShiftTimeSlot: integer({ mode: "boolean" }).default(false).notNull(),
     onboardingStep: integer().default(0),
   },
   (table) => [],

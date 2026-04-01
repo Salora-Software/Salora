@@ -330,7 +330,7 @@
 					const end = item.endTime;
 
 					return {
-						person: item.member?.user.name || '',
+						person: item.employee?.user.name || '',
 						title: item.title || undefined,
 						status: item.booking?.status as
 							| 'PENDING'
@@ -340,7 +340,7 @@
 							| undefined,
 						notes: item.notes || undefined,
 						serviceId: item.booking?.serviceId || undefined,
-						memberId: item.member?.id || undefined,
+						memberId: item.employee?.id || undefined,
 						start: start,
 						end: end,
 						id: item.id

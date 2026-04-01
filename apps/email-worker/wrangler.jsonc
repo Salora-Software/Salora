@@ -20,5 +20,8 @@
 			}
 		]
 	},
-	"vars": {}
+	"vars": {},
+	"observability": {
+		"enabled": true,
+	}
 }

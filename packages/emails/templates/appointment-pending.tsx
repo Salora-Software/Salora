@@ -1,5 +1,6 @@
 import {
 	Body,
+	Button,
 	Container,
 	Head,
 	Hr,
@@ -7,14 +8,13 @@ import {
 	Preview,
 	Section,
 	Text,
-	Button,
 } from '@react-email/components';
 import { main, container, box, hr, headingStyle, paragraph, button } from './lib/styles';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { DetailsBox } from './components/DetailsBox';
 
-export interface AppointmentCancelledEmailProps {
+export interface AppointmentPendingEmailProps {
 	previewText?: string;
 	logoUrl?: string;
 	companyName?: string;
@@ -30,21 +30,21 @@ export interface AppointmentCancelledEmailProps {
 	};
 }
 
-export const AppointmentCancelledEmail = ({
-	previewText = 'Je afspraak is geannuleerd',
+export const AppointmentPendingEmail = ({
+	previewText = 'Je aanvraag is ontvangen',
 	logoUrl = 'https://cdn.salora.app/storage/unnamed.png',
 	companyName = 'Salora Beauty',
 	companyAddress = 'Keizersgracht 123, 1015 CJ Amsterdam',
-	heading = 'Afspraak Geannuleerd',
-	content = 'Beste {{ name }},\n\nJe afspraak is helaas geannuleerd. We hopen je snel weer te zien. Klik op de knop hieronder om een nieuwe afspraak in te plannen.',
-	buttonText = 'Nieuwe Afspraak Maken',
-	buttonLink = 'https://jouw-app.com/boek',
+	heading = 'Afspraak In Behandeling',
+	content = 'Beste {{ name }},\n\nJe aanvraag is goed ontvangen. Omdat afspraken niet automatisch worden geaccepteerd, staat je afspraak momenteel op in behandeling.\n\nJe ontvangt een nieuwe e-mail zodra we je afspraak hebben goedgekeurd of afgewezen.',
+	buttonText = 'Bekijk Aanvraag',
+	buttonLink = 'https://jouw-app.com/dashboard',
 	details = {
 		date: '12 mei 2026',
 		time: '14:00',
 		location: 'Hoofdstraat 1, Amsterdam',
 	},
-}: AppointmentCancelledEmailProps) => {
+}: AppointmentPendingEmailProps) => {
 	return (
 		<Html>
 			<Head />
@@ -71,4 +71,4 @@ export const AppointmentCancelledEmail = ({
 	);
 };
 
-export default AppointmentCancelledEmail;
+export default AppointmentPendingEmail;

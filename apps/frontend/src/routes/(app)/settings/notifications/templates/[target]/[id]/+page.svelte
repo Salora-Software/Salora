@@ -277,7 +277,7 @@
 			{/each}
 
 			<p class="text-muted-foreground text-xs">
-				Je kunt variabelen gebruiken zoals {'{{ naam }}'}, {'{{ datum }}'}, {'{{ tijd }}'}.
+				Je kunt variabelen gebruiken zoals {'{{ name }}'}, {'{{ date }}'}, {'{{ time }}'}.
 			</p>
 		</div>
 

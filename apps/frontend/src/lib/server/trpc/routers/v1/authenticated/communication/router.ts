@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
 import { renderEmail } from '@salora/emails';
-import { sendEmailWithFailover, type MailCredential } from '@salora/mailer';
+import { type MailCredential } from '@salora/mailer';
 import { env } from '$lib/server/env';
 
 const DEFAULT_SENDER = 'noreply@salora.app';
@@ -302,14 +302,14 @@ export const router = createRouter({
 
 			const body = await renderEmail('AppointmentEmail', mailProps);
 
-			await sendEmailWithFailover({
-				senderName: organization.name || 'Salora',
-				from: env?.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
-				to: input.email,
-				subject,
-				body,
-				credentials
-			});
+			// await sendEmailWithFailover({
+			// 	senderName: organization.name || 'Salora',
+			// 	from: env?.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
+			// 	to: input.email,
+			// 	subject,
+			// 	body,
+			// 	credentials
+			// });
 			return true;
 		}),
 	getCommunications: privateProcedure

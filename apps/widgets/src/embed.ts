@@ -43,7 +43,7 @@ const endpoint =
 	urlParams.get('backendUrl') ||
 	scriptEl?.dataset.endpoint ||
 	scriptEl?.dataset.backendUrl ||
-	'https://app.salora.app';
+	'http://localhost:5173';
 
 mount(WidgetWrapper, {
 	target: targetDiv,

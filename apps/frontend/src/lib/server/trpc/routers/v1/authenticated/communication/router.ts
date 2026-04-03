@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
 import { renderEmail } from '@salora/emails';
-import { type MailCredential } from '@salora/mailer';
+import type { MailCredential } from '@salora/mailer';
 import { env } from '$lib/server/env';
 
 const DEFAULT_SENDER = 'noreply@salora.app';

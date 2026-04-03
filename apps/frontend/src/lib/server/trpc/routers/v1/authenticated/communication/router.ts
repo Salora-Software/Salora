@@ -3,7 +3,139 @@ import { router as createRouter, privateProcedure, publicProcedure } from '../..
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
-import type { EmailQueueMessage } from '@salora/mailer';
+import { renderEmail } from '@salora/emails';
+import { sendEmailWithFailover, type MailCredential } from '@salora/mailer';
+import { env } from '$lib/server/env';
+
+const DEFAULT_SENDER = 'noreply@salora.app';
+
+const getDefaultSubject = (templateType: string): string => {
+	switch (templateType) {
+		case 'EMAIL_APPROVED':
+			return 'Je afspraak is bevestigd';
+		case 'EMAIL_CANCELED':
+			return 'Je afspraak is geannuleerd';
+		case 'EMAIL_DENIED':
+			return 'Update over je afspraak';
+		case 'EMAIL_CREATED':
+			return 'Je afspraakaanvraag is ontvangen';
+		default:
+			return 'Update over je afspraak';
+	}
+};
+
+const getDefaultHeading = (templateType: string): string => {
+	switch (templateType) {
+		case 'EMAIL_APPROVED':
+			return 'Afspraak Bevestigd';
+		case 'EMAIL_CANCELED':
+			return 'Afspraak Geannuleerd';
+		case 'EMAIL_DENIED':
+			return 'Afspraak Gewijzigd';
+		case 'EMAIL_CREATED':
+			return 'Afspraak In Behandeling';
+		default:
+			return 'Afspraak Update';
+	}
+};
+
+const getDefaultContent = (templateType: string): string => {
+	switch (templateType) {
+		case 'EMAIL_CREATED':
+			return 'Beste {{ customer.name }},\n\nJe afspraakaanvraag is ontvangen en wacht op goedkeuring.';
+		case 'EMAIL_CANCELED':
+			return 'Beste {{ customer.name }},\n\nJe afspraak is geannuleerd.';
+		case 'EMAIL_APPROVED':
+			return 'Beste {{ customer.name }},\n\nJe afspraak is bevestigd.';
+		default:
+			return 'Beste {{ customer.name }},\n\nEr is een update over je afspraak.';
+	}
+};
+
+const getValueByPath = (data: Record<string, unknown>, path: string): unknown => {
+	return path.split('.').reduce<unknown>((acc, part) => {
+		if (typeof acc !== 'object' || acc === null) return undefined;
+		return (acc as Record<string, unknown>)[part];
+	}, data);
+};
+
+const replaceTemplateVariables = (template: string, data: Record<string, unknown>): string => {
+	return template.replace(/{{\s*([^}]+)\s*}}/g, (_, path: string) => {
+		const value = getValueByPath(data, path.trim());
+		if (value === null || value === undefined) return '';
+		return String(value);
+	});
+};
+
+const parseTemplateBody = (body?: string | null): Record<string, unknown> => {
+	if (!body) return {};
+
+	try {
+		const parsed = JSON.parse(body) as unknown;
+		if (typeof parsed === 'object' && parsed !== null) {
+			return parsed as Record<string, unknown>;
+		}
+	} catch {
+		return { content: body };
+	}
+
+	return {};
+};
+
+const interpolateRecord = (value: unknown, data: Record<string, unknown>): unknown => {
+	if (typeof value === 'string') {
+		return replaceTemplateVariables(value, data);
+	}
+
+	if (Array.isArray(value)) {
+		return value.map((item) => interpolateRecord(item, data));
+	}
+
+	if (typeof value === 'object' && value !== null) {
+		const out: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(value)) {
+			out[k] = interpolateRecord(v, data);
+		}
+		return out;
+	}
+
+	return value;
+};
+
+const toStringValue = (value: unknown, fallback = ''): string => {
+	return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+};
+
+const buildCredentials = (communication: any): MailCredential[] => {
+	const settings = communication?.settings ?? {};
+
+	const orgCredential: MailCredential | null =
+		settings.smtpServer && settings.smtpUsername && settings.smtpPassword
+			? {
+					provider_name: 'Organization SMTP',
+					priority: 10,
+					from: settings.smtpEmail,
+					smtp_host: settings.smtpServer,
+					smtp_port: Number(settings.smtpPort ?? 587),
+					username: settings.smtpUsername,
+					password: settings.smtpPassword
+				}
+			: null;
+
+	const fallbackCredential: MailCredential | null =
+		env?.MAIL_FALLBACK_SERVER && env?.MAIL_FALLBACK_USERNAME && env?.MAIL_FALLBACK_PASSWORD
+			? {
+					provider_name: 'Fallback SMTP',
+					priority: 100,
+					smtp_host: env.MAIL_FALLBACK_SERVER,
+					smtp_port: Number(env.MAIL_FALLBACK_PORT ?? 587),
+					username: env.MAIL_FALLBACK_USERNAME,
+					password: env.MAIL_FALLBACK_PASSWORD
+				}
+			: null;
+
+	return [orgCredential, fallbackCredential].filter((cred): cred is MailCredential => cred !== null);
+};
 
 export const router = createRouter({
 	getTemplates: privateProcedure
@@ -87,14 +219,7 @@ export const router = createRouter({
 			})
 		)
 		.output(z.any())
-		.mutation(async ({ ctx: { db, session, emailQueue }, input }) => {
-			if (!emailQueue) {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'email_queue_not_configured'
-				});
-			}
-
+		.mutation(async ({ ctx: { db, session }, input }) => {
 			const organizationId = session.session.activeOrganizationId;
 			const organization = await db.query.organization.findFirst({
 				where: eq(schema.organization.id, organizationId!)
@@ -106,15 +231,85 @@ export const router = createRouter({
 				});
 			}
 
-			const job: EmailQueueMessage = {
-				version: 'v2',
-				eventType: 'TEST_TEMPLATE',
-				templateType: input.templateType,
-				organizationId: organizationId!,
-				recipientEmail: input.email
+			const communication = await db.query.communicationSetting.findFirst({
+				where: and(
+					eq(schema.communicationSetting.organizationId, organizationId!),
+					eq(schema.communicationSetting.type, 'EMAIL')
+				)
+			});
+
+			const credentials = buildCredentials(communication);
+			if (credentials.length === 0) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'smtp_not_configured'
+				});
+			}
+
+			const template = await db.query.template.findFirst({
+				where: and(
+					eq(schema.template.organizationId, organizationId!),
+					eq(schema.template.type, input.templateType),
+					eq(schema.template.target, 'CUSTOMER'),
+					eq(schema.template.enabled, true)
+				)
+			});
+
+			const variables: Record<string, unknown> = {
+				customer: {
+					name: 'Test Klant',
+					email: input.email
+				},
+				employee: {
+					name: 'Test Medewerker'
+				},
+				booking: {
+					name: 'Intake',
+					date: '12 mei 2026',
+					time: '14:00',
+					location: organization.location || 'Onbekende locatie'
+				},
+				branch: {
+					name: organization.name
+				}
 			};
 
-			await emailQueue.send(job);
+			const parsedBody = parseTemplateBody(template?.body as string | undefined);
+			const interpolatedBody = interpolateRecord(parsedBody, variables) as Record<string, unknown>;
+			const detailsInput =
+				typeof interpolatedBody.details === 'object' && interpolatedBody.details !== null
+					? (interpolatedBody.details as Record<string, unknown>)
+					: {};
+
+			const mailProps = {
+				companyName: toStringValue(interpolatedBody.companyName, organization.name),
+				companyAddress: toStringValue(interpolatedBody.companyAddress, organization.location || ''),
+				heading: toStringValue(interpolatedBody.heading, getDefaultHeading(input.templateType)),
+				content: toStringValue(interpolatedBody.content, getDefaultContent(input.templateType)),
+				buttonText: toStringValue(interpolatedBody.buttonText, 'Bekijk afspraak'),
+				buttonLink: toStringValue(interpolatedBody.buttonLink, 'https://salora.app'),
+				details: {
+					date: toStringValue(detailsInput.date, '12 mei 2026'),
+					time: toStringValue(detailsInput.time, '14:00'),
+					location: toStringValue(detailsInput.location, organization.location || 'Onbekende locatie')
+				}
+			};
+
+			const subject = replaceTemplateVariables(
+				template?.subject || getDefaultSubject(input.templateType),
+				variables
+			);
+
+			const body = await renderEmail('AppointmentEmail', mailProps);
+
+			await sendEmailWithFailover({
+				senderName: organization.name || 'Salora',
+				from: env?.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
+				to: input.email,
+				subject,
+				body,
+				credentials
+			});
 			return true;
 		}),
 	getCommunications: privateProcedure

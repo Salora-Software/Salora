@@ -1,6 +1,6 @@
 import { createDb, schema } from "@salora/database";
 import { renderEmail } from "@salora/emails";
-import type { TemplateEmailQueueMessage } from "@salora/mailer";
+import type { EmailTargetAudience, TemplateEmailQueueMessage } from "@salora/mailer";
 import { and, eq } from "drizzle-orm";
 import type { Env } from "./types";
 
@@ -13,6 +13,31 @@ interface ResolvedTemplateEmail {
 }
 
 const DEFAULT_SENDER = "noreply@salora.app";
+
+const getTemplateName = (
+  templateType: string,
+  targetAudience: EmailTargetAudience,
+) => {
+  if (targetAudience === "EMPLOYEE") {
+    switch (templateType) {
+      case "EMAIL_CANCELED":
+        return "AppointmentCancelledEmployeeEmail" as const;
+      case "EMAIL_CREATED":
+        return "AppointmentPendingEmployeeEmail" as const;
+      default:
+        return "AppointmentEmployeeEmail" as const;
+    }
+  }
+
+  switch (templateType) {
+    case "EMAIL_CANCELED":
+      return "AppointmentCancelledEmail" as const;
+    case "EMAIL_CREATED":
+      return "AppointmentPendingEmail" as const;
+    default:
+      return "AppointmentEmail" as const;
+  }
+};
 
 const getDefaultSubject = (templateType: string): string => {
   switch (templateType) {
@@ -46,6 +71,8 @@ const getDefaultHeading = (templateType: string): string => {
 
 const getDefaultContent = (templateType: string): string => {
   switch (templateType) {
+    case "EMAIL_CREATED":
+      return "Beste {{ customer.name }},\n\nJe afspraakaanvraag voor {{ booking.name }} is ontvangen en wacht op goedkeuring.";
     case "EMAIL_CANCELED":
       return "Beste {{ customer.name }},\n\nJe afspraak voor {{ booking.name }} is geannuleerd.";
     case "EMAIL_APPROVED":
@@ -165,6 +192,11 @@ export const resolveTemplateEmail = async (
         with: {
           customer: true,
           service: true,
+          employee: {
+            with: {
+              user: true,
+            },
+          },
           calendarItems: true,
         },
       })
@@ -181,16 +213,24 @@ export const resolveTemplateEmail = async (
   const appointmentDate = firstCalendarItem?.startTime ?? new Date();
   const organizationTimeZone = organization.timeZone || "UTC";
 
+  const targetAudience = payload.targetAudience ?? "CUSTOMER";
+
   const customerName = isTestTemplate
     ? "Test Klant"
     : booking?.customer?.name || "Klant";
-  const customerEmail = isTestTemplate
-    ? payload.recipientEmail || "test@salora.app"
-    : booking?.customer?.email || payload.recipientEmail || "";
+  const employeeName = booking?.employee?.user?.name || "Medewerker";
+  const customerEmail = booking?.customer?.email || "";
+  const employeeEmail = booking?.employee?.user?.email || "";
+  const recipientEmail =
+    isTestTemplate
+      ? "test@salora.app"
+      : targetAudience === "EMPLOYEE"
+        ? employeeEmail
+        : customerEmail;
 
-  if (!customerEmail) {
+  if (!isTestTemplate && !recipientEmail) {
     throw new Error(
-      `No recipient available for template ${payload.templateType} (bookingId=${payload.bookingId || "n/a"})`,
+      `No recipient available for template ${payload.templateType} (bookingId=${payload.bookingId || "n/a"}, target=${targetAudience})`,
     );
   }
 
@@ -198,6 +238,7 @@ export const resolveTemplateEmail = async (
     where: and(
       eq(schema.template.organizationId, payload.organizationId),
       eq(schema.template.type, payload.templateType),
+      eq(schema.template.target, targetAudience),
       eq(schema.template.enabled, true),
     ),
   });
@@ -224,6 +265,10 @@ export const resolveTemplateEmail = async (
       email: customerEmail,
       phone: booking?.customer?.phone || "",
     },
+    employee: {
+      name: employeeName,
+      email: employeeEmail,
+    },
     booking: {
       name: booking?.service?.name || "Intake",
       price:
@@ -239,7 +284,7 @@ export const resolveTemplateEmail = async (
     },
   };
 
-  const parsedBody = parseTemplateBody(template?.body);
+  const parsedBody = parseTemplateBody(template?.body as string | null | undefined);
   const interpolatedBody = interpolateRecord(parsedBody, variables) as Record<
     string,
     unknown
@@ -293,12 +338,15 @@ export const resolveTemplateEmail = async (
   const subjectTemplate =
     template?.subject || getDefaultSubject(payload.templateType);
   const subject = replaceTemplateVariables(subjectTemplate, variables);
-  const body = await renderEmail("AppointmentEmail", mailProps as any);
+  const body = await renderEmail(
+    getTemplateName(payload.templateType, targetAudience),
+    mailProps as any,
+  );
 
   return {
     senderName: organization.name || "Salora",
     from: env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
-    to: customerEmail,
+    to: recipientEmail,
     subject,
     body,
   };

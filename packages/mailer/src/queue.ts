@@ -1,12 +1,14 @@
 export const EMAIL_QUEUE_NAME = "email-jobs";
 
+export type EmailTargetAudience = "CUSTOMER" | "EMPLOYEE";
+
 export interface TemplateEmailQueueMessage {
   version?: "v2";
   eventType?: "TEST_TEMPLATE" | string;
   templateType: string;
   organizationId: string;
-  recipientEmail?: string;
   bookingId?: string;
+  targetAudience?: EmailTargetAudience;
 }
 
 export type EmailQueueMessage = TemplateEmailQueueMessage;
@@ -19,13 +21,19 @@ export const isTemplateEmailQueueMessage = (
 
   if (typeof msg.templateType !== "string") return false;
   if (typeof msg.organizationId !== "string") return false;
-  if (msg.eventType === "TEST_TEMPLATE") {
-    return typeof msg.recipientEmail === "string";
+  if (
+    msg.targetAudience !== undefined &&
+    msg.targetAudience !== "CUSTOMER" &&
+    msg.targetAudience !== "EMPLOYEE"
+  ) {
+    return false;
   }
 
-  return (
-    typeof msg.recipientEmail === "string" || typeof msg.bookingId === "string"
-  );
+  if (msg.eventType === "TEST_TEMPLATE") {
+    return true;
+  }
+
+  return typeof msg.bookingId === "string";
 };
 
 export const isEmailQueueMessage = (

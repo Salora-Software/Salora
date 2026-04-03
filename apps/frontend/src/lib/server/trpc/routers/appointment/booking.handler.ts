@@ -10,6 +10,7 @@ import {
 } from '$lib/services/appointment-context.service';
 import type { CreateBookingInput } from './booking.schema';
 import type { PortalContext } from '../../context';
+import type { EmailQueueMessage } from '@salora/mailer';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
 import { env } from '$lib/server/env';
@@ -21,7 +22,7 @@ type CreateBookingOpts = {
 
 export const createBookingHandler = async ({
 	input,
-	ctx: { db, headers, auth, url }
+	ctx: { db, headers, auth, url, emailQueue }
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
 	// 1. Haal de globale organisatie- en service data op voor deze dag
@@ -238,6 +239,27 @@ export const createBookingHandler = async ({
 		// @ts-ignore
 		user: emp.user
 	}));
+
+	if (emailQueue && booking.status === 'PENDING') {
+		const baseJob = {
+			version: 'v2' as const,
+			templateType: 'EMAIL_CREATED',
+			organizationId,
+			bookingId: booking.id
+		};
+
+		const customerJob: EmailQueueMessage = {
+			...baseJob,
+			targetAudience: 'CUSTOMER'
+		};
+
+		const employeeJob: EmailQueueMessage = {
+			...baseJob,
+			targetAudience: 'EMPLOYEE'
+		};
+
+		await Promise.all([emailQueue.send(customerJob), emailQueue.send(employeeJob)]);
+	}
 
 	// await notificationService.sendEmailNotification({
 	// 	type: organization.appointmentStatus === 'CONFIRMED' ? 'EMAIL_APPROVED' : 'EMAIL_CREATED',

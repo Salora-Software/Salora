@@ -240,10 +240,19 @@ export const createBookingHandler = async ({
 		user: emp.user
 	}));
 
-	if (emailQueue && booking.status === 'PENDING') {
+	if (emailQueue) {
+		const templateType =
+			booking.status === 'CONFIRMED'
+				? 'EMAIL_APPROVED'
+				: booking.status === 'CANCELLED'
+					? 'EMAIL_CANCELED'
+					: booking.status === 'DENIED'
+						? 'EMAIL_DENIED'
+						: 'EMAIL_CREATED';
+
 		const baseJob = {
 			version: 'v2' as const,
-			templateType: 'EMAIL_CREATED',
+			templateType,
 			organizationId,
 			bookingId: booking.id
 		};
@@ -260,51 +269,6 @@ export const createBookingHandler = async ({
 
 		await Promise.all([emailQueue.send(customerJob), emailQueue.send(employeeJob)]);
 	}
-
-	// await notificationService.sendEmailNotification({
-	// 	type: organization.appointmentStatus === 'CONFIRMED' ? 'EMAIL_APPROVED' : 'EMAIL_CREATED',
-	// 	to: contact.email,
-	// 	employeeEmail: employeeUser?.email || '',
-	// 	variables: {
-	// 		customer: {
-	// 			name: customer?.name,
-	// 			email: customer?.email,
-	// 			phone: customer?.phone,
-	// 			panel
-	// 		},
-	// 		booking: {
-	// 			name: service.name,
-	// 			employee: employeeUser?.name || '',
-	// 			employeeId: bestEmployee.id,
-	// 			serviceId: service.id,
-	// 			serviceDuration: service.duration,
-	// 			servicePrice: service.price,
-	// 			serviceDescription: service.description,
-	// 			panel,
-	// 			start: {
-	// 				date: requestedStart.toFormat('yyyy-MM-dd'),
-	// 				year: requestedStart.year,
-	// 				month: requestedStart.month,
-	// 				day: requestedStart.day,
-	// 				hour: requestedStart.hour.toString().padStart(2, '0'),
-	// 				minute: requestedStart.minute.toString().padStart(2, '0')
-	// 			},
-	// 			end: {
-	// 				date: requestedEnd.toFormat('yyyy-MM-dd'),
-	// 				year: requestedEnd.year,
-	// 				month: requestedEnd.month,
-	// 				day: requestedEnd.day,
-	// 				hour: requestedEnd.hour.toString().padStart(2, '0'),
-	// 				minute: requestedEnd.minute.toString().padStart(2, '0')
-	// 			}
-	// 		}
-	// 	},
-	// 	branch: {
-	// 		...organization,
-	// 		members: membersForNotification,
-	// 		services: [service]
-	// 	}
-	// });
 
 	return { booking, calendarItem };
 };

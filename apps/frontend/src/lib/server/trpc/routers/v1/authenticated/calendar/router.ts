@@ -3,6 +3,7 @@ import { router as createRouter, privateProcedure } from '../../../../context';
 import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { getEmployeeAvailabilityV2, getOrganization } from '$lib/server/general';
+import type { EmailQueueMessage } from '@salora/mailer';
 
 import { DateTime, Interval } from 'luxon';
 import { eq } from 'drizzle-orm';
@@ -282,7 +283,8 @@ export const router = createRouter({
 				input,
 				ctx: {
 					session: { user },
-					db
+					db,
+					emailQueue
 				}
 			}) => {
 				const { title, startTime, endTime, notes, type, organizationId } = input;
@@ -413,118 +415,33 @@ export const router = createRouter({
 							templateType = 'EMAIL_APPROVED';
 						}
 
-						if (templateType && booking.customer) {
-							const dateStart = DateTime.fromJSDate(data.startTime, {
-								zone: organization.timeZone
-							});
-							const dateEnd = DateTime.fromJSDate(data.endTime, {
-								zone: organization.timeZone
-							});
+						if (templateType && emailQueue) {
+							const baseJob = {
+								version: 'v2' as const,
+								templateType,
+								organizationId,
+								bookingId: booking.id
+							};
 
-							// Include original time information if time changed (but not for cancellations)
-							const originalStartTime =
-								timeChanged && newStatus !== 'CANCELLED'
-									? DateTime.fromJSDate(existingItem.startTime, {
-											zone: organization.timeZone
-										})
-									: null;
-							const originalEndTime =
-								timeChanged && newStatus !== 'CANCELLED'
-									? DateTime.fromJSDate(existingItem.endTime, {
-											zone: organization.timeZone
-										})
-									: null;
+							const jobs: EmailQueueMessage[] = [];
 
-							// Get new member information if member changed
-							let newMember = null;
-							if (memberChanged && newEmployeeId) {
-								newMember = await db.query.member.findFirst({
-									where: (member, { eq }) => eq(member.id, newEmployeeId),
-									with: {
-										user: true
-									}
+							if (booking.customer?.email) {
+								jobs.push({
+									...baseJob,
+									targetAudience: 'CUSTOMER'
 								});
 							}
 
-							// await notificationService
-							// 	.sendEmailNotification({
-							// 		type: templateType,
-							// 		to: booking.customer.email,
-							// 		employeeEmail:
-							// 			memberChanged && newMember
-							// 				? newMember.user.email
-							// 				: booking.employee?.user.email,
-							// 		variables: {
-							// 			customer: {
-							// 				name: booking.customer.name,
-							// 				email: booking.customer.email,
-							// 				phone: booking.customer.phone
-							// 			},
-							// 			booking: {
-							// 				name: booking.service.name,
-							// 				employee:
-							// 					memberChanged && newMember
-							// 						? newMember.user.name
-							// 						: booking.employee?.user.name,
-							// 				employeeId:
-							// 					memberChanged && newEmployeeId ? newEmployeeId : booking.employeeId,
-							// 				serviceId: booking.serviceId,
-							// 				serviceDuration: booking.service.duration,
-							// 				servicePrice: booking.service.price,
-							// 				serviceDescription: booking.service.description,
-							// 				start: {
-							// 					date: dateStart.toFormat('yyyy-MM-dd'),
-							// 					year: dateStart.year,
-							// 					month: dateStart.month,
-							// 					day: dateStart.day,
-							// 					hour: dateStart.hour.toString().padStart(2, '0'),
-							// 					minute: dateStart.minute.toString().padStart(2, '0')
-							// 				},
-							// 				end: {
-							// 					date: dateEnd.toFormat('yyyy-MM-dd'),
-							// 					year: dateEnd.year,
-							// 					month: dateEnd.month,
-							// 					day: dateEnd.day,
-							// 					hour: dateEnd.hour.toString().padStart(2, '0'),
-							// 					minute: dateEnd.minute.toString().padStart(2, '0')
-							// 				},
-							// 				// Include original time information for rescheduling notifications
-							// 				...(timeChanged && originalStartTime && originalEndTime
-							// 					? {
-							// 							originalStart: {
-							// 								date: originalStartTime.toFormat('yyyy-MM-dd'),
-							// 								year: originalStartTime.year,
-							// 								month: originalStartTime.month,
-							// 								day: originalStartTime.day,
-							// 								hour: originalStartTime.hour.toString().padStart(2, '0'),
-							// 								minute: originalStartTime.minute.toString().padStart(2, '0')
-							// 							},
-							// 							originalEnd: {
-							// 								date: originalEndTime.toFormat('yyyy-MM-dd'),
-							// 								year: originalEndTime.year,
-							// 								month: originalEndTime.month,
-							// 								day: originalEndTime.day,
-							// 								hour: originalEndTime.hour.toString().padStart(2, '0'),
-							// 								minute: originalEndTime.minute.toString().padStart(2, '0')
-							// 							},
-							// 							isRescheduled: true
-							// 						}
-							// 					: {}),
-							// 				// Include member change information for staff reassignment notifications
-							// 				...(memberChanged
-							// 					? {
-							// 							originalEmployee: booking.employee?.user.name,
-							// 							newEmployee: newMember?.user.name,
-							// 							isStaffReassigned: true
-							// 						}
-							// 					: {})
-							// 			}
-							// 		},
-							// 		branch: organization
-							// 	})
-							// 	.catch((e) => {
-							// 		console.error('Error sending notification email:', e);
-							// 	});
+							if (booking.employee?.user?.email) {
+								jobs.push({
+									...baseJob,
+									targetAudience: 'EMPLOYEE'
+								});
+							}
+
+							if (jobs.length > 0) {
+								await Promise.all(jobs.map((job) => emailQueue.send(job)));
+							}
 						}
 					}
 				} else {

@@ -6,3 +6,6 @@ export { default as ForgotPasswordEmail } from './forgot-password';
 
 export { default as AppointmentCancelledEmail } from './appointment-cancelled';
 // export { AppointmentCancelledEmailSchema, type AppointmentCancelledEmailVariables } from './appointment-cancelled.config';
+
+export { default as AppointmentEmployeeEmail } from './appointment-employee';
+export { default as AppointmentCancelledEmployeeEmail } from './appointment-cancelled-employee';

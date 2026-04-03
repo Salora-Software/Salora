@@ -5,17 +5,21 @@
 	"types": "./src/index.ts",
 	"type": "module",
 	"private": true,
+	"scripts": {
+		"dev": "email dev --dir templates",
+		"build": "tsc"
+	},
 	"dependencies": {
-		"@react-email/components": "1.0.7",
+		"@react-email/components": "^1.0.11",
 		"react-dom": "^19.0.0",
 		"react": "^19.0.0"
 	},
 	"devDependencies": {
+		"@react-email/preview-server": "5.2.10",
 		"@types/bun": "latest",
-		"@react-email/preview-server": "5.2.8",
 		"@types/react": "^19.0.1",
 		"@types/react-dom": "^19.0.1",
-		"react-email": "5.2.8"
+		"react-email": "^5.2.10"
 	},
 	"peerDependencies": {
 		"typescript": "^5"

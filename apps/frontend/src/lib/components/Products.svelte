@@ -885,7 +885,7 @@
 						: 'Vul de gegevens in om een nieuw pakket toe te voegen.'}
 				</Sheet.Description>
 			</Sheet.Header>
-			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md pr-3">
+			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md p-3">
 				<!-- <TinySlider bind:this={slider}>
 						{#snippet children({ sliderWidth })} -->
 				{#each sliderContent.items as item, i}

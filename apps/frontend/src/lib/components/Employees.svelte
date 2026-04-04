@@ -551,7 +551,7 @@ md:grid-cols-1  `,
 	{/each}
 </div>
 <Sheet.Root bind:open={values.sheet.active}>
-	<Sheet.Content side="right" class="w-full max-w-full! sm:w-162.5">
+	<Sheet.Content side="right" class="max-w-162.5!">
 		<div>
 			<Sheet.Header>
 				<Sheet.Title>
@@ -561,7 +561,7 @@ md:grid-cols-1  `,
 					>Vul de gegevens in om een nieuw medewerker toe te voegen</Sheet.Description
 				>
 			</Sheet.Header>
-			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md pr-3">
+			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md p-3">
 				<!-- <TinySlider bind:this={slider}>
 						{#snippet children({ sliderWidth })} -->
 				{#each sliderContent.items as item, i}

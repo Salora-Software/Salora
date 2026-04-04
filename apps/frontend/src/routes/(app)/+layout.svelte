@@ -24,7 +24,7 @@
 <BranchWizard {data} />
 <Sidebar.Provider bind:open>
 	<AppSidebar {data} />
-	<main class="grid h-full w-full grid-rows-[auto_1fr]">
+	<main class="grid h-full min-h-screen w-full grid-rows-[auto_1fr]">
 		<div
 			class="topHeader !bg-sidebar sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b px-4"
 		>

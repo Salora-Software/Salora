@@ -159,7 +159,11 @@
 			van andere duur is.
 		</p>
 	</div>
-	<Switch disabled={generalSettings.isLoading} bind:checked={form.autoShiftTimeSlot} />
+	<Switch
+		id="airplane-mode"
+		disabled={generalSettings.isLoading}
+		bind:checked={form.autoShiftTimeSlot}
+	/>
 </div>
 <h3 class="text-md font-semibold">Tijdzone</h3>
 <p class="mb-1 text-sm text-gray-500">De tijdzone die wordt gebruikt voor het boekingssysteem.</p>

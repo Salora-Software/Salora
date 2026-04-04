@@ -35,15 +35,14 @@ shadow.appendChild(targetDiv);
 
 script?.parentNode?.insertBefore(container, script);
 
-const urlParams = new URLSearchParams(window.location.search);
-const branchId = urlParams.get('branchId') || urlParams.get('id');
 const scriptEl = script instanceof HTMLScriptElement ? script : null;
+const branchId =
+	scriptEl?.dataset.id || scriptEl?.dataset.branchId || new URLSearchParams(window.location.search).get('branchId');
 const endpoint =
-	urlParams.get('endpoint') ||
-	urlParams.get('backendUrl') ||
 	scriptEl?.dataset.endpoint ||
 	scriptEl?.dataset.backendUrl ||
-	'http://localhost:5173';
+	new URLSearchParams(window.location.search).get('endpoint') ||
+	'https://app.salora.app';
 
 mount(WidgetWrapper, {
 	target: targetDiv,

@@ -35,6 +35,9 @@
 			"enabled": true,
 		},
 	},
+	"limits": {
+		"cpu_ms": 200,
+	},
 	"vars": {
 		"DEPLOY_TARGET": "worker",
 		"SKIP_DEPENDENCY_INSTALL": "true",

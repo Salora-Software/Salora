@@ -28,7 +28,7 @@
 		"docker:push": "docker push ghcr.io/hexidevs/lumabooking:salora && docker push ghcr.io/hexidevs/lumabooking:latest"
 	},
 	"devDependencies": {
-		"@lucide/svelte": "^0.482.0",
+		"@lucide/svelte": "^1.7.0",
 		"@salora/eslint-config": "workspace:*",
 		"@sveltejs/adapter-cloudflare": "^7.2.8",
 		"@sveltejs/adapter-cloudflare-workers": "^2.8.0",

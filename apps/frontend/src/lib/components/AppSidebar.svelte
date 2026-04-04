@@ -249,7 +249,7 @@
 										{data.branches.length}/1
 									</Tooltip.Trigger>
 									<Tooltip.Content class="w-31.25">
-										<p class="text-muted-foreground text-xs">Maximum aantal vestigingen</p>
+										<p class=" text-xs">Maximum aantal vestigingen</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							</Tooltip.Provider>

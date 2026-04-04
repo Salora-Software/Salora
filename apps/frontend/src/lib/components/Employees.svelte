@@ -552,7 +552,7 @@ md:grid-cols-1  `,
 	{/each}
 </div>
 <Sheet.Root bind:open={values.sheet.active}>
-	<Sheet.Content side="right" class="w-full max-w-full! sm:w-162.5">
+	<Sheet.Content side="right" class="max-w-162.5!">
 		<div>
 			<Sheet.Header>
 				<Sheet.Title>

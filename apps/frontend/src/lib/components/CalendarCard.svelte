@@ -73,17 +73,8 @@
 		onUpsertItem?: (item: CalendarItem | undefined) => Promise<void>;
 	} & WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 	import { cn } from '$lib/utils.js';
-	import {
-		AlignLeft,
-		BriefcaseBusiness,
-		Calendar,
-		CircleCheck,
-		CircleCheckBig,
-		Clock,
-		InfoIcon,
-		Notebook,
-		PlusIcon
-	} from 'lucide-svelte';
+	import { BriefcaseBusiness, Calendar, CircleCheck, Clock, PlusIcon } from 'lucide-svelte';
+	import AlignLeft from 'lucide-svelte/icons/align-left';
 	import * as ContextMenu from './ui/context-menu';
 	import * as Popover from './ui/popover';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -674,7 +665,6 @@
 								<Separator class="my-2" />
 								<div class="ml flex w-full justify-between gap-4 px-3">
 									<Button
-										size="xs"
 										variant="destructive"
 										class="w-24"
 										onclick={async () => {
@@ -689,7 +679,6 @@
 										Verwijder
 									</Button>
 									<Button
-										size="xs"
 										class="w-24"
 										onclick={async () => {
 											try {

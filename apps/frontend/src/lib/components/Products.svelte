@@ -619,7 +619,10 @@
 		</Button>
 	</div>
 </div>
-<Sheet.Root bind:open={values.sheet.active}>
+<Sheet.Root
+	bind:open={values.sheet.active}
+	class="data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right"
+>
 	{#if value === 'services'}
 		{#if services.length > 0 && !servicesQuery.isLoading}
 			<div class="w-full">

@@ -106,6 +106,7 @@
 		"proxy-deep": "^4.0.1",
 		"redis": "^4.7.1",
 		"rollup-plugin-visualizer": "^7.0.1",
+		"runed": "^0.37.1",
 		"shadcn-svelte": "latest",
 		"sharp": "^0.33.5",
 		"superjson": "^2.2.2",

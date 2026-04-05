@@ -268,7 +268,7 @@
 		</Sheet.Header>
 
 		<ScrollArea class="h-[calc(100vh-10rem)] px-3">
-			<div class="space-y-6 py-4">
+			<div class="space-y-6">
 				<div class="space-y-3">
 					<div class="flex items-center justify-between gap-3">
 						<div>
@@ -294,12 +294,12 @@
 							<Command.Root shouldFilter={false} class="w-full">
 								<Command.Input bind:value={customerQuerySearch} placeholder="Zoek klant..." />
 								<Command.List>
-									<Command.Empty>Geen klanten gevonden.</Command.Empty>
 									{#if customersQuery.isFetching}
 										<div class="text-muted-foreground flex justify-center py-6 text-center text-sm">
 											<Loader2 class="text-muted-foreground h-4 w-4 animate-spin" />
 										</div>
 									{:else}
+										<Command.Empty>Geen klanten gevonden.</Command.Empty>
 										<Command.Group>
 											{#each customersQuery.data?.customers || [] as customer (customer.id)}
 												<Command.Item value={customer.id} onSelect={() => selectCustomer(customer)}>

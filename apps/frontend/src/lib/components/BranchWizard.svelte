@@ -1029,7 +1029,7 @@
 					Vul de gegevens in om een nieuw medewerker toe te voegen
 				</Sheet.Description>
 			</Sheet.Header>
-			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md p-3">
+			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md px-3">
 				<div class="grid gap-4 py-4">
 					<div class="flex w-full flex-col items-center justify-center gap-4">
 						<img src="/images/user.svg" alt="User" class="rounded-3.75 h-25 w-25" />

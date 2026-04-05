@@ -562,7 +562,7 @@ md:grid-cols-1  `,
 					>Vul de gegevens in om een nieuw medewerker toe te voegen</Sheet.Description
 				>
 			</Sheet.Header>
-			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md p-3">
+			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md px-3">
 				<!-- <TinySlider bind:this={slider}>
 						{#snippet children({ sliderWidth })} -->
 				{#each sliderContent.items as item, i}

@@ -5,7 +5,7 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -117,9 +117,7 @@
 
 <div class="relative">
 	<Popover.Root bind:open>
-		<Popover.Trigger
-			class="ring-offset-background focus-visible:ring-ring border-input bg-background hover:bg-accent hover:text-accent-foreground relative inline-flex h-10 w-10 items-center justify-center rounded-md border text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-		>
+		<Popover.Trigger class={buttonVariants({ variant: 'outline', size: 'icon-lg' })}>
 			<BellIcon class="h-[1.2rem] w-[1.2rem]" />
 			<span class="sr-only">Notificaties</span>
 

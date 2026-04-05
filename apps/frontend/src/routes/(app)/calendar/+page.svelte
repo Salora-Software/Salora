@@ -262,7 +262,7 @@
 		</Popover.Root>
 	</div>
 	<!-- Controls row: today + arrows -->
-	<div class="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+	<div class="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
 		<Button
 			variant="default"
 			class="flex-1 gap-2 sm:flex-none"
@@ -273,38 +273,40 @@
 			<Plus class="h-4 w-4" />
 			Nieuwe afspraak
 		</Button>
-		<Button
-			variant="outline"
-			class="flex-1 sm:flex-none"
-			disabled={selectedDate &&
-				selectedDate.toDate(getLocalTimeZone()).toDateString() === new Date().toDateString()}
-			onclick={() => {
-				selectedDate = today(getLocalTimeZone());
-			}}>{t.dateRange.today}</Button
-		>
-		<div class="flex gap-2">
+		<div class="flex w-full gap-2 sm:w-auto sm:justify-start">
 			<Button
 				variant="outline"
-				class="h-8 w-8 rounded-full"
+				class="flex-1 sm:flex-none"
+				disabled={selectedDate &&
+					selectedDate.toDate(getLocalTimeZone()).toDateString() === new Date().toDateString()}
 				onclick={() => {
-					if (selectedDate) {
-						selectedDate = selectedDate.add({ days: -1 });
-					}
-				}}
+					selectedDate = today(getLocalTimeZone());
+				}}>{t.dateRange.today}</Button
 			>
-				<ChevronLeft />
-			</Button>
-			<Button
-				variant="outline"
-				class="h-8 w-8 rounded-full"
-				onclick={() => {
-					if (selectedDate) {
-						selectedDate = selectedDate.add({ days: 1 });
-					}
-				}}
-			>
-				<ChevronRight />
-			</Button>
+			<div class="flex gap-2">
+				<Button
+					variant="outline"
+					class="h-8 w-8 rounded-full"
+					onclick={() => {
+						if (selectedDate) {
+							selectedDate = selectedDate.add({ days: -1 });
+						}
+					}}
+				>
+					<ChevronLeft />
+				</Button>
+				<Button
+					variant="outline"
+					class="h-8 w-8 rounded-full"
+					onclick={() => {
+						if (selectedDate) {
+							selectedDate = selectedDate.add({ days: 1 });
+						}
+					}}
+				>
+					<ChevronRight />
+				</Button>
+			</div>
 		</div>
 	</div>
 </div>

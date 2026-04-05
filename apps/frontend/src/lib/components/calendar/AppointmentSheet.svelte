@@ -249,6 +249,15 @@
 
 	$effect(() => {
 		if (!open) return;
+
+		const selectedService = services.find((s) => s.id === serviceId);
+		if (selectedService?.duration) {
+			endDate = startDate.plus({ minutes: selectedService.duration });
+		}
+	});
+
+	$effect(() => {
+		if (!open) return;
 		if (customersQuery.data?.customers && !selectedCustomer?.id) {
 			const match = customersQuery.data.customers.find((customer) => customer.id === customerId);
 			if (match) {
@@ -397,7 +406,7 @@
 
 					<div class="space-y-2">
 						<Label>Status</Label>
-						<Select.Root bind:value={status}>
+						<Select.Root bind:value={status} type="single">
 							<Select.Trigger class="w-full">
 								{status === 'PENDING'
 									? 'In afwachting'

@@ -1,5 +1,3 @@
-import mysql from 'mysql2/promise';
-import { env } from './env';
 
 interface AmeliaCustomer {
 	id: string | number;
@@ -40,64 +38,21 @@ interface AmeliaData {
  * Expects the Amelia database to be accessible via DATABASE_URL environment variable
  */
 export async function getAmeliaDataFromMySQL(): Promise<AmeliaData> {
-	let connection;
-
 	try {
+		// Vervang domein.nl door het daadwerkelijke domein van de remote server
+		const response = await fetch(`https://hexidev.nl/amelia-export.php`);
 
-		// Parse the DATABASE_URL to get connection config
-		const config = {
-			host: '116.202.134.139',
-			user: 'babylon1',
-			password: 'C42!g38evNhO:E',
-			database: 'babylon1_migrate', // of je test DB
-			port: 3306
-		};
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
 
-		// Create MySQL connection
-		connection = await mysql.createConnection(config);
-		console.log('Connected to database. Fetching Amelia data...');
+		const ameliaData: AmeliaData = await response.json();
 
-		// 1. Fetch all customers
-		const [customersResult] = (await connection.execute(`
-			SELECT id, firstName, lastName, email, phone, gender, note 
-			FROM eouz_amelia_users 
-			WHERE type = 'customer'
-		`)) as any;
-
-		const customers = Array.isArray(customersResult) ? customersResult : [];
-
-		// 2. Fetch all services
-		const [servicesResult] = (await connection.execute(`
-			SELECT id, name, price, duration 
-			FROM eouz_amelia_services
-		`)) as any;
-
-		const services = Array.isArray(servicesResult) ? servicesResult : [];
-
-		// 3. Fetch appointments with customer bookings
-		const [appointmentsResult] = (await connection.execute(`
-			SELECT a.id as appointmentId, a.bookingStart, a.bookingEnd, cb.created, a.serviceId, cb.customerId, cb.status, a.internalNotes
-			FROM eouz_amelia_appointments a
-			JOIN eouz_amelia_customer_bookings cb ON a.id = cb.appointmentId
-		`)) as any;
-
-		const appointments = Array.isArray(appointmentsResult) ? appointmentsResult : [];
-
-		const ameliaData: AmeliaData = {
-			customers,
-			services,
-			appointments
-		};
-
-		console.log(`Fetched ${ameliaData.customers.length} customers, ${ameliaData.services.length} services, ${ameliaData.appointments.length} appointments`);
+		console.log(`Fetched ${ameliaData.customers?.length || 0} customers, ${ameliaData.services?.length || 0} services, ${ameliaData.appointments?.length || 0} appointments`);
 
 		return ameliaData;
 	} catch (error) {
 		const message = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`Failed to fetch Amelia data from MySQL: ${message}`);
-	} finally {
-		if (connection) {
-			await connection.end();
-		}
+		throw new Error(`Failed to fetch Amelia data via API: ${message}`);
 	}
 }

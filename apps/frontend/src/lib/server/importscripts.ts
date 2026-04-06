@@ -43,10 +43,6 @@ export async function getAmeliaDataFromMySQL(): Promise<AmeliaData> {
 	let connection;
 
 	try {
-		// Ensure env is available
-		if (!env?.DATABASE_URL) {
-			throw new Error('DATABASE_URL environment variable is not set');
-		}
 
 		// Parse the DATABASE_URL to get connection config
 		const config = {

@@ -5,12 +5,14 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpsertCalendarItemInput } from './upsert-calendar-item.schema';
+import { enqueueTemplateEmail } from './email-queue';
 
 export const upsertCalendarItemHandler = async ({
 	input,
 	ctx: {
 		session: { user },
-		db
+		db,
+		emailQueue
 	}
 }: {
 	input: UpsertCalendarItemInput;
@@ -133,7 +135,7 @@ export const upsertCalendarItemHandler = async ({
 				templateType = 'EMAIL_APPROVED';
 			}
 
-			if (templateType && booking.customer) {
+			if (templateType) {
 				const dateStart = DateTime.fromJSDate(data.startTime, { zone: organization.timeZone });
 				const dateEnd = DateTime.fromJSDate(data.endTime, { zone: organization.timeZone });
 				const originalStartTime =
@@ -158,6 +160,19 @@ export const upsertCalendarItemHandler = async ({
 						}
 					});
 				}
+
+				await enqueueTemplateEmail(emailQueue, {
+					templateType,
+					organizationId,
+					bookingId: booking.id,
+					targets: {
+						customerEmail: booking.customer?.email,
+						employeeEmail:
+							memberChanged && newMember?.user?.email
+								? newMember.user.email
+								: booking.employee?.user?.email
+					}
+				});
 
 				// await notificationService
 				// 	.sendEmailNotification({

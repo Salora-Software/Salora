@@ -5,12 +5,14 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { DeleteCalendarItemInput } from './delete-calendar-item.schema';
+import { enqueueTemplateEmail } from './email-queue';
 
 export const deleteCalendarItemHandler = async ({
 	input: { id },
 	ctx: {
 		session: { user },
-		db
+		db,
+		emailQueue
 	}
 }: {
 	input: DeleteCalendarItemInput;
@@ -63,6 +65,16 @@ export const deleteCalendarItemHandler = async ({
 		if (organization && booking.customer && booking.status !== 'CANCELLED') {
 			const dateStart = DateTime.fromJSDate(existingItem.startTime, { zone: organization.timeZone });
 			const dateEnd = DateTime.fromJSDate(existingItem.endTime, { zone: organization.timeZone });
+
+			await enqueueTemplateEmail(emailQueue, {
+				templateType: 'EMAIL_CANCELED',
+				organizationId: existingItem.organization.id,
+				bookingId: booking.id,
+				targets: {
+					customerEmail: booking.customer?.email,
+					employeeEmail: booking.employee?.user?.email
+				}
+			});
 
 			// await notificationService
 			// 	.sendEmailNotification({

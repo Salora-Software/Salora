@@ -5,12 +5,14 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpdateCalendarItemInput } from './update-calendar-item.schema';
+import { enqueueTemplateEmail } from './email-queue';
 
 export const updateCalendarItemHandler = async ({
 	input: { id, startTime, endTime },
 	ctx: {
 		session: { user },
-		db
+		db,
+		emailQueue
 	}
 }: {
 	input: UpdateCalendarItemInput;
@@ -77,6 +79,16 @@ export const updateCalendarItemHandler = async ({
 			});
 			const originalEndTime = DateTime.fromJSDate(existingItem.endTime, {
 				zone: organization.timeZone
+			});
+
+			await enqueueTemplateEmail(emailQueue, {
+				templateType: 'EMAIL_APPROVED',
+				organizationId: existingItem.organization.id,
+				bookingId: booking.id,
+				targets: {
+					customerEmail: booking.customer?.email,
+					employeeEmail: booking.employee?.user?.email
+				}
 			});
 
 			// await notificationService

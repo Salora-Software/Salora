@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
-import { notificationService } from '$lib/server/NotificationService';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { DeleteCalendarItemInput } from './delete-calendar-item.schema';
 
@@ -65,49 +64,49 @@ export const deleteCalendarItemHandler = async ({
 			const dateStart = DateTime.fromJSDate(existingItem.startTime, { zone: organization.timeZone });
 			const dateEnd = DateTime.fromJSDate(existingItem.endTime, { zone: organization.timeZone });
 
-			await notificationService
-				.sendEmailNotification({
-					type: 'EMAIL_CANCELED',
-					to: booking.customer.email,
-					employeeEmail: booking.employee?.user.email,
-					variables: {
-						customer: {
-							name: booking.customer.name,
-							email: booking.customer.email,
-							phone: booking.customer.phone
-						},
-						booking: {
-							name: booking.service.name,
-							employee: booking.employee?.user.name,
-							employeeId: booking.employeeId,
-							serviceId: booking.serviceId,
-							serviceDuration: booking.service.duration,
-							servicePrice: booking.service.price,
-							serviceDescription: booking.service.description,
-							start: {
-								date: dateStart.toFormat('yyyy-MM-dd'),
-								year: dateStart.year,
-								month: dateStart.month,
-								day: dateStart.day,
-								hour: dateStart.hour.toString().padStart(2, '0'),
-								minute: dateStart.minute.toString().padStart(2, '0')
-							},
-							end: {
-								date: dateEnd.toFormat('yyyy-MM-dd'),
-								year: dateEnd.year,
-								month: dateEnd.month,
-								day: dateEnd.day,
-								hour: dateEnd.hour.toString().padStart(2, '0'),
-								minute: dateEnd.minute.toString().padStart(2, '0')
-							},
-							isCancelled: true
-						}
-					},
-					branch: organization
-				})
-				.catch((error) => {
-					console.error('Error sending cancellation notification email:', error);
-				});
+			// await notificationService
+			// 	.sendEmailNotification({
+			// 		type: 'EMAIL_CANCELED',
+			// 		to: booking.customer.email,
+			// 		employeeEmail: booking.employee?.user.email,
+			// 		variables: {
+			// 			customer: {
+			// 				name: booking.customer.name,
+			// 				email: booking.customer.email,
+			// 				phone: booking.customer.phone
+			// 			},
+			// 			booking: {
+			// 				name: booking.service.name,
+			// 				employee: booking.employee?.user.name,
+			// 				employeeId: booking.employeeId,
+			// 				serviceId: booking.serviceId,
+			// 				serviceDuration: booking.service.duration,
+			// 				servicePrice: booking.service.price,
+			// 				serviceDescription: booking.service.description,
+			// 				start: {
+			// 					date: dateStart.toFormat('yyyy-MM-dd'),
+			// 					year: dateStart.year,
+			// 					month: dateStart.month,
+			// 					day: dateStart.day,
+			// 					hour: dateStart.hour.toString().padStart(2, '0'),
+			// 					minute: dateStart.minute.toString().padStart(2, '0')
+			// 				},
+			// 				end: {
+			// 					date: dateEnd.toFormat('yyyy-MM-dd'),
+			// 					year: dateEnd.year,
+			// 					month: dateEnd.month,
+			// 					day: dateEnd.day,
+			// 					hour: dateEnd.hour.toString().padStart(2, '0'),
+			// 					minute: dateEnd.minute.toString().padStart(2, '0')
+			// 				},
+			// 				isCancelled: true
+			// 			}
+			// 		},
+			// 		branch: organization
+			// 	})
+			// 	.catch((error) => {
+			// 		console.error('Error sending cancellation notification email:', error);
+			// 	});
 		}
 	}
 

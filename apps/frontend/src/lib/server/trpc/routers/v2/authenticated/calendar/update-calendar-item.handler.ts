@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
-import { notificationService } from '$lib/server/NotificationService';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpdateCalendarItemInput } from './update-calendar-item.schema';
 
@@ -80,65 +79,65 @@ export const updateCalendarItemHandler = async ({
 				zone: organization.timeZone
 			});
 
-			await notificationService
-				.sendEmailNotification({
-					type: 'EMAIL_APPROVED',
-					to: booking.customer.email,
-					employeeEmail: booking.employee?.user.email,
-					variables: {
-						customer: {
-							name: booking.customer.name,
-							email: booking.customer.email,
-							phone: booking.customer.phone
-						},
-						booking: {
-							name: booking.service.name,
-							employee: booking.employee?.user.name,
-							employeeId: booking.employeeId,
-							serviceId: booking.serviceId,
-							serviceDuration: booking.service.duration,
-							servicePrice: booking.service.price,
-							serviceDescription: booking.service.description,
-							start: {
-								date: dateStart.toFormat('yyyy-MM-dd'),
-								year: dateStart.year,
-								month: dateStart.month,
-								day: dateStart.day,
-								hour: dateStart.hour.toString().padStart(2, '0'),
-								minute: dateStart.minute.toString().padStart(2, '0')
-							},
-							end: {
-								date: dateEnd.toFormat('yyyy-MM-dd'),
-								year: dateEnd.year,
-								month: dateEnd.month,
-								day: dateEnd.day,
-								hour: dateEnd.hour.toString().padStart(2, '0'),
-								minute: dateEnd.minute.toString().padStart(2, '0')
-							},
-							originalStart: {
-								date: originalStartTime.toFormat('yyyy-MM-dd'),
-								year: originalStartTime.year,
-								month: originalStartTime.month,
-								day: originalStartTime.day,
-								hour: originalStartTime.hour.toString().padStart(2, '0'),
-								minute: originalStartTime.minute.toString().padStart(2, '0')
-							},
-							originalEnd: {
-								date: originalEndTime.toFormat('yyyy-MM-dd'),
-								year: originalEndTime.year,
-								month: originalEndTime.month,
-								day: originalEndTime.day,
-								hour: originalEndTime.hour.toString().padStart(2, '0'),
-								minute: originalEndTime.minute.toString().padStart(2, '0')
-							},
-							isRescheduled: true
-						}
-					},
-					branch: organization
-				})
-				.catch((error) => {
-					console.error('Error sending reschedule notification email:', error);
-				});
+			// await notificationService
+			// 	.sendEmailNotification({
+			// 		type: 'EMAIL_APPROVED',
+			// 		to: booking.customer.email,
+			// 		employeeEmail: booking.employee?.user.email,
+			// 		variables: {
+			// 			customer: {
+			// 				name: booking.customer.name,
+			// 				email: booking.customer.email,
+			// 				phone: booking.customer.phone
+			// 			},
+			// 			booking: {
+			// 				name: booking.service.name,
+			// 				employee: booking.employee?.user.name,
+			// 				employeeId: booking.employeeId,
+			// 				serviceId: booking.serviceId,
+			// 				serviceDuration: booking.service.duration,
+			// 				servicePrice: booking.service.price,
+			// 				serviceDescription: booking.service.description,
+			// 				start: {
+			// 					date: dateStart.toFormat('yyyy-MM-dd'),
+			// 					year: dateStart.year,
+			// 					month: dateStart.month,
+			// 					day: dateStart.day,
+			// 					hour: dateStart.hour.toString().padStart(2, '0'),
+			// 					minute: dateStart.minute.toString().padStart(2, '0')
+			// 				},
+			// 				end: {
+			// 					date: dateEnd.toFormat('yyyy-MM-dd'),
+			// 					year: dateEnd.year,
+			// 					month: dateEnd.month,
+			// 					day: dateEnd.day,
+			// 					hour: dateEnd.hour.toString().padStart(2, '0'),
+			// 					minute: dateEnd.minute.toString().padStart(2, '0')
+			// 				},
+			// 				originalStart: {
+			// 					date: originalStartTime.toFormat('yyyy-MM-dd'),
+			// 					year: originalStartTime.year,
+			// 					month: originalStartTime.month,
+			// 					day: originalStartTime.day,
+			// 					hour: originalStartTime.hour.toString().padStart(2, '0'),
+			// 					minute: originalStartTime.minute.toString().padStart(2, '0')
+			// 				},
+			// 				originalEnd: {
+			// 					date: originalEndTime.toFormat('yyyy-MM-dd'),
+			// 					year: originalEndTime.year,
+			// 					month: originalEndTime.month,
+			// 					day: originalEndTime.day,
+			// 					hour: originalEndTime.hour.toString().padStart(2, '0'),
+			// 					minute: originalEndTime.minute.toString().padStart(2, '0')
+			// 				},
+			// 				isRescheduled: true
+			// 			}
+			// 		},
+			// 		branch: organization
+			// 	})
+			// 	.catch((error) => {
+			// 		console.error('Error sending reschedule notification email:', error);
+			// 	});
 		}
 	}
 

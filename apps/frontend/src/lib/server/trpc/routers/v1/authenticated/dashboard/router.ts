@@ -64,7 +64,8 @@ export const router = createRouter({
 					},
 					booking: {
 						with: {
-							customer: true
+							customer: true,
+							service: true
 						}
 					}
 				},

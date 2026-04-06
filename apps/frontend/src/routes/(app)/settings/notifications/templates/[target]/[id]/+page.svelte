@@ -289,7 +289,7 @@
 
 			{#each Object.entries(AppointmentEmailSchema) as [key, config]}
 				<div
-					class="space-y-2 {config.type === 'editor' ? 'flex min-h-[300px] flex-1 flex-col' : ''}"
+					class="space-y-2 {config.type === 'editor' ? 'flex min-h-75 flex-1 flex-col' : ''}"
 				>
 					<Label for={key}>{config.label}</Label>
 					{#if loadingTemplate}

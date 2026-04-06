@@ -114,7 +114,7 @@ export const TEMPLATE_VARIABLE_DEFINITIONS: TemplateVariableDefinition[] = [
 export const extractTemplateVariablePaths = (value: string): string[] => {
 	if (!value) return [];
 
-	const matches = [...value.matchAll(PLACEHOLDER_PATTERN)];
+	const matches = Array.from(value.matchAll(PLACEHOLDER_PATTERN));
 	return matches
 		.map((match) => match[1]?.trim())
 		.filter((path): path is string => Boolean(path));
@@ -143,10 +143,12 @@ export const validateTemplateVariables = (
 ): TemplateVariableValidationResult => {
 	const used = extractTemplateVariablePaths(value);
 	const allowedPathSet = new Set(allowedPaths);
-	const unknown = [...new Set(used.filter((path) => !allowedPathSet.has(path)))];
+	const unknown = Array.from(
+		new Set(used.filter((path) => !allowedPathSet.has(path))),
+	);
 
 	return {
-		used: [...new Set(used)],
+		used: Array.from(new Set(used)),
 		unknown,
 	};
 };
@@ -176,7 +178,7 @@ export const validateTemplateRecordVariables = (
 	walk(record);
 
 	const allowedPathSet = new Set(allowedPaths);
-	const uniqueUsed = [...new Set(collected)];
+	const uniqueUsed = Array.from(new Set(collected));
 
 	return {
 		used: uniqueUsed,

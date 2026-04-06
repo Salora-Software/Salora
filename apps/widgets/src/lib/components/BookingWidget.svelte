@@ -481,7 +481,6 @@
 						<div class="flex gap-2">
 							<Button
 								class="widget-button ml-auto bg-transparent hover:bg-opacity-10"
-								variant="secondary"
 								disabled={index === 0}
 								onclick={() => goToStep(index - 1, false)}>Terug</Button
 							>

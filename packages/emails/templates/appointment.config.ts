@@ -13,7 +13,7 @@ export const AppointmentEmailSchema = {
 	content: {
 		type: 'editor', // Jouw custom editor component
 		label: 'Bericht',
-		defaultValue: 'Beste {{ name }},\n\nBedankt voor de boeking!'
+		defaultValue: 'Beste {{ customer.name }},\n\nBedankt voor de boeking!'
 	},
 	buttonText: {
 		type: 'text',

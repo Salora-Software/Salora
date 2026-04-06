@@ -170,7 +170,7 @@ const formatTime = (date: Date, timeZone: string): string =>
 export const resolveTemplateEmail = async (
   payload: TemplateEmailQueueMessage,
   env: Env,
-): Promise<ResolvedTemplateEmail> => {
+): Promise<ResolvedTemplateEmail | null> => {
   const db = createDb(env.DB as any);
 
   const organization = await db.query.organization.findFirst({
@@ -239,9 +239,18 @@ export const resolveTemplateEmail = async (
       eq(schema.template.organizationId, payload.organizationId),
       eq(schema.template.type, payload.templateType),
       eq(schema.template.target, targetAudience),
-      eq(schema.template.enabled, true),
     ),
   });
+
+  if (template && !template.enabled) {
+    console.info("Skipping email because template is disabled", {
+      organizationId: payload.organizationId,
+      templateType: payload.templateType,
+      targetAudience,
+      bookingId: payload.bookingId,
+    });
+    return null;
+  }
 
   const variables: Record<string, unknown> = {
     branch: {

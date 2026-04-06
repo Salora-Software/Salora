@@ -35,6 +35,16 @@ const processQueueMessage = async (
 
     const renderedEmail = await resolveTemplateEmail(payload, env);
 
+    if (!renderedEmail) {
+      console.info("Email skipped by template resolver", {
+        organizationId,
+        templateType: payload.templateType,
+        targetAudience: payload.targetAudience ?? "CUSTOMER",
+      });
+      message.ack();
+      return;
+    }
+
     await sendEmailWithFailover({
       senderName: renderedEmail.senderName,
       from: renderedEmail.from || env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,

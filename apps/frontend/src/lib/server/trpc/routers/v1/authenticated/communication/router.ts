@@ -3,7 +3,12 @@ import { router as createRouter, privateProcedure, publicProcedure } from '../..
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
 import { eq, and } from 'drizzle-orm';
-import { renderEmail } from '@salora/emails';
+import {
+	renderEmail,
+	getAllowedTemplateVariablePaths,
+	validateTemplateRecordVariables,
+	validateTemplateVariables
+} from '@salora/emails';
 import type { MailCredential } from '@salora/mailer';
 import { env } from '$lib/server/env';
 
@@ -106,6 +111,22 @@ const toStringValue = (value: unknown, fallback = ''): string => {
 	return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 };
 
+const getTemplateVariableWarnings = (
+	target: string,
+	subject: string,
+	bodyRecord: Record<string, unknown>
+): string[] => {
+	const audience = target === 'EMPLOYEE' ? 'EMPLOYEE' : 'CUSTOMER';
+	const allowedPaths = getAllowedTemplateVariablePaths(audience);
+	const subjectValidation = validateTemplateVariables(subject, allowedPaths);
+	const bodyValidation = validateTemplateRecordVariables(bodyRecord, allowedPaths);
+	const unknown = [...new Set([...subjectValidation.unknown, ...bodyValidation.unknown])];
+
+	return unknown.map((path) =>
+		`Onbekende variabele: {{ ${path} }}. Gebruik dot-path variabelen zoals {{ customer.name }}.`
+	);
+};
+
 const buildCredentials = (communication: any): MailCredential[] => {
 	const settings = communication?.settings ?? {};
 
@@ -188,8 +209,10 @@ export const router = createRouter({
 		.output(z.any())
 		.mutation(async ({ ctx: { db, session }, input }) => {
 			// Upsert template by (type, target, organizationId)
+			const parsedBody = parseTemplateBody(input.body);
+			const warnings = getTemplateVariableWarnings(input.target, input.subject, parsedBody);
 			const orgId = session.session.activeOrganizationId!;
-			const upserted = await db
+			await db
 				.insert(schema.template)
 				.values({
 					id: crypto.randomUUID(),
@@ -209,7 +232,10 @@ export const router = createRouter({
 						updatedAt: new Date()
 					}
 				});
-			return upserted;
+			return {
+				success: true,
+				warnings
+			};
 		}),
 	sendTestEmail: privateProcedure
 		.input(

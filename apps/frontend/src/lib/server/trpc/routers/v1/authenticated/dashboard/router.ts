@@ -34,14 +34,14 @@ export const router = createRouter({
 			// Get current time in the organization's timezone
 			const now = DateTime.now().setZone(branch.timeZone);
 
-			// Use provided date range or default to today
+			// Use provided date range or default to the next 24 hours
 			let startTime, endTime;
 			if (input?.startDate && input?.endDate) {
 				startTime = DateTime.fromISO(input.startDate).setZone(branch.timeZone).startOf('day');
 				endTime = DateTime.fromISO(input.endDate).setZone(branch.timeZone).endOf('day');
 			} else {
 				startTime = now.startOf('day');
-				endTime = now.endOf('day');
+				endTime = now.plus({ hours: 24 });
 			}
 
 			// Convert to UTC Date objects for database query
@@ -280,8 +280,8 @@ export const router = createRouter({
 			const appointmentChange =
 				lastPeriodBookings.length > 0
 					? ((currentPeriodBookings.length - lastPeriodBookings.length) /
-							lastPeriodBookings.length) *
-						100
+						lastPeriodBookings.length) *
+					100
 					: 100;
 			const revenueChange =
 				lastPeriodRevenue > 0
@@ -294,8 +294,8 @@ export const router = createRouter({
 			const newCustomerChange =
 				newCustomersLastPeriod.length > 0
 					? ((newCustomersThisPeriod.length - newCustomersLastPeriod.length) /
-							newCustomersLastPeriod.length) *
-						100
+						newCustomersLastPeriod.length) *
+					100
 					: 100; // Determine grouping strategy based on date range
 			const totalDays = Math.ceil(endOfPeriod.diff(startOfPeriod, 'days').days) + 1;
 			let groupingStrategy: 'daily' | 'weekly' | 'monthly' | 'yearly';

@@ -286,7 +286,7 @@ export const importAmeliaDataHandler = async ({
 		}
 
 		// Execute Batch Queries
-		const CHUNK_SIZE = 50; // Safe batch size for SQLite variables overhead
+		const CHUNK_SIZE = 5; // Safe batch size for SQLite variables overhead
 
 		// Run bulk inserts in chunks
 		console.log('[IMPORT] Executing batch inserts...');

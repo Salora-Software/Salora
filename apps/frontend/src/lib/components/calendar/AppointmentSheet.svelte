@@ -82,7 +82,6 @@
 	const members = $derived(
 		(branch?.members || []).slice().sort((a, b) => a.user.name.localeCompare(b.user.name))
 	);
-
 	const customersQuery = $derived(
 		trpcQuery.v2.authenticated.customers.getCustomers.createQuery(
 			{

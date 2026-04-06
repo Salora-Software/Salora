@@ -134,7 +134,7 @@
 				toast.warning('Template opgeslagen met waarschuwingen over onbekende variabelen');
 			}
 
-			const result = await trpc.v1.authenticated.communication.upsertTemplate.mutate({
+			const result = await trpc.v2.authenticated.communication.upsertTemplate.mutate({
 				type: templateId!,
 				subject,
 				body: JSON.stringify(formValues),
@@ -155,7 +155,7 @@
 
 	async function toggleStatus(e: boolean) {
 		try {
-			await trpc.v1.authenticated.communication.updateTemplateStatus.mutate({
+			await trpc.v2.authenticated.communication.updateTemplateStatus.mutate({
 				type: templateId!,
 				target: target as any,
 				enabled: e
@@ -288,9 +288,7 @@
 			</div>
 
 			{#each Object.entries(AppointmentEmailSchema) as [key, config]}
-				<div
-					class="space-y-2 {config.type === 'editor' ? 'flex min-h-75 flex-1 flex-col' : ''}"
-				>
+				<div class="space-y-2 {config.type === 'editor' ? 'flex min-h-75 flex-1 flex-col' : ''}">
 					<Label for={key}>{config.label}</Label>
 					{#if loadingTemplate}
 						<Skeleton class="h-10 w-full {config.type === 'editor' ? 'flex-1' : ''}" />

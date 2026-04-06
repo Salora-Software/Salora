@@ -57,6 +57,15 @@ const getDefaultContent = (templateType: string): string => {
 	}
 };
 
+const getDefaultTemplateBody = (templateType: string): string => {
+	return JSON.stringify({
+		companyName: 'Salora Beauty',
+		heading: getDefaultHeading(templateType),
+		content: getDefaultContent(templateType),
+		buttonText: 'Bekijk Afspraak'
+	});
+};
+
 const getValueByPath = (data: Record<string, unknown>, path: string): unknown => {
 	return path.split('.').reduce<unknown>((acc, part) => {
 		if (typeof acc !== 'object' || acc === null) return undefined;
@@ -178,6 +187,7 @@ export const router = createRouter({
 		)
 		.output(z.any())
 		.mutation(async ({ ctx: { db, session }, input }) => {
+			const orgId = session.session.activeOrganizationId!;
 			const updated = await db
 				.update(schema.template)
 				.set({ enabled: input.enabled })
@@ -185,16 +195,36 @@ export const router = createRouter({
 					and(
 						eq(schema.template.type, input.type),
 						eq(schema.template.target, input.target),
-						eq(schema.template.organizationId, session.session.activeOrganizationId!)
+						eq(schema.template.organizationId, orgId)
 					)
 				)
 				.returning();
 
-			if (updated.length === 0)
-				throw new TRPCError({
-					code: 'NOT_FOUND',
-					message: 'template_not_found'
-				});
+			if (updated.length === 0) {
+				const [created] = await db
+					.insert(schema.template)
+					.values({
+						id: crypto.randomUUID(),
+						type: input.type,
+						target: input.target,
+						organizationId: orgId,
+						subject: getDefaultSubject(input.type),
+						body: getDefaultTemplateBody(input.type),
+						enabled: input.enabled,
+						updatedAt: new Date()
+					})
+					.returning();
+
+				if (!created) {
+					throw new TRPCError({
+						code: 'INTERNAL_SERVER_ERROR',
+						message: 'template_create_failed'
+					});
+				}
+
+				return [created];
+			}
+
 			return updated;
 		}),
 	upsertTemplate: privateProcedure
@@ -212,9 +242,26 @@ export const router = createRouter({
 			const parsedBody = parseTemplateBody(input.body);
 			const warnings = getTemplateVariableWarnings(input.target, input.subject, parsedBody);
 			const orgId = session.session.activeOrganizationId!;
-			await db
-				.insert(schema.template)
-				.values({
+
+			const existingTemplate = await db.query.template.findFirst({
+				where: and(
+					eq(schema.template.type, input.type),
+					eq(schema.template.target, input.target),
+					eq(schema.template.organizationId, orgId)
+				)
+			});
+
+			if (existingTemplate) {
+				await db
+					.update(schema.template)
+					.set({
+						subject: input.subject,
+						body: input.body,
+						updatedAt: new Date()
+					})
+					.where(eq(schema.template.id, existingTemplate.id));
+			} else {
+				await db.insert(schema.template).values({
 					id: crypto.randomUUID(),
 					type: input.type,
 					target: input.target,
@@ -223,15 +270,9 @@ export const router = createRouter({
 					body: input.body,
 					enabled: true,
 					updatedAt: new Date()
-				})
-				.onConflictDoUpdate({
-					target: [schema.template.type, schema.template.target, schema.template.organizationId],
-					set: {
-						subject: input.subject,
-						body: input.body,
-						updatedAt: new Date()
-					}
 				});
+			}
+
 			return {
 				success: true,
 				warnings

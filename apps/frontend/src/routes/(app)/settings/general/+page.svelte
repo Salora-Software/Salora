@@ -200,7 +200,7 @@
 <Button
 	onclick={() => {
 		trpc.v2.authenticated.import.importAmeliaData.mutate({
-			organizationId: 'zMkv8OlL22ZfhkL7PzHSSIkIcJRmRSDh'
+			organizationId: activeBranch?.id || ''
 		});
 	}}>Importeren</Button
 >

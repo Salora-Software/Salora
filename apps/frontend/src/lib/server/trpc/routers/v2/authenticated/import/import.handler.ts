@@ -62,7 +62,7 @@ export const importAmeliaDataHandler = async ({
 			members: existingMembers.length
 		});
 
-		const defaultEmployeeId = existingMembers.length > 0 ? existingMembers[0].id : null;
+		const defaultEmployeeId = '1ed695e3-dcf4-431f-b6d6-eb99ec7a841e';
 
 		// Calculate earliest created dates per customer and service from appointments
 		const earliestCustomerDates = new Map<string | number, Date>();

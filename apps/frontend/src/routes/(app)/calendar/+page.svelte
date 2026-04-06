@@ -1,7 +1,8 @@
 <script lang="ts">
 	import EventCalandar from '$lib/components/EventCalandar.svelte';
+	import { AppointmentSheet } from '$lib/components/calendar';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { ChevronLeft, ChevronRight, Plus } from 'lucide-svelte';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { CalendarIcon } from 'lucide-svelte';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
@@ -11,28 +12,24 @@
 	import { language, t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
 	import type { BranchType } from '$lib/runes.svelte.js';
+	import { onMount } from 'svelte';
 	let { data } = $props();
-	let activeBranch: BranchType | null = $state(data.branchesState.getActiveBranch());
-	const queryClient = data.queryClient;
-
-	// Calendar queries and mutations using trpcQuery (TanStack Query)
-
+	const queryClient = $derived(data.queryClient);
+	const branchesState = $derived(data.branchesState);
+	let activeBranch: BranchType | null = $state(null);
 	let selectedDate = $state<DateValue | undefined>(today(getLocalTimeZone()));
-
-	// Local state for calendar to avoid binding issues
 	let calendarDate = $state<DateValue | undefined>(undefined);
+	let cancelRefetching = $state(false);
+	let createAppointmentOpen = $state(false);
 
-	// Sync calendar date with selected date
 	$effect(() => {
 		if (calendarDate) {
 			selectedDate = calendarDate;
 		}
 	});
-
-	let cancelRefetching = $state(false);
 	// Calendar query (must be after selectedDate declaration)
 	let calendarQuery = $derived(
-		trpcQuery.v1.authenticated.calendar.getCalendar.createQuery(
+		trpcQuery.v2.authenticated.calendar.getCalendar.createQuery(
 			{
 				organizationId: activeBranch?.id || '',
 				startDate: selectedDate
@@ -57,7 +54,7 @@
 	);
 
 	// Calendar mutations
-	const updateCalendarItem = trpcQuery.v1.authenticated.calendar.updateCalendarItem.createMutation({
+	const updateCalendarItem = trpcQuery.v2.authenticated.calendar.updateCalendarItem.createMutation({
 		mutationKey: ['updateCalendarItem'],
 		onMutate: ({ id, startTime, endTime }) => {
 			queryClient.cancelQueries({
@@ -106,7 +103,7 @@
 		}
 	});
 
-	const deleteCalendarItem = trpcQuery.v1.authenticated.calendar.deleteCalendarItem.createMutation({
+	const deleteCalendarItem = trpcQuery.v2.authenticated.calendar.deleteCalendarItem.createMutation({
 		mutationKey: ['deleteCalendarItem'],
 		onMutate: ({ id }) => {
 			queryClient.cancelQueries({
@@ -147,7 +144,7 @@
 			});
 		}
 	});
-	const upsertCalendarItem = trpcQuery.v1.authenticated.calendar.upsertCalendarItem.createMutation({
+	const upsertCalendarItem = trpcQuery.v2.authenticated.calendar.upsertCalendarItem.createMutation({
 		mutationKey: ['upsertCalendarItem'],
 		onSettled: () => {
 			queryClient.invalidateQueries({
@@ -221,8 +218,11 @@
 	};
 
 	let sortedMembers = $state<MemberType[]>([]);
-	data.branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
+	onMount(() => {
+		activeBranch = branchesState.getActiveBranch();
+		branchesState.onBranchChange((branch) => {
+			activeBranch = branch;
+		});
 	});
 
 	$effect(() => {
@@ -262,42 +262,60 @@
 		</Popover.Root>
 	</div>
 	<!-- Controls row: today + arrows -->
-	<div class="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+	<div class="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
 		<Button
-			variant="outline"
-			class="flex-1 sm:flex-none"
-			disabled={selectedDate &&
-				selectedDate.toDate(getLocalTimeZone()).toDateString() === new Date().toDateString()}
+			variant="default"
+			class="flex-1 gap-2 sm:flex-none"
 			onclick={() => {
-				selectedDate = today(getLocalTimeZone());
-			}}>{t.dateRange.today}</Button
+				createAppointmentOpen = true;
+			}}
 		>
-		<div class="flex gap-2">
+			<Plus class="h-4 w-4" />
+			Nieuwe afspraak
+		</Button>
+		<div class="flex w-full gap-2 sm:w-auto sm:justify-start">
 			<Button
 				variant="outline"
-				class="h-8 w-8 rounded-full"
+				class="flex-1 sm:flex-none"
+				disabled={selectedDate &&
+					selectedDate.toDate(getLocalTimeZone()).toDateString() === new Date().toDateString()}
 				onclick={() => {
-					if (selectedDate) {
-						selectedDate = selectedDate.add({ days: -1 });
-					}
-				}}
+					selectedDate = today(getLocalTimeZone());
+				}}>{t.dateRange.today}</Button
 			>
-				<ChevronLeft />
-			</Button>
-			<Button
-				variant="outline"
-				class="h-8 w-8 rounded-full"
-				onclick={() => {
-					if (selectedDate) {
-						selectedDate = selectedDate.add({ days: 1 });
-					}
-				}}
-			>
-				<ChevronRight />
-			</Button>
+			<div class="flex gap-2">
+				<Button
+					variant="outline"
+					class="h-8 w-8 rounded-full"
+					onclick={() => {
+						if (selectedDate) {
+							selectedDate = selectedDate.add({ days: -1 });
+						}
+					}}
+				>
+					<ChevronLeft />
+				</Button>
+				<Button
+					variant="outline"
+					class="h-8 w-8 rounded-full"
+					onclick={() => {
+						if (selectedDate) {
+							selectedDate = selectedDate.add({ days: 1 });
+						}
+					}}
+				>
+					<ChevronRight />
+				</Button>
+			</div>
 		</div>
 	</div>
 </div>
+<AppointmentSheet
+	bind:open={createAppointmentOpen}
+	branch={activeBranch}
+	{selectedDate}
+	{queryClient}
+/>
 <div class="overflow-hidden">
 	{#key activeBranch}
 		<EventCalandar

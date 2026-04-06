@@ -29,6 +29,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { keepPreviousData } from '@tanstack/svelte-query';
+	import { Debounced } from 'runed';
 	let { data } = $props();
 
 	let activeBranch = $state(data.branchesState.getActiveBranch());
@@ -43,22 +44,20 @@
 	);
 	let showPageInput: number = $state(-1); // Track which dot index is showing input
 	let pageInputValue: string = $state('');
-	let searchQuery: string = $state(page.url.searchParams.get('search') || '');
-	let searchInputValue: string = $state(page.url.searchParams.get('search') || '');
-	let searchPollInterval: ReturnType<typeof setInterval> | null = null;
-	let lastSearchInputValue: string = '';
+	let searchValue: string = $state(page.url.searchParams.get('search') || '');
+	let searchDebounced = new Debounced(() => searchValue, 300);
 	let prevData: any = $state(null);
 
 	let customersQuery = $derived(
-		trpcQuery.v1.authenticated.customers.getCustomers.createQuery(
+		trpcQuery.v2.authenticated.customers.getCustomers.createQuery(
 			{
 				organizationId: activeBranch?.id || data.session.session.activeOrganizationId,
 				skip: currentPage * pageSize || 0,
 				take: pageSize || 10,
-				search: searchQuery.trim() || undefined
+				search: searchDebounced.current.trim() || undefined
 			},
 			{
-				queryKey: ['customers', currentPage, pageSize, searchQuery],
+				queryKey: ['customers', currentPage, pageSize, searchDebounced.current],
 				placeholderData: () => {
 					return keepPreviousData(prevData);
 				}
@@ -152,27 +151,10 @@
 		prevData = customersQuery.data;
 	});
 
-	// Sync state with URL params
-	onMount(() => {
-		// Poll for search input changes every 200ms
-		searchPollInterval = setInterval(() => {
-			if (searchInputValue !== lastSearchInputValue) {
-				lastSearchInputValue = searchInputValue;
-				searchQuery = searchInputValue;
-				currentPage = 0;
-				pagination = { pageIndex: 0, pageSize };
-				updateParams();
-			}
-		}, 350);
-		return () => {
-			if (searchPollInterval) clearInterval(searchPollInterval);
-		};
-	});
-
 	function updateParams() {
 		const params = page.url.searchParams;
 		params.set('page', (currentPage + 1).toString());
-		params.set('search', searchQuery);
+		params.set('search', searchDebounced.current);
 		const url = `${window.location.pathname}?${params.toString()}`;
 		window.history.replaceState({}, '', url);
 	}
@@ -199,7 +181,7 @@
 				return columnFilters;
 			},
 			get globalFilter() {
-				return searchInputValue;
+				return searchValue;
 			}
 		},
 		getCoreRowModel: getCoreRowModel(),
@@ -235,9 +217,9 @@
 		},
 		onGlobalFilterChange: (updater) => {
 			if (typeof updater === 'function') {
-				searchInputValue = updater(searchInputValue);
+				searchValue = updater(searchValue);
 			} else {
-				searchInputValue = updater;
+				searchValue = updater;
 			}
 		},
 		onColumnVisibilityChange: (updater) => {
@@ -342,7 +324,7 @@
 <h1 class="mt-5 mb-6 text-3xl font-semibold">Klanten</h1>
 <div class="w-full">
 	<div class="flex items-center pb-4">
-		<Input placeholder="Filter naam of e-mail..." bind:value={searchInputValue} class="max-w-sm" />
+		<Input placeholder="Filter naam of e-mail..." bind:value={searchValue} class="max-w-sm" />
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
@@ -365,7 +347,7 @@
 		</DropdownMenu.Root>
 	</div>
 	<div class="rounded-md">
-		{#if (customersQuery.isPlaceholderData || customersQuery.isLoading) && searchQuery == ''}
+		{#if (customersQuery.isPlaceholderData || customersQuery.isLoading) && searchDebounced.current == ''}
 			<Table.Root>
 				<Table.Header>
 					<Table.Row>
@@ -542,26 +524,26 @@
 									pagination = { pageIndex: currentPage, pageSize };
 								}
 								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex + 1, pageSize, searchQuery],
+									queryKey: ['customers', newPageIndex + 1, pageSize, searchDebounced.current],
 									queryFn: () =>
-										trpc.v1.authenticated.customers.getCustomers.query({
+										trpc.v2.authenticated.customers.getCustomers.query({
 											organizationId:
 												activeBranch?.id || data.session.session.activeOrganizationId || '',
 											skip: ((pageNum as number) - 1) * pageSize,
 											take: pageSize,
-											search: searchQuery.trim() || undefined
+											search: searchDebounced.current.trim() || undefined
 										}),
 									staleTime: 1000 * 60 * 5 // 5 minutes
 								});
 								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex - 1, pageSize, searchQuery],
+									queryKey: ['customers', newPageIndex - 1, pageSize, searchDebounced.current],
 									queryFn: () =>
-										trpc.v1.authenticated.customers.getCustomers.query({
+										trpc.v2.authenticated.customers.getCustomers.query({
 											organizationId:
 												activeBranch?.id || data.session.session.activeOrganizationId || '',
 											skip: ((pageNum as number) - 1) * pageSize,
 											take: pageSize,
-											search: searchQuery.trim() || undefined
+											search: searchDebounced.current.trim() || undefined
 										}),
 									staleTime: 1000 * 60 * 5 // 5 minutes
 								});
@@ -569,14 +551,14 @@
 							onmouseenter={() => {
 								const newPageIndex = (pageNum as number) - 1;
 								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex, pageSize, searchQuery],
+									queryKey: ['customers', newPageIndex, pageSize, searchDebounced.current],
 									queryFn: () =>
-										trpc.v1.authenticated.customers.getCustomers.query({
+										trpc.v2.authenticated.customers.getCustomers.query({
 											organizationId:
 												activeBranch?.id || data.session.session.activeOrganizationId || '',
 											skip: ((pageNum as number) - 1) * pageSize,
 											take: pageSize,
-											search: searchQuery.trim() || undefined
+											search: searchDebounced.current.trim() || undefined
 										}),
 									staleTime: 1000 * 60 * 5 // 5 minutes
 								});

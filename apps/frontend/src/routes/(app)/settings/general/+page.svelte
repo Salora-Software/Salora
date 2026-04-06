@@ -199,17 +199,9 @@
 </Button>
 <Button
 	onclick={() => {
-		trpc.v2.authenticated.import.importAmeliaData.mutate(
-			{ organizationId: 'zMkv8OlL22ZfhkL7PzHSSIkIcJRmRSDh' },
-			{
-				onSuccess() {
-					toast.success('Amelia data succesvol geïmporteerd');
-				},
-				onError() {
-					toast.error('Er is een fout opgetreden bij het importeren van Amelia data');
-				}
-			}
-		);
+		trpc.v2.authenticated.import.importAmeliaData.mutate({
+			organizationId: 'zMkv8OlL22ZfhkL7PzHSSIkIcJRmRSDh'
+		});
 	}}>Importeren</Button
 >
 

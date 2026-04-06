@@ -4,7 +4,6 @@ import { publicProcedure, router } from './context';
 import { router as v1 } from './routers/v1/router';
 import { router as v2 } from './routers/v2/_router';
 import { router as appointment } from './routers/appointment/_router';
-import { importScriptsRouter } from '../importscripts';
 
 export const appRouter = router({
 	ping: publicProcedure
@@ -15,8 +14,5 @@ export const appRouter = router({
 		}),
 	v1: v1,
 	v2: v2,
-	appointment: appointment,
-	importScripts: importScriptsRouter
+	appointment: appointment
 });
-
-export type AppRouter = typeof appRouter;

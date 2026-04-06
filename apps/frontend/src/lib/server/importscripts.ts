@@ -21,8 +21,8 @@ interface AmeliaService {
 interface AmeliaAppointment {
 	appointmentId: string | number;
 	bookingStart: Date;
-    bookingEnd: Date;
-    created: Date;
+	bookingEnd: Date;
+	created: Date;
 	serviceId: string | number;
 	customerId: string | number;
 	status: string;

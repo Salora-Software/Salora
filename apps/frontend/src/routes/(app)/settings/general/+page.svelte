@@ -197,13 +197,14 @@
 		Opslaan
 	{/if}
 </Button>
-<Button
+
+<!-- <Button
 	onclick={() => {
 		trpc.v2.authenticated.import.importAmeliaData.mutate({
 			organizationId: activeBranch?.id || ''
 		});
 	}}>Importeren</Button
->
+> -->
 
 <style>
 	@keyframes fadeOut {

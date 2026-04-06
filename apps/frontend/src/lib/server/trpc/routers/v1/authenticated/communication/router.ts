@@ -133,26 +133,26 @@ const buildCredentials = (communication: any): MailCredential[] => {
 	const orgCredential: MailCredential | null =
 		settings.smtpServer && settings.smtpUsername && settings.smtpPassword
 			? {
-					provider_name: 'Organization SMTP',
-					priority: 10,
-					from: settings.smtpEmail,
-					smtp_host: settings.smtpServer,
-					smtp_port: Number(settings.smtpPort ?? 587),
-					username: settings.smtpUsername,
-					password: settings.smtpPassword
-				}
+				provider_name: 'Organization SMTP',
+				priority: 10,
+				from: settings.smtpEmail,
+				smtp_host: settings.smtpServer,
+				smtp_port: Number(settings.smtpPort ?? 587),
+				username: settings.smtpUsername,
+				password: settings.smtpPassword
+			}
 			: null;
 
 	const fallbackCredential: MailCredential | null =
 		env?.MAIL_FALLBACK_SERVER && env?.MAIL_FALLBACK_USERNAME && env?.MAIL_FALLBACK_PASSWORD
 			? {
-					provider_name: 'Fallback SMTP',
-					priority: 100,
-					smtp_host: env.MAIL_FALLBACK_SERVER,
-					smtp_port: Number(env.MAIL_FALLBACK_PORT ?? 587),
-					username: env.MAIL_FALLBACK_USERNAME,
-					password: env.MAIL_FALLBACK_PASSWORD
-				}
+				provider_name: 'Fallback SMTP',
+				priority: 100,
+				smtp_host: env.MAIL_FALLBACK_SERVER,
+				smtp_port: Number(env.MAIL_FALLBACK_PORT ?? 587),
+				username: env.MAIL_FALLBACK_USERNAME,
+				password: env.MAIL_FALLBACK_PASSWORD
+			}
 			: null;
 
 	return [orgCredential, fallbackCredential].filter((cred): cred is MailCredential => cred !== null);

@@ -308,7 +308,9 @@
 			{/each}
 
 			<p class="text-muted-foreground text-xs">
-				Gebruik dot-path variabelen zoals {#each placeholderExamples as path, index}{'{{ ' + path + ' }}'}
+				Gebruik dot-path variabelen zoals {#each placeholderExamples as path, index}{'{{ ' +
+						path +
+						' }}'}
 					{index < placeholderExamples.length - 1 ? ', ' : '.'}
 				{/each}
 			</p>

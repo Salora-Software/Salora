@@ -17,11 +17,13 @@
 	const mode = 'light';
 	setMode(mode);
 
+	const trpc = createTrpcClient(endpoint);
+
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
+	setContext('trpc', trpc);
 
 	onMount(async () => {
-		const trpc = createTrpcClient(endpoint);
 		try {
 			// Gebruik v1.getBranch zoals in de originele layout.server.ts
 			branchData = await trpc.v1.getBranch.query({

@@ -14,7 +14,7 @@
 
 <span
 	class={cn(
-		'has-focus:border-ring border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] relative flex w-[60%] rounded-md border',
+		'has-focus:border-ring border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] relative flex w-[60%] rounded-md border bg-widget-input-bg',
 		className
 	)}
 >

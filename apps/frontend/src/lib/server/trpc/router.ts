@@ -16,3 +16,5 @@ export const appRouter = router({
 	v2: v2,
 	appointment: appointment
 });
+
+export type AppRouter = typeof appRouter;

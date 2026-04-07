@@ -1,6 +1,7 @@
 /// <reference path="../worker-configuration.d.ts" />
 import type { Auth } from '$lib/server/auth';
 import type { DatabaseType } from '@salora/database';
+import type { EmailQueueMessage } from '@salora/mailer';
 
 declare global {
 	namespace App {
@@ -12,6 +13,7 @@ declare global {
 			ip?: string;
 			db: DatabaseType;
 			auth: Auth;
+			emailQueue?: Queue<EmailQueueMessage>;
 		}
 		// interface PageState {}
 		interface Platform {

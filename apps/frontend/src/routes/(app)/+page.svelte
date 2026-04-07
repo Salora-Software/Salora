@@ -250,7 +250,7 @@
 		)
 	);
 	const appointments = $derived(
-		upcomingAppointmentsQuery.data?.appointments.sort((a, b) => {
+		upcomingAppointmentsQuery.data?.appointments.sort((a: any, b: any) => {
 			const dateA = new Date(a.localStartTime || a.startTime);
 			const dateB = new Date(b.localStartTime || b.startTime);
 
@@ -265,46 +265,61 @@
 		}) || []
 	);
 	let upcomingAppointments = $derived(
-		appointments.map((appointment) => ({
-			id: appointment.id, // Add the calendar item ID for updates
-			date: appointment.localStartTime
-				? new Date(appointment.localStartTime).toLocaleDateString('nl-NL', {
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric'
-					})
-				: 'Onbekende datum',
-			time: appointment.localStartTime
-				? new Date(appointment.localStartTime).toLocaleTimeString('nl-NL', {
-						hour: '2-digit',
-						minute: '2-digit'
-					})
-				: 'Onbekende tijd',
-			duration:
-				appointment.localEndTime && appointment.localStartTime
-					? `${Math.round((new Date(appointment.localEndTime).getTime() - new Date(appointment.localStartTime).getTime()) / (1000 * 60))} min`
-					: '30 min',
-			assigned: {
-				id: appointment.member?.id || '1',
-				name: appointment.member?.user?.name || 'Medewerker',
-				image: appointment.member?.user?.image || ''
-			},
-			type: appointment.title || 'Afspraak',
-			price: {
-				amount: 30, // Default price, could be enhanced later
-				currency: 'EUR'
-			},
-			status: appointment.booking?.status || 'PENDING',
-			value: appointment.booking?.status || 'PENDING',
-			customer: {
-				name: appointment.customer?.name || 'Onbekende klant',
-				email: appointment.customer?.email || 'Geen email'
-			},
-			// Store original appointment data for updates
-			originalAppointment: appointment,
-			// Loading state for individual appointments
-			isUpdating: false
-		}))
+		appointments.map((appointment: any) => {
+			const serviceName = appointment.booking?.service?.name || appointment.title || 'Afspraak';
+			const servicePrice =
+				typeof appointment.booking?.service?.price === 'number'
+					? appointment.booking.service.price
+					: null;
+
+			return {
+				id: appointment.id, // Add the calendar item ID for updates
+				date: appointment.localStartTime
+					? new Date(appointment.localStartTime).toLocaleDateString('nl-NL', {
+							year: 'numeric',
+							month: 'long',
+							day: 'numeric'
+						})
+					: 'Onbekende datum',
+				time: appointment.localStartTime
+					? new Date(appointment.localStartTime).toLocaleTimeString('nl-NL', {
+							hour: '2-digit',
+							minute: '2-digit'
+						})
+					: 'Onbekende tijd',
+				duration:
+					appointment.localEndTime && appointment.localStartTime
+						? `${Math.round((new Date(appointment.localEndTime).getTime() - new Date(appointment.localStartTime).getTime()) / (1000 * 60))} min`
+						: '30 min',
+				assigned: {
+					id: appointment.member?.id || '1',
+					name: appointment.member?.user?.name || 'Medewerker',
+					image: appointment.member?.user?.image || ''
+				},
+				type: serviceName,
+				price: {
+					amount: servicePrice,
+					currency: 'EUR'
+				},
+				priceLabel:
+					typeof servicePrice === 'number'
+						? servicePrice.toLocaleString('nl-NL', {
+								minimumFractionDigits: 2,
+								maximumFractionDigits: 2
+							})
+						: 'Onbekend',
+				status: appointment.booking?.status || 'PENDING',
+				value: appointment.booking?.status || 'PENDING',
+				customer: {
+					name: appointment.customer?.name || 'Onbekende klant',
+					email: appointment.customer?.email || 'Geen email'
+				},
+				// Store original appointment data for updates
+				originalAppointment: appointment,
+				// Loading state for individual appointments
+				isUpdating: false
+			};
+		})
 	);
 
 	data.branchesState.onBranchChange(async (branch) => {
@@ -489,7 +504,7 @@
 	<Card.Header>
 		<Card.Title>
 			Afspraken
-			<span class="text-muted-foreground text-xs"> (Vandaag) </span>
+			<span class="text-muted-foreground text-xs"> (Komende 24 uur) </span>
 		</Card.Title>
 	</Card.Header>
 	<Card.Content>
@@ -546,7 +561,7 @@
 			{#each upcomingAppointments as item, i}
 				<Separator />
 				<div
-					class="afspraak-card hover:bg-sidebar-accent border-muted flex flex-col items-stretch gap-2 overflow-x-auto rounded-lg border py-2 transition-colors sm:flex-row"
+					class="afspraak-card hover:bg-sidebar-accent flex flex-col items-stretch gap-2 overflow-x-auto py-2 transition-colors sm:flex-row"
 				>
 					<div class="bg-secondary my-auto h-8 w-full shrink-0 rounded-md sm:h-30 sm:w-8"></div>
 					<div class="mobile-zigzag flex flex-1 flex-col items-stretch gap-2 py-2 sm:flex-row">
@@ -563,6 +578,10 @@
 								<p class="text-muted-foreground">Van:</p>
 								<p class="text-md">{item.duration}</p>
 							</div>
+							<div class="font-semibold">
+								<p class="text-muted-foreground">Afspraak:</p>
+								<p class="text-md">{item.type}</p>
+							</div>
 						</div>
 						<div
 							class="mobile-zigzag-item flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-start sm:gap-4"
@@ -576,7 +595,7 @@
 							</div>
 							<div class="font-semibold">
 								<p class="text-muted-foreground">Prijs:</p>
-								<p class="text-md">€ {item.price.amount}</p>
+								<p class="text-md">€ {item.priceLabel}</p>
 							</div>
 						</div>
 						<div
@@ -624,9 +643,9 @@
 		{:else}
 			<div class="flex h-40 flex-col items-center justify-center">
 				<CalendarDays class="text-muted-foreground mb-4 h-12 w-12" />
-				<p class="text-foreground text-lg font-medium">Geen afspraken voor vandaag</p>
+				<p class="text-foreground text-lg font-medium">Geen afspraken in de komende 24 uur</p>
 				<p class="text-muted-foreground max-w-md text-center text-sm">
-					Er zijn momenteel geen afspraken gepland voor vandaag. Probeer het later opnieuw.
+					Er zijn momenteel geen afspraken gepland in de komende 24 uur. Probeer het later opnieuw.
 				</p>
 			</div>
 		{/if}

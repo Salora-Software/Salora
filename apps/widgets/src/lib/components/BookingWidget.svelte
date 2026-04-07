@@ -23,9 +23,10 @@
 		saveContactToLocalStorage,
 		loadContactFromLocalStorage,
 		type BookingValues,
-		type BookingButton
+		type BookingButton,
+		type TRPCClient
 	} from '$lib/booking-utils.js';
-	import { tick } from 'svelte';
+	import { tick, getContext } from 'svelte';
 	import type { RouterOutput } from '@salora/trpc-types';
 	import { DateTime, type Interval } from 'luxon';
 	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
@@ -56,6 +57,8 @@
 	}
 
 	let { branch, collapsed = $bindable(false), cardWidth = $bindable(0) }: Props = $props();
+
+	const trpc = getContext<TRPCClient>('trpc');
 
 	const monthOptions = [
 		'Januari',
@@ -120,6 +123,7 @@
 				}
 
 				occupancyData = await loadOccupancy(
+					trpc,
 					new Date().getFullYear(),
 					new Date().getMonth() + 1,
 					bookingState.appointment.value,
@@ -209,7 +213,7 @@
 
 		selectedStep = bookingSteps[index];
 		if (!selectedStep) {
-			const result = await createBooking(bookingState, branch);
+			const result = await createBooking(trpc, bookingState, branch);
 			if (!result.success) {
 				bookingSteps = bookingSteps.map((step, i) => ({
 					...step,
@@ -394,6 +398,7 @@
 										).setZone(branch?.timeZone || 'utc', { keepLocalTime: true });
 
 										availabilityData = await loadDayAvailability(
+											trpc,
 											luxonDate,
 											bookingState.appointment.value,
 											branch?.id
@@ -422,6 +427,7 @@
 											bookingState.date.calendarValue = undefined;
 										}
 										occupancyData = await loadOccupancy(
+											trpc,
 											year,
 											month,
 											bookingState.appointment.value,
@@ -480,8 +486,7 @@
 						</div>
 						<div class="flex gap-2">
 							<Button
-								class="widget-button ml-auto bg-transparent hover:bg-opacity-10"
-								variant="outline"
+								class="widget-button ml-auto "
 								disabled={index === 0}
 								onclick={() => goToStep(index - 1, false)}>Terug</Button
 							>

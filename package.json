@@ -20,8 +20,10 @@
     "build:docker": "bun i && bun run --env-file=.env turbo run build:docker --filter=frontend",
     "build:frontend": "bun i && bun run --env-file=.env turbo run build --filter=frontend",
     "build:frontend:worker": "bun i && bun run --env-file=.env turbo run build:worker --filter=frontend",
+    "build:email:worker": "bun i && bun run --env-file=.env turbo run build:worker --filter=email-worker",
     "deploy:frontend": "cd apps/frontend && bunx wrangler deploy",
     "deploy:frontend:worker": "bun run build:frontend:worker && cd apps/frontend && bunx wrangler deploy",
+    "deploy:email": "cd apps/email-worker && bunx wrangler deploy",
     "dev": "bun run --env-file=.env turbo dev",
     "dev:frontend:worker": "DEPLOY_TARGET=worker bun run --env-file=.env turbo dev:worker --filter=frontend",
     "deploy": "bun run --env-file=.env.landing turbo run deploy --filter=landing",
@@ -48,6 +50,7 @@
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
     "layerchart": "^1.0.13",
+    "mysql2": "^3.20.0",
     "wrangler": "^4.78.0"
   },
   "overrides": {

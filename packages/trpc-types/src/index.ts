@@ -1,4 +1,3 @@
-// export type { AppRouter } from "../../../apps/frontend/src/lib/server/trpc/router";
 import type { AppRouter as Router } from "../../../apps/frontend/src/lib/server/trpc/router";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 

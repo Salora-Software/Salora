@@ -1,6 +1,7 @@
 import {
   sqliteTable,
   foreignKey,
+  uniqueIndex,
   text,
   real,
   integer,
@@ -510,7 +511,7 @@ export const template = sqliteTable(
     type: text().notNull(),
     target: text().notNull(),
     subject: text(),
-    body: text().notNull(),
+    body: text({ mode: "json" }).notNull(),
     enabled: integer({ mode: "boolean" }).default(true).notNull(),
   },
   (table) => [
@@ -585,6 +586,10 @@ export const communicationSetting = sqliteTable(
     enabled: integer({ mode: "boolean" }).notNull(),
   },
   (table) => [
+    uniqueIndex("communication_setting_org_type_idx").on(
+      table.organizationId,
+      table.type,
+    ),
     foreignKey({
       columns: [table.organizationId],
       foreignColumns: [organization.id],

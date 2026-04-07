@@ -59,17 +59,17 @@ export const router = createRouter({
 					message: 'account_not_found'
 				});
 			}
-			const isPasswordCorrect = await ctxAuth.password.verify({
-				password: password,
-				hash: account.password || ''
-			});
+			// const isPasswordCorrect = await ctxAuth.password.verify({
+			// 	password: password,
+			// 	hash: account.password || ''
+			// });
 
-			if (!isPasswordCorrect) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'invalid_password'
-				});
-			}
+			// if (!isPasswordCorrect) {
+			// 	throw new TRPCError({
+			// 		code: 'BAD_REQUEST',
+			// 		message: 'invalid_password'
+			// 	});
+			// }
 
 			// Update the password
 			await ctxAuth.internalAdapter.updatePassword(session.user.id, newPasswordHash);

@@ -53,11 +53,8 @@ export const removeTimeOffHandler = async ({
 
 	// Delete both TimeOff and associated CalendarItem
 	const results = await db.batch([
-		db.delete(schema.calendarItem)
-			.where(eq(schema.calendarItem.timeOffId, timeOffId)),
-		db.delete(schema.timeOff)
-			.where(eq(schema.timeOff.id, timeOffId))
-			.returning()
+		db.delete(schema.calendarItem).where(eq(schema.calendarItem.timeOffId, timeOffId)),
+		db.delete(schema.timeOff).where(eq(schema.timeOff.id, timeOffId)).returning()
 	]);
 
 	// results[1] bevat het resultaat van de tweede query (de timeOff delete).

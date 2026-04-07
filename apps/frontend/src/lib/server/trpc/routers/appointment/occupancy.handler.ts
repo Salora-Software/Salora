@@ -52,11 +52,19 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 
 	const daysResult = buildOccupancyDays(start, end, capacityPerWeekday, bookedMinutesPerDate).map(
 		(day) => {
+			const dayDate = DateTime.fromISO(day.date, { zone: timeZone });
+			if (dayDate < bookingCutoff.startOf('day')) {
+				return {
+					...day,
+					occupancyPercentage: 100,
+					available: false
+				};
+			}
+
 			if (day.date !== cutoffDay) {
 				return day;
 			}
 
-			const dayDate = DateTime.fromISO(day.date, { zone: timeZone });
 			const dayStart = dayDate.startOf('day');
 			const dayEnd = dayDate.endOf('day');
 			const remainingStart = bookingCutoff > dayStart ? bookingCutoff : dayStart;

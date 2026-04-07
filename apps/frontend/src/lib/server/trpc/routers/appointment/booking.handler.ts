@@ -10,10 +10,10 @@ import {
 } from '$lib/services/appointment-context.service';
 import type { CreateBookingInput } from './booking.schema';
 import type { PortalContext } from '../../context';
+import type { EmailQueueMessage } from '@salora/mailer';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
 import { env } from '$lib/server/env';
-import { notificationService } from '$lib/server/NotificationService';
 
 type CreateBookingOpts = {
 	ctx: PortalContext;
@@ -22,7 +22,7 @@ type CreateBookingOpts = {
 
 export const createBookingHandler = async ({
 	input,
-	ctx: { db, headers, auth, url }
+	ctx: { db, headers, auth, url, emailQueue }
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
 	// 1. Haal de globale organisatie- en service data op voor deze dag
@@ -240,50 +240,35 @@ export const createBookingHandler = async ({
 		user: emp.user
 	}));
 
-	await notificationService.sendEmailNotification({
-		type: organization.appointmentStatus === 'CONFIRMED' ? 'EMAIL_APPROVED' : 'EMAIL_CREATED',
-		to: contact.email,
-		employeeEmail: employeeUser?.email || '',
-		variables: {
-			customer: {
-				name: customer?.name,
-				email: customer?.email,
-				phone: customer?.phone,
-				panel
-			},
-			booking: {
-				name: service.name,
-				employee: employeeUser?.name || '',
-				employeeId: bestEmployee.id,
-				serviceId: service.id,
-				serviceDuration: service.duration,
-				servicePrice: service.price,
-				serviceDescription: service.description,
-				panel,
-				start: {
-					date: requestedStart.toFormat('yyyy-MM-dd'),
-					year: requestedStart.year,
-					month: requestedStart.month,
-					day: requestedStart.day,
-					hour: requestedStart.hour.toString().padStart(2, '0'),
-					minute: requestedStart.minute.toString().padStart(2, '0')
-				},
-				end: {
-					date: requestedEnd.toFormat('yyyy-MM-dd'),
-					year: requestedEnd.year,
-					month: requestedEnd.month,
-					day: requestedEnd.day,
-					hour: requestedEnd.hour.toString().padStart(2, '0'),
-					minute: requestedEnd.minute.toString().padStart(2, '0')
-				}
-			}
-		},
-		branch: {
-			...organization,
-			members: membersForNotification,
-			services: [service]
-		}
-	});
+	if (emailQueue) {
+		const templateType =
+			booking.status === 'CONFIRMED'
+				? 'EMAIL_APPROVED'
+				: booking.status === 'CANCELLED'
+					? 'EMAIL_CANCELED'
+					: booking.status === 'DENIED'
+						? 'EMAIL_DENIED'
+						: 'EMAIL_CREATED';
+
+		const baseJob = {
+			version: 'v2' as const,
+			templateType,
+			organizationId,
+			bookingId: booking.id
+		};
+
+		const customerJob: EmailQueueMessage = {
+			...baseJob,
+			targetAudience: 'CUSTOMER'
+		};
+
+		const employeeJob: EmailQueueMessage = {
+			...baseJob,
+			targetAudience: 'EMPLOYEE'
+		};
+
+		await Promise.all([emailQueue.send(customerJob), emailQueue.send(employeeJob)]);
+	}
 
 	return { booking, calendarItem };
 };

@@ -3,7 +3,6 @@ import { router as createRouter, portalProcedure } from '../../context';
 import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { getOrganization } from '$lib/server/general';
-import { notificationService } from '$lib/server/NotificationService';
 import { DateTime, Interval } from 'luxon';
 import { env } from '$lib/server/env';
 
@@ -26,7 +25,6 @@ export const router = createRouter({
 	}),
 
 	sendMagicLink: portalProcedure
-
 		.input(
 			z.object({
 				email: z.string().email(),
@@ -94,40 +92,6 @@ export const router = createRouter({
 			// Send magic link email using custom template
 			const encode = encodeURIComponent;
 			const url = `${env?.PUBLIC_FRONTEND_URL}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${email}`)}`;
-			await notificationService.sendEmailNotification({
-				to: email,
-				branch: organization,
-				variables: {
-					magicLink: url,
-					customer: {
-						name: customer.name || '',
-						email: customer.email || ''
-					}
-				},
-				customTemplate: {
-					subject: 'Je verificatie link',
-					body: `
-						<html>
-							<body style="font-family: Arial, sans-serif; color: #222;">
-								<div style="max-width: 480px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 32px; background: #fafbfc;">
-									<h2 style="color: #2d7ff9;">Hallo {{customer.name}},</h2>
-									<p>
-										Klik op de onderstaande knop om je e-mailadres te verifiëren en in te loggen op je account:
-									</p>
-									<p style="text-align: center; margin: 32px 0;">
-										<a href="{{magicLink}}" style="background: #2d7ff9; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-											Verifieer &amp; Log in
-										</a>
-									</p>
-									<p style="font-size: 14px; color: #888;">
-										Heb je deze aanvraag niet gedaan? Negeer deze e-mail dan gerust.
-									</p>
-								</div>
-							</body>
-						</html>
-					`
-				}
-			});
 			return { success: true };
 		}),
 	cancelAppointment: portalProcedure
@@ -171,45 +135,45 @@ export const router = createRouter({
 				zone: organization.timeZone || 'UTC'
 			});
 			const dateEnd = DateTime.fromJSDate(calendarItem.endTime);
-			await notificationService.sendEmailNotification({
-				type: 'EMAIL_CANCELED',
-				to: booking.customer?.email || '',
-				employeeEmail: booking.employee?.user.email,
-				variables: {
-					customer: {
-						name: booking.customer?.name || '',
-						email: booking.customer?.email || '',
-						phone: booking.customer?.phone || ''
-					},
-					booking: {
-						name: booking.service.name,
-						employee: booking.employee?.user.name,
-						employeeId: booking.employeeId,
-						serviceId: booking.serviceId,
-						serviceDuration: booking.service.duration,
-						servicePrice: booking.service.price,
-						serviceDescription: booking.service.description,
-						start: {
-							date: dateStart.toFormat('yyyy-MM-dd'),
-							year: dateStart.year,
-							month: dateStart.month,
-							day: dateStart.day,
-							hour: dateStart.hour.toString().padStart(2, '0'),
-							minute: dateStart.minute.toString().padStart(2, '0')
-						},
-						end: {
-							date: dateEnd.toFormat('yyyy-MM-dd'),
-							year: dateEnd.year,
-							month: dateEnd.month,
-							day: dateEnd.day,
-							hour: dateEnd.hour.toString().padStart(2, '0'),
-							minute: dateEnd.minute.toString().padStart(2, '0')
-						},
-						isCancelled: true
-					}
-				},
-				branch: organization
-			});
+			// await notificationService.sendEmailNotification({
+			// 	type: 'EMAIL_CANCELED',
+			// 	to: booking.customer?.email || '',
+			// 	employeeEmail: booking.employee?.user.email,
+			// 	variables: {
+			// 		customer: {
+			// 			name: booking.customer?.name || '',
+			// 			email: booking.customer?.email || '',
+			// 			phone: booking.customer?.phone || ''
+			// 		},
+			// 		booking: {
+			// 			name: booking.service.name,
+			// 			employee: booking.employee?.user.name,
+			// 			employeeId: booking.employeeId,
+			// 			serviceId: booking.serviceId,
+			// 			serviceDuration: booking.service.duration,
+			// 			servicePrice: booking.service.price,
+			// 			serviceDescription: booking.service.description,
+			// 			start: {
+			// 				date: dateStart.toFormat('yyyy-MM-dd'),
+			// 				year: dateStart.year,
+			// 				month: dateStart.month,
+			// 				day: dateStart.day,
+			// 				hour: dateStart.hour.toString().padStart(2, '0'),
+			// 				minute: dateStart.minute.toString().padStart(2, '0')
+			// 			},
+			// 			end: {
+			// 				date: dateEnd.toFormat('yyyy-MM-dd'),
+			// 				year: dateEnd.year,
+			// 				month: dateEnd.month,
+			// 				day: dateEnd.day,
+			// 				hour: dateEnd.hour.toString().padStart(2, '0'),
+			// 				minute: dateEnd.minute.toString().padStart(2, '0')
+			// 			},
+			// 			isCancelled: true
+			// 		}
+			// 	},
+			// 	branch: organization
+			// });
 			return { success: true };
 		})
 });

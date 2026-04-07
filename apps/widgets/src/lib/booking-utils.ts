@@ -1,9 +1,11 @@
-import { trpc } from '$lib/trpc.js';
 import { toast } from 'svelte-sonner';
 import type { DateValue } from '@internationalized/date';
 import { DateTime, Interval } from 'luxon';
-import type { RouterOutput } from '@salora/trpc-types';
+import type { RouterOutput, AppRouter } from '@salora/trpc-types';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import type { createTRPCProxyClient } from '@trpc/client';
+
+export type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
 
 export interface BookingValues {
 	appointment: {
@@ -39,6 +41,7 @@ const occupancyCache = new Map<string, RouterOutput['appointment']['getOccupancy
 const availabilityCache = new Map<string, RouterOutput['appointment']['getAvailability']>();
 
 export async function loadOccupancy(
+	trpc: TRPCClient,
 	year: number,
 	month: number,
 	serviceId: string,
@@ -53,7 +56,7 @@ export async function loadOccupancy(
 
 	try {
 		const response = await trpc.appointment.getOccupancy.query({
-			branchId,
+			branchId: branchId,
 			serviceId,
 			range: Interval.fromDateTimes(start, end).toISO()
 		});
@@ -66,6 +69,7 @@ export async function loadOccupancy(
 }
 
 export async function loadDayAvailability(
+	trpc: TRPCClient,
 	date: DateTime,
 	serviceId: string,
 	branchId: string
@@ -88,14 +92,12 @@ export async function loadDayAvailability(
 }
 
 export async function createBooking(
+	trpc: TRPCClient,
 	values: BookingValues,
 	branch: any
 ): Promise<{ success: boolean; employeeId?: string }> {
 	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
-	if (!parsedPhone || !parsedPhone.isValid()) {
-		toast.error('Please provide a valid phone number.');
-		return { success: false };
-	}
+
 	let date = values.date.timeValue?.start;
 	if (!date) {
 		toast.error('Please select a valid date and time.');
@@ -109,7 +111,7 @@ export async function createBooking(
 			date: date.toJSDate(),
 			contact: {
 				email: values.contact.email,
-				phone: parsedPhone.number,
+				phone: parsedPhone?.number,
 				firstName: values.contact.firstName,
 				lastName: values.contact.lastName,
 				notes: values.contact.notes

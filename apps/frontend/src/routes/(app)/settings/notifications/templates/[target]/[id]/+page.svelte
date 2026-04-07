@@ -1,5 +1,11 @@
 <script lang="ts">
 	import { renderEmail, AppointmentEmailSchema } from '@salora/emails';
+	import {
+		getAllowedTemplateVariablePaths,
+		validateTemplateRecordVariables,
+		validateTemplateVariables,
+		type TemplateVariableAudience
+	} from '@salora/emails';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -24,6 +30,7 @@
 	let enabled = $state(false);
 	let testEmail = $state('');
 	let openTestEmail = $state(false);
+	let variableWarnings = $state<string[]>([]);
 
 	const templateNames: Record<string, string> = {
 		EMAIL_APPROVED: 'Afspraak bevestigd',
@@ -94,7 +101,6 @@
 
 	$effect(() => {
 		renderPending = true;
-		let start = Date.now();
 		const props = mailProps;
 		(async () => {
 			try {
@@ -105,15 +111,40 @@
 		})();
 	});
 
+	const allowedVariablePaths = $derived(
+		getAllowedTemplateVariablePaths((target as TemplateVariableAudience) || 'CUSTOMER')
+	);
+
+	const placeholderExamples = $derived(allowedVariablePaths.slice(0, 6));
+
+	$effect(() => {
+		const subjectValidation = validateTemplateVariables(subject, allowedVariablePaths);
+		const bodyValidation = validateTemplateRecordVariables(formValues, allowedVariablePaths);
+		const unknown = [...new Set([...subjectValidation.unknown, ...bodyValidation.unknown])];
+		variableWarnings = unknown.map(
+			(path) =>
+				`Onbekende variabele: {{ ${path} }}. Gebruik dot-path variabelen zoals {{ customer.name }}.`
+		);
+	});
+
 	async function handleSave() {
 		loading = true;
 		try {
-			await trpc.v1.authenticated.communication.upsertTemplate.mutate({
+			if (variableWarnings.length > 0) {
+				toast.warning('Template opgeslagen met waarschuwingen over onbekende variabelen');
+			}
+
+			const result = await trpc.v2.authenticated.communication.upsertTemplate.mutate({
 				type: templateId!,
 				subject,
 				body: JSON.stringify(formValues),
 				target: target as any
 			});
+
+			if (Array.isArray(result?.warnings) && result.warnings.length > 0) {
+				result.warnings.forEach((warning: string) => toast.warning(warning));
+			}
+
 			toast.success('Template is succesvol bijgewerkt');
 			// Invalidate shared query → layout sidebar + page both refresh
 			await data.queryClient.invalidateQueries({ queryKey: ['notificationTemplates'] });
@@ -124,7 +155,7 @@
 
 	async function toggleStatus(e: boolean) {
 		try {
-			await trpc.v1.authenticated.communication.updateTemplateStatus.mutate({
+			await trpc.v2.authenticated.communication.updateTemplateStatus.mutate({
 				type: templateId!,
 				target: target as any,
 				enabled: e
@@ -167,7 +198,9 @@
 						class="mt-2 w-full"
 						placeholder="Voer een e-mailadres in"
 						type="email"
+						name="email"
 						bind:value={testEmail}
+						autocomplete="email"
 						disabled={loading}
 					/>
 					<p class="text-muted-foreground mt-2 text-sm">
@@ -255,9 +288,7 @@
 			</div>
 
 			{#each Object.entries(AppointmentEmailSchema) as [key, config]}
-				<div
-					class="space-y-2 {config.type === 'editor' ? 'flex min-h-[300px] flex-1 flex-col' : ''}"
-				>
+				<div class="space-y-2 {config.type === 'editor' ? 'flex min-h-75 flex-1 flex-col' : ''}">
 					<Label for={key}>{config.label}</Label>
 					{#if loadingTemplate}
 						<Skeleton class="h-10 w-full {config.type === 'editor' ? 'flex-1' : ''}" />
@@ -275,8 +306,20 @@
 			{/each}
 
 			<p class="text-muted-foreground text-xs">
-				Je kunt variabelen gebruiken zoals {'{{ naam }}'}, {'{{ datum }}'}, {'{{ tijd }}'}.
+				Gebruik dot-path variabelen zoals {#each placeholderExamples as path, index}{'{{ ' +
+						path +
+						' }}'}
+					{index < placeholderExamples.length - 1 ? ', ' : '.'}
+				{/each}
 			</p>
+
+			{#if variableWarnings.length > 0}
+				<div class="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+					{#each variableWarnings as warning}
+						<p>{warning}</p>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 		<!-- Right Column: Preview -->

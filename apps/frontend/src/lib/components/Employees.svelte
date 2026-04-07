@@ -95,7 +95,7 @@
 			reason: '',
 			loading: false,
 			popoverOpen: false,
-			items: [] as any[]
+			items: [] as RouterOutput['v2']['authenticated']['employee']['getTimeOffs']
 		}
 	});
 	let sliderContent: {
@@ -238,8 +238,7 @@
 				memberId: values.sheet.editing,
 				startTime: start,
 				endTime: end,
-				reason: values.timeOff.reason,
-				type: 'LEAVE'
+				reason: values.timeOff.reason
 			});
 
 			toast.success('Verlof toegevoegd');
@@ -787,48 +786,50 @@ md:grid-cols-1  `,
 													<Table.Cell>
 														<div class="flex flex-col">
 															<span class="font-medium text-black">
-																{#if DateTime.fromJSDate(item.calendarItem.startTime).hasSame(DateTime.fromJSDate(item.calendarItem.endTime), 'day')}
-																	{DateTime.fromJSDate(item.calendarItem.startTime).toLocaleString(
-																		DateTime.DATE_MED
-																	)}
+																{#if DateTime.fromJSDate(item.calendarItem?.startTime || new Date()).hasSame(DateTime.fromJSDate(item.calendarItem?.endTime || new Date()), 'day')}
+																	{DateTime.fromJSDate(
+																		item.calendarItem?.startTime || new Date()
+																	).toLocaleString(DateTime.DATE_MED)}
 																	<span class="text-muted-foreground ml-1 text-xs font-normal">
-																		({DateTime.fromJSDate(item.calendarItem.startTime).toFormat(
-																			'HH:mm'
-																		)} - {DateTime.fromJSDate(item.calendarItem.endTime).toFormat(
-																			'HH:mm'
-																		)})
+																		({DateTime.fromJSDate(
+																			item.calendarItem?.startTime || new Date()
+																		).toFormat('HH:mm')} - {DateTime.fromJSDate(
+																			item.calendarItem?.endTime || new Date()
+																		).toFormat('HH:mm')})
 																	</span>
 																{:else}
-																	{DateTime.fromJSDate(item.calendarItem.startTime).toFormat(
-																		'dd MMM'
-																	)}
+																	{DateTime.fromJSDate(
+																		item.calendarItem?.startTime || new Date()
+																	).toFormat('dd MMM')}
 																	<span class="text-muted-foreground mx-1 text-xs font-normal">
-																		({DateTime.fromJSDate(item.calendarItem.startTime).toFormat(
-																			'HH:mm'
-																		)})
+																		({DateTime.fromJSDate(
+																			item.calendarItem?.startTime || new Date()
+																		).toFormat('HH:mm')})
 																	</span>
 																	-
-																	{DateTime.fromJSDate(item.calendarItem.endTime).toFormat(
-																		'dd MMM'
-																	)}
+																	{DateTime.fromJSDate(
+																		item.calendarItem?.endTime || new Date()
+																	).toFormat('dd MMM')}
 																	<span class="text-muted-foreground ml-1 text-xs font-normal">
-																		({DateTime.fromJSDate(item.calendarItem.endTime).toFormat(
-																			'HH:mm'
-																		)})
+																		({DateTime.fromJSDate(
+																			item.calendarItem?.endTime || new Date()
+																		).toFormat('HH:mm')})
 																	</span>
 																{/if}
 															</span>
 															<span class="text-muted-foreground text-xs font-normal">
-																{DateTime.fromJSDate(item.calendarItem.startTime).toFormat('yyyy')}
+																{DateTime.fromJSDate(
+																	item.calendarItem?.startTime || new Date()
+																).toFormat('yyyy')}
 															</span>
 														</div>
 													</Table.Cell>
-													<Table.Cell>{item.reason || 'Geen reden'}</Table.Cell>
+													<Table.Cell>{item.timeOff.reason || 'Geen reden'}</Table.Cell>
 													<Table.Cell class="text-right">
 														<Button
 															variant="ghost"
 															size="icon"
-															onclick={() => removeTimeOff(item.id)}
+															onclick={() => removeTimeOff(item.timeOff.id)}
 															class="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-700"
 														>
 															<Trash2 size={16} />

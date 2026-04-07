@@ -7,6 +7,7 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		DB: D1Database;
+		EMAIL_QUEUE: Queue;
 		ASSETS: Fetcher;
 		DEPLOY_TARGET: "worker";
 		SKIP_DEPENDENCY_INSTALL: "true";

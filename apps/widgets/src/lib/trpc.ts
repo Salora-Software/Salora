@@ -1,5 +1,5 @@
 // src/lib/trpc.ts
-import { createTRPCProxyClient, httpLink, type TRPCLink } from '@trpc/client';
+import { createTRPCProxyClient, httpLink, type TRPCClient, type TRPCLink } from '@trpc/client';
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
 import type { AppRouter, RouterOutput } from '@salora/trpc-types';
@@ -8,8 +8,8 @@ import { observable } from '@trpc/server/observable';
 import { t } from './translation';
 import superjson from './superjson';
 
-type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
-const DEFAULT_BACKEND_URL = 'http://localhost:5173';
+export type TRPCRouterClient = TRPCClient<AppRouter>;
+const DEFAULT_BACKEND_URL = 'https://app.salora.app';
 
 const normalizeBackendUrl = (url?: string | null): string => {
 	if (!url) return DEFAULT_BACKEND_URL;
@@ -18,7 +18,7 @@ const normalizeBackendUrl = (url?: string | null): string => {
 
 const resolvedBackendUrl = normalizeBackendUrl();
 
-export const createTrpcClient = (backendUrl?: string): TRPCClient =>
+export const createTrpcClient = (backendUrl?: string): TRPCRouterClient =>
 	createTRPCProxyClient<AppRouter>({
 		links: [
 			customLink,
@@ -63,8 +63,8 @@ export const customLink: TRPCLink<AppRouter> = () => {
 		});
 	};
 };
-export const trpc: TRPCClient = createTrpcClient(resolvedBackendUrl);
-export const trpcS: TRPCClient = createTRPCProxyClient<AppRouter>({
+export const trpc: TRPCRouterClient = createTrpcClient(resolvedBackendUrl);
+export const trpcS: TRPCRouterClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpLink({
 			url: `${resolvedBackendUrl}/api/trpc`,
@@ -72,7 +72,7 @@ export const trpcS: TRPCClient = createTRPCProxyClient<AppRouter>({
 		})
 	]
 }); // Server fetch without toast
-export const trpcOnServer = (fetch: FetchEsque, backendUrl?: string): TRPCClient =>
+export const trpcOnServer = (fetch: FetchEsque, backendUrl?: string): TRPCRouterClient =>
 	createTRPCProxyClient<AppRouter>({
 		links: [
 			customLink,

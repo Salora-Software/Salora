@@ -8,7 +8,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { NumberInput } from '$lib/components/ui/number-input/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { trpcQuery } from '$lib/trpc.js';
+	import { trpc, trpcQuery } from '$lib/trpc.js';
 	let { data } = $props();
 
 	let activeBranch = $state(data.branchesState.getActiveBranch());
@@ -197,6 +197,14 @@
 		Opslaan
 	{/if}
 </Button>
+
+<!-- <Button
+	onclick={() => {
+		trpc.v2.authenticated.import.importAmeliaData.mutate({
+			organizationId: activeBranch?.id || ''
+		});
+	}}>Importeren</Button
+> -->
 
 <style>
 	@keyframes fadeOut {

@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
-import { createDb, schema, type DatabaseType } from '@salora/database';
+import { schema, type DatabaseType } from '@salora/database';
 
 // 1. Exporteer de factory-functie
 export const createAuth = (db: DatabaseType, origin: string) => {

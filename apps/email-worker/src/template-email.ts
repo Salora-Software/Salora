@@ -311,7 +311,7 @@ export const resolveTemplateEmail = async (
 		template?.subject || getDefaultSubject(payload.templateType);
 	const subject = replaceTemplateVariables(subjectTemplate, variables);
 
-	const buttonLink = await generateDirectMagicLink(auth, recipientEmail, customerName);
+	const buttonLink = await generateDirectMagicLink(auth, { email: recipientEmail, name: customerName, callback: '/appointments/' + payload.organizationId });
 	const mailProps = {
 		companyName: toStringValue(interpolatedBody.companyName, organization.name),
 		companyAddress: toStringValue(

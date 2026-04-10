@@ -76,7 +76,8 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 			customLink,
 			httpLink({
 				url: '/api/trpc',
-				transformer: SuperJSON
+				transformer: SuperJSON,
+				fetch
 			})
 		]
 	});

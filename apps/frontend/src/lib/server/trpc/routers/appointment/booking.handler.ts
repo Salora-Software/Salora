@@ -22,9 +22,11 @@ type CreateBookingOpts = {
 
 export const createBookingHandler = async ({
 	input,
-	ctx: { db, headers, auth, url, emailQueue }
+	ctx: { db, auth, req, emailQueue }
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
+	const url = new URL(req.url);
+
 	// 1. Haal de globale organisatie- en service data op voor deze dag
 	const initialSpan = getDaySpanForJsDate(date);
 
@@ -216,7 +218,7 @@ export const createBookingHandler = async ({
 			customerEmail: contact.email,
 			employeeEmail: employeeUser?.email
 		},
-		origin: headers.get('origin') || ''
+		origin: url.origin || ''
 	});
 
 	return { booking, calendarItem };

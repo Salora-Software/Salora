@@ -6,6 +6,7 @@ import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpdateCalendarItemInput } from './update-calendar-item.schema';
 import { enqueueTemplateEmail } from '../../../../../email-queue';
+import { url } from 'better-auth';
 
 export const updateCalendarItemHandler = async ({
 	input: { id, startTime, endTime },
@@ -19,6 +20,9 @@ export const updateCalendarItemHandler = async ({
 	input: UpdateCalendarItemInput;
 	ctx: PrivateContext;
 }) => {
+	const url = new URL(req.url);
+
+
 	const existingItem = await db.query.calendarItem.findFirst({
 		where: (calendarItem, { eq }) => eq(calendarItem.id, id),
 		with: {
@@ -80,7 +84,7 @@ export const updateCalendarItemHandler = async ({
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
 				},
-				origin: req.headers.get('origin') || ''
+				origin: url.origin || ''
 			});
 		}
 	}

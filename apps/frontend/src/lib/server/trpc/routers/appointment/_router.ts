@@ -33,6 +33,7 @@ export const router = createRouter({
 	cancelAppointment: portalProcedure
 		.input(z.object({ appointmentId: z.string() }))
 		.mutation(async ({ input: { appointmentId, branchId }, ctx }) => {
+			const url = new URL(ctx.req.url);
 			const customer = ctx.customer as any;
 			const session = ctx.session as any;
 
@@ -106,7 +107,7 @@ export const router = createRouter({
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
 				},
-				origin: ctx.headers.get('origin') || ''
+				origin: url.origin
 			});
 
 			return { success: true };

@@ -21,6 +21,7 @@ export const upsertCalendarItemHandler = async ({
 }) => {
 	const { title, startTime, endTime, notes, type, organizationId } = input;
 	const id = 'id' in input ? input.id : undefined;
+	const url = new URL(req.url);
 
 	const organization = await getOrganization(db, organizationId);
 	if (!organization) {
@@ -173,7 +174,7 @@ export const upsertCalendarItemHandler = async ({
 								? newMember.user.email
 								: booking.employee?.user?.email
 					},
-					origin: req.headers.get('origin') || ''
+					origin: url.origin
 				});
 			}
 		}

@@ -12,6 +12,7 @@ export const updateCalendarItemHandler = async ({
 	ctx: {
 		session: { user },
 		db,
+		req,
 		emailQueue
 	}
 }: {
@@ -78,7 +79,8 @@ export const updateCalendarItemHandler = async ({
 				targets: {
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
-				}
+				},
+				origin: req.headers.get('origin') || ''
 			});
 		}
 	}

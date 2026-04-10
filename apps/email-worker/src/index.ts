@@ -37,7 +37,7 @@ const processQueueMessage = async (
 		const renderedEmail = await resolveTemplateEmail(payload, env);
 
 		if (!renderedEmail) {
-			console.info("Email skipped by template resolver", {
+			console.error("Email skipped by template resolver", {
 				organizationId,
 				templateType: payload.templateType,
 				targetAudience: payload.targetAudience ?? "CUSTOMER",

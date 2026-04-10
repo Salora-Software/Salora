@@ -12,6 +12,7 @@ export const upsertCalendarItemHandler = async ({
 	ctx: {
 		session: { user },
 		db,
+		req,
 		emailQueue
 	}
 }: {
@@ -171,7 +172,8 @@ export const upsertCalendarItemHandler = async ({
 							memberChanged && newMember?.user?.email
 								? newMember.user.email
 								: booking.employee?.user?.email
-					}
+					},
+					origin: req.headers.get('origin') || ''
 				});
 			}
 		}

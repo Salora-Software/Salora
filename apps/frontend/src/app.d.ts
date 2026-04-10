@@ -1,5 +1,5 @@
 /// <reference path="../worker-configuration.d.ts" />
-import type { Auth } from '$lib/server/auth';
+import type { Auth } from '@salora/auth';
 import type { DatabaseType } from '@salora/database';
 import type { EmailQueueMessage } from '@salora/mailer';
 

@@ -1,4 +1,4 @@
-import { createAuth } from '$lib/server/auth'; // Path to your auth file
+import { createAuth } from '@salora/auth';
 import { createDb } from '@salora/database';
 import type { Handle } from '@sveltejs/kit';
 import { svelteKitHandler } from 'better-auth/svelte-kit';

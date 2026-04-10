@@ -5,7 +5,7 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpsertCalendarItemInput } from './upsert-calendar-item.schema';
-import { enqueueTemplateEmail } from './email-queue';
+import { enqueueTemplateEmail } from '../../../../../email-queue';
 
 export const upsertCalendarItemHandler = async ({
 	input,
@@ -173,78 +173,6 @@ export const upsertCalendarItemHandler = async ({
 								: booking.employee?.user?.email
 					}
 				});
-
-				// await notificationService
-				// 	.sendEmailNotification({
-				// 		type: templateType,
-				// 		to: booking.customer.email,
-				// 		employeeEmail:
-				// 			memberChanged && newMember ? newMember.user.email : booking.employee?.user.email,
-				// 		variables: {
-				// 			customer: {
-				// 				name: booking.customer.name,
-				// 				email: booking.customer.email,
-				// 				phone: booking.customer.phone
-				// 			},
-				// 			booking: {
-				// 				name: booking.service.name,
-				// 				employee: memberChanged && newMember ? newMember.user.name : booking.employee?.user.name,
-				// 				employeeId: memberChanged && newEmployeeId ? newEmployeeId : booking.employeeId,
-				// 				serviceId: booking.serviceId,
-				// 				serviceDuration: booking.service.duration,
-				// 				servicePrice: booking.service.price,
-				// 				serviceDescription: booking.service.description,
-				// 				start: {
-				// 					date: dateStart.toFormat('yyyy-MM-dd'),
-				// 					year: dateStart.year,
-				// 					month: dateStart.month,
-				// 					day: dateStart.day,
-				// 					hour: dateStart.hour.toString().padStart(2, '0'),
-				// 					minute: dateStart.minute.toString().padStart(2, '0')
-				// 				},
-				// 				end: {
-				// 					date: dateEnd.toFormat('yyyy-MM-dd'),
-				// 					year: dateEnd.year,
-				// 					month: dateEnd.month,
-				// 					day: dateEnd.day,
-				// 					hour: dateEnd.hour.toString().padStart(2, '0'),
-				// 					minute: dateEnd.minute.toString().padStart(2, '0')
-				// 				},
-				// 				...(timeChanged && originalStartTime && originalEndTime
-				// 					? {
-				// 						originalStart: {
-				// 							date: originalStartTime.toFormat('yyyy-MM-dd'),
-				// 							year: originalStartTime.year,
-				// 							month: originalStartTime.month,
-				// 							day: originalStartTime.day,
-				// 							hour: originalStartTime.hour.toString().padStart(2, '0'),
-				// 							minute: originalStartTime.minute.toString().padStart(2, '0')
-				// 						},
-				// 						originalEnd: {
-				// 							date: originalEndTime.toFormat('yyyy-MM-dd'),
-				// 							year: originalEndTime.year,
-				// 							month: originalEndTime.month,
-				// 							day: originalEndTime.day,
-				// 							hour: originalEndTime.hour.toString().padStart(2, '0'),
-				// 							minute: originalEndTime.minute.toString().padStart(2, '0')
-				// 						},
-				// 						isRescheduled: true
-				// 					}
-				// 					: {}),
-				// 				...(memberChanged
-				// 					? {
-				// 						originalEmployee: booking.employee?.user.name,
-				// 						newEmployee: newMember?.user.name,
-				// 						isStaffReassigned: true
-				// 					}
-				// 					: {})
-				// 			}
-				// 		},
-				// 		branch: organization
-				// 	})
-				// 	.catch((error) => {
-				// 		console.error('Error sending notification email:', error);
-				// 	});
 			}
 		}
 	} else {

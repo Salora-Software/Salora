@@ -3,6 +3,7 @@ import { renderEmail } from "@salora/emails";
 import type { EmailTargetAudience, TemplateEmailQueueMessage } from "@salora/mailer";
 import { and, eq } from "drizzle-orm";
 import type { Env } from "./types";
+import { createAuth, generateDirectMagicLink } from "@salora/auth";
 
 interface ResolvedTemplateEmail {
 	senderName: string;
@@ -172,6 +173,7 @@ export const resolveTemplateEmail = async (
 	env: Env,
 ): Promise<ResolvedTemplateEmail | null> => {
 	const db = createDb(env.DB as any);
+	const auth = createAuth(db, payload.origin);
 
 	const organization = await db.query.organization.findFirst({
 		where: eq(schema.organization.id, payload.organizationId),
@@ -305,6 +307,11 @@ export const resolveTemplateEmail = async (
 			? (interpolatedBody.details as Record<string, unknown>)
 			: {};
 
+	const subjectTemplate =
+		template?.subject || getDefaultSubject(payload.templateType);
+	const subject = replaceTemplateVariables(subjectTemplate, variables);
+
+	const buttonLink = await generateDirectMagicLink(auth, recipientEmail, customerName);
 	const mailProps = {
 		companyName: toStringValue(interpolatedBody.companyName, organization.name),
 		companyAddress: toStringValue(
@@ -326,7 +333,7 @@ export const resolveTemplateEmail = async (
 		buttonText: toStringValue(interpolatedBody.buttonText, "Bekijk afspraak"),
 		buttonLink: toStringValue(
 			interpolatedBody.buttonLink,
-			"https://salora.app",
+			buttonLink,
 		),
 		details: {
 			date: toStringValue(
@@ -344,9 +351,6 @@ export const resolveTemplateEmail = async (
 		},
 	};
 
-	const subjectTemplate =
-		template?.subject || getDefaultSubject(payload.templateType);
-	const subject = replaceTemplateVariables(subjectTemplate, variables);
 	const body = await renderEmail(
 		getTemplateName(payload.templateType, targetAudience),
 		mailProps as any,

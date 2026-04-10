@@ -6,6 +6,7 @@ import {
 import { getCredentials } from "./credentials";
 import type { Env, QueueBatch } from "./types";
 import { resolveTemplateEmail } from "./template-email";
+import { createAuth } from "@salora/auth";
 
 const DEFAULT_SENDER = "noreply@salora.app";
 

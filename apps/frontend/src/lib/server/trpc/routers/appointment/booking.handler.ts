@@ -218,7 +218,7 @@ export const createBookingHandler = async ({
 			customerEmail: contact.email,
 			employeeEmail: employeeUser?.email
 		},
-		origin: url.origin || ''
+		origin: req.headers.get("host") || ''
 	});
 
 	return { booking, calendarItem };

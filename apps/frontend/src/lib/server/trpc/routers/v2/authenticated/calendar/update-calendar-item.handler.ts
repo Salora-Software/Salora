@@ -84,7 +84,7 @@ export const updateCalendarItemHandler = async ({
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
 				},
-				origin: url.origin || ''
+				origin: req.headers.get("host") || ''
 			});
 		}
 	}

@@ -174,7 +174,7 @@ export const upsertCalendarItemHandler = async ({
 								? newMember.user.email
 								: booking.employee?.user?.email
 					},
-					origin: url.origin
+					origin: req.headers.get("host") || ''
 				});
 			}
 		}

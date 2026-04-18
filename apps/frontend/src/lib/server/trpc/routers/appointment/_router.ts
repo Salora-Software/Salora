@@ -107,7 +107,7 @@ export const router = createRouter({
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
 				},
-				origin: ctx.req.headers.get("host") || ''
+				origin: url.origin || ''
 			});
 
 			return { success: true };

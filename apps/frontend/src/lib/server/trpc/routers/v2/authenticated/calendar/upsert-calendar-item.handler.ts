@@ -92,7 +92,8 @@ export const upsertCalendarItemHandler = async ({
 				title: data.title,
 				startTime: data.startTime,
 				endTime: data.endTime,
-				employeeId: type === 'BOOKING' && 'memberId' in input && input.memberId ? input.memberId : undefined,
+				employeeId:
+					type === 'BOOKING' && 'memberId' in input && input.memberId ? input.memberId : undefined,
 				notes: data.notes,
 				type: data.type as schema.CalendarItemTypes
 			})
@@ -104,8 +105,12 @@ export const upsertCalendarItemHandler = async ({
 				.set({
 					status: data.status as schema.BookingStatuses,
 					notes: data.notes,
-					...(type === 'BOOKING' && 'serviceId' in input && input.serviceId ? { serviceId: input.serviceId } : {}),
-					...(type === 'BOOKING' && 'memberId' in input && input.memberId ? { employeeId: input.memberId } : {}),
+					...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
+						? { serviceId: input.serviceId }
+						: {}),
+					...(type === 'BOOKING' && 'memberId' in input && input.memberId
+						? { employeeId: input.memberId }
+						: {}),
 					...(type === 'BOOKING' && 'customerId' in input
 						? { customerId: input.customerId || null }
 						: {})
@@ -143,14 +148,14 @@ export const upsertCalendarItemHandler = async ({
 				const originalStartTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.startTime, {
-							zone: organization.timeZone
-						})
+								zone: organization.timeZone
+							})
 						: null;
 				const originalEndTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.endTime, {
-							zone: organization.timeZone
-						})
+								zone: organization.timeZone
+							})
 						: null;
 
 				let newMember = null;
@@ -174,7 +179,7 @@ export const upsertCalendarItemHandler = async ({
 								? newMember.user.email
 								: booking.employee?.user?.email
 					},
-					origin: req.headers.get("host") || ''
+					origin: url.origin || ''
 				});
 			}
 		}

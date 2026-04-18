@@ -5,19 +5,23 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpdateCalendarItemInput } from './update-calendar-item.schema';
-import { enqueueTemplateEmail } from './email-queue';
+import { enqueueTemplateEmail } from '../../../../../email-queue';
+import { url } from 'better-auth';
 
 export const updateCalendarItemHandler = async ({
 	input: { id, startTime, endTime },
 	ctx: {
 		session: { user },
 		db,
+		req,
 		emailQueue
 	}
 }: {
 	input: UpdateCalendarItemInput;
 	ctx: PrivateContext;
 }) => {
+	const url = new URL(req.url);
+
 	const existingItem = await db.query.calendarItem.findFirst({
 		where: (calendarItem, { eq }) => eq(calendarItem.id, id),
 		with: {
@@ -69,18 +73,8 @@ export const updateCalendarItemHandler = async ({
 		existingItem.booking.status !== 'CANCELLED'
 	) {
 		const booking = existingItem.booking;
-		const organization = await getOrganization(db, existingItem.organization.id);
 
-		if (organization && booking.customer) {
-			const dateStart = DateTime.fromJSDate(startTime, { zone: organization.timeZone });
-			const dateEnd = DateTime.fromJSDate(endTime, { zone: organization.timeZone });
-			const originalStartTime = DateTime.fromJSDate(existingItem.startTime, {
-				zone: organization.timeZone
-			});
-			const originalEndTime = DateTime.fromJSDate(existingItem.endTime, {
-				zone: organization.timeZone
-			});
-
+		if (booking.customer) {
 			await enqueueTemplateEmail(emailQueue, {
 				templateType: 'EMAIL_APPROVED',
 				organizationId: existingItem.organization.id,
@@ -88,68 +82,9 @@ export const updateCalendarItemHandler = async ({
 				targets: {
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
-				}
+				},
+				origin: url.origin || ''
 			});
-
-			// await notificationService
-			// 	.sendEmailNotification({
-			// 		type: 'EMAIL_APPROVED',
-			// 		to: booking.customer.email,
-			// 		employeeEmail: booking.employee?.user.email,
-			// 		variables: {
-			// 			customer: {
-			// 				name: booking.customer.name,
-			// 				email: booking.customer.email,
-			// 				phone: booking.customer.phone
-			// 			},
-			// 			booking: {
-			// 				name: booking.service.name,
-			// 				employee: booking.employee?.user.name,
-			// 				employeeId: booking.employeeId,
-			// 				serviceId: booking.serviceId,
-			// 				serviceDuration: booking.service.duration,
-			// 				servicePrice: booking.service.price,
-			// 				serviceDescription: booking.service.description,
-			// 				start: {
-			// 					date: dateStart.toFormat('yyyy-MM-dd'),
-			// 					year: dateStart.year,
-			// 					month: dateStart.month,
-			// 					day: dateStart.day,
-			// 					hour: dateStart.hour.toString().padStart(2, '0'),
-			// 					minute: dateStart.minute.toString().padStart(2, '0')
-			// 				},
-			// 				end: {
-			// 					date: dateEnd.toFormat('yyyy-MM-dd'),
-			// 					year: dateEnd.year,
-			// 					month: dateEnd.month,
-			// 					day: dateEnd.day,
-			// 					hour: dateEnd.hour.toString().padStart(2, '0'),
-			// 					minute: dateEnd.minute.toString().padStart(2, '0')
-			// 				},
-			// 				originalStart: {
-			// 					date: originalStartTime.toFormat('yyyy-MM-dd'),
-			// 					year: originalStartTime.year,
-			// 					month: originalStartTime.month,
-			// 					day: originalStartTime.day,
-			// 					hour: originalStartTime.hour.toString().padStart(2, '0'),
-			// 					minute: originalStartTime.minute.toString().padStart(2, '0')
-			// 				},
-			// 				originalEnd: {
-			// 					date: originalEndTime.toFormat('yyyy-MM-dd'),
-			// 					year: originalEndTime.year,
-			// 					month: originalEndTime.month,
-			// 					day: originalEndTime.day,
-			// 					hour: originalEndTime.hour.toString().padStart(2, '0'),
-			// 					minute: originalEndTime.minute.toString().padStart(2, '0')
-			// 				},
-			// 				isRescheduled: true
-			// 			}
-			// 		},
-			// 		branch: organization
-			// 	})
-			// 	.catch((error) => {
-			// 		console.error('Error sending reschedule notification email:', error);
-			// 	});
 		}
 	}
 

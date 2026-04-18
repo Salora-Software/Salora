@@ -8,9 +8,9 @@ import {
 	createAppointmentContext,
 	getBookingCutoffDateTime
 } from '$lib/services/appointment-context.service';
+import { enqueueTemplateEmail } from '$lib/server/email-queue';
 import type { CreateBookingInput } from './booking.schema';
 import type { PortalContext } from '../../context';
-import type { EmailQueueMessage } from '@salora/mailer';
 
 // Let op: pas de onderstaande imports aan naar jouw daadwerkelijke paden
 import { env } from '$lib/server/env';
@@ -22,9 +22,11 @@ type CreateBookingOpts = {
 
 export const createBookingHandler = async ({
 	input,
-	ctx: { db, headers, auth, url, emailQueue }
+	ctx: { db, auth, req, emailQueue }
 }: CreateBookingOpts) => {
 	const { organizationId, serviceId, employeeId, date, contact } = input;
+	const url = new URL(req.url);
+
 	// 1. Haal de globale organisatie- en service data op voor deze dag
 	const initialSpan = getDaySpanForJsDate(date);
 
@@ -111,12 +113,20 @@ export const createBookingHandler = async ({
 	let user = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.email, contact.email) });
 
 	if (!user) {
-		user = await ctxAuth.internalAdapter.createUser({
+		const newUser = await ctxAuth.internalAdapter.createUser({
 			email: contact.email,
 			name: `${contact.firstName} ${contact.lastName}`,
 			phone: contact.phone || '',
 			organizationId: organizationId
 		});
+		user = {
+			...newUser,
+			phone: contact.phone || null
+		} as any;
+	}
+
+	if (!user) {
+		throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'failed_to_create_user' });
 	}
 
 	// Drizzle does not have upsert, so try update, then insert if not found
@@ -157,37 +167,6 @@ export const createBookingHandler = async ({
 		customer = inserted[0];
 	}
 
-	// 6. Auth Magic Link (Originele logica)
-	const magicLink = await auth.api
-		.signInMagicLink({
-			headers,
-			body: {
-				email: contact.email,
-				callbackURL: `/appointments/${organization.id}`
-			}
-		})
-		.catch((e) => {
-			console.error('Magic link error:', e);
-			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'magic_link_error' });
-		});
-
-	let magicLinkVerification;
-	if (magicLink.status) {
-		magicLinkVerification = await db.query.verification.findFirst({
-			where: (v, { and, eq, gte }) =>
-				and(eq(v.value, `{"email":"${contact.email}"}`), gte(v.expiresAt, new Date())),
-			orderBy: (v, { desc }) => desc(v.createdAt)
-		});
-		if (magicLinkVerification) {
-			await db.insert(schema.verification).values({
-				id: crypto.randomUUID(),
-				identifier: magicLinkVerification.identifier,
-				value: magicLinkVerification.value,
-				expiresAt: magicLinkVerification.expiresAt
-			});
-		}
-	}
-
 	// 7. Booking & CalendarItem aanmaken
 	const [booking] = await db
 		.insert(schema.booking)
@@ -219,56 +198,28 @@ export const createBookingHandler = async ({
 		})
 		.returning();
 
-	// 8. Notificatie (Originele logica)
-	const encode = encodeURIComponent;
-	const panel = {
-		url: `${url}/api/auth/magic-link/verify?token=${magicLinkVerification?.identifier ?? ''}&callbackURL=${encode(`/app/appointments/${organization.id}?email=${contact.email}`)}`,
-		cancel: `${url}/api/auth/magic-link/verify?token=${encode(magicLinkVerification?.identifier ?? '')}&callbackURL=${encode(`${env?.PUBLIC_FRONTEND_URL}/app/appointments/${organization.id}?email=${contact.email}&cancel=${calendarItem.id}`)}`
-	};
-
 	// Haal user email van employee op via de meegeleverde include in fetchBookingData (als je die daar hebt, anders extra query nodig)
 	const employeeUser = await db.query.user.findFirst({
 		where: (u, { eq }) => eq(u.id, bestEmployee.userId)
 	});
 
-	const membersForNotification = (employeesToUse as any[]).map((emp) => ({
-		...emp.member,
-		services: [],
-		calendarItems: emp.member.calendarItems,
-		availabilities: emp.member.availabilities,
-		// @ts-ignore
-		user: emp.user
-	}));
-
-	if (emailQueue) {
-		const templateType =
+	await enqueueTemplateEmail(emailQueue, {
+		templateType:
 			booking.status === 'CONFIRMED'
 				? 'EMAIL_APPROVED'
 				: booking.status === 'CANCELLED'
 					? 'EMAIL_CANCELED'
 					: booking.status === 'DENIED'
 						? 'EMAIL_DENIED'
-						: 'EMAIL_CREATED';
-
-		const baseJob = {
-			version: 'v2' as const,
-			templateType,
-			organizationId,
-			bookingId: booking.id
-		};
-
-		const customerJob: EmailQueueMessage = {
-			...baseJob,
-			targetAudience: 'CUSTOMER'
-		};
-
-		const employeeJob: EmailQueueMessage = {
-			...baseJob,
-			targetAudience: 'EMPLOYEE'
-		};
-
-		await Promise.all([emailQueue.send(customerJob), emailQueue.send(employeeJob)]);
-	}
+						: 'EMAIL_CREATED',
+		organizationId,
+		bookingId: booking.id,
+		targets: {
+			customerEmail: contact.email,
+			employeeEmail: employeeUser?.email
+		},
+		origin: url.origin || ''
+	});
 
 	return { booking, calendarItem };
 };

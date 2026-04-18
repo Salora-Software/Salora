@@ -6,6 +6,7 @@ import {
 import { getCredentials } from "./credentials";
 import type { Env, QueueBatch } from "./types";
 import { resolveTemplateEmail } from "./template-email";
+import { createAuth } from "@salora/auth";
 
 const DEFAULT_SENDER = "noreply@salora.app";
 
@@ -36,7 +37,7 @@ const processQueueMessage = async (
 		const renderedEmail = await resolveTemplateEmail(payload, env);
 
 		if (!renderedEmail) {
-			console.info("Email skipped by template resolver", {
+			console.error("Email skipped by template resolver", {
 				organizationId,
 				templateType: payload.templateType,
 				targetAudience: payload.targetAudience ?? "CUSTOMER",

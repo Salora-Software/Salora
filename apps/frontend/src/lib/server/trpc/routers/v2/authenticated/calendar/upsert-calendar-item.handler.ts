@@ -5,13 +5,14 @@ import { schema } from '@salora/database';
 import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpsertCalendarItemInput } from './upsert-calendar-item.schema';
-import { enqueueTemplateEmail } from './email-queue';
+import { enqueueTemplateEmail } from '../../../../../email-queue';
 
 export const upsertCalendarItemHandler = async ({
 	input,
 	ctx: {
 		session: { user },
 		db,
+		req,
 		emailQueue
 	}
 }: {
@@ -20,6 +21,7 @@ export const upsertCalendarItemHandler = async ({
 }) => {
 	const { title, startTime, endTime, notes, type, organizationId } = input;
 	const id = 'id' in input ? input.id : undefined;
+	const url = new URL(req.url);
 
 	const organization = await getOrganization(db, organizationId);
 	if (!organization) {
@@ -90,7 +92,8 @@ export const upsertCalendarItemHandler = async ({
 				title: data.title,
 				startTime: data.startTime,
 				endTime: data.endTime,
-				employeeId: type === 'BOOKING' && 'memberId' in input && input.memberId ? input.memberId : undefined,
+				employeeId:
+					type === 'BOOKING' && 'memberId' in input && input.memberId ? input.memberId : undefined,
 				notes: data.notes,
 				type: data.type as schema.CalendarItemTypes
 			})
@@ -102,8 +105,12 @@ export const upsertCalendarItemHandler = async ({
 				.set({
 					status: data.status as schema.BookingStatuses,
 					notes: data.notes,
-					...(type === 'BOOKING' && 'serviceId' in input && input.serviceId ? { serviceId: input.serviceId } : {}),
-					...(type === 'BOOKING' && 'memberId' in input && input.memberId ? { employeeId: input.memberId } : {}),
+					...(type === 'BOOKING' && 'serviceId' in input && input.serviceId
+						? { serviceId: input.serviceId }
+						: {}),
+					...(type === 'BOOKING' && 'memberId' in input && input.memberId
+						? { employeeId: input.memberId }
+						: {}),
 					...(type === 'BOOKING' && 'customerId' in input
 						? { customerId: input.customerId || null }
 						: {})
@@ -141,14 +148,14 @@ export const upsertCalendarItemHandler = async ({
 				const originalStartTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.startTime, {
-							zone: organization.timeZone
-						})
+								zone: organization.timeZone
+							})
 						: null;
 				const originalEndTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.endTime, {
-							zone: organization.timeZone
-						})
+								zone: organization.timeZone
+							})
 						: null;
 
 				let newMember = null;
@@ -171,80 +178,9 @@ export const upsertCalendarItemHandler = async ({
 							memberChanged && newMember?.user?.email
 								? newMember.user.email
 								: booking.employee?.user?.email
-					}
+					},
+					origin: url.origin || ''
 				});
-
-				// await notificationService
-				// 	.sendEmailNotification({
-				// 		type: templateType,
-				// 		to: booking.customer.email,
-				// 		employeeEmail:
-				// 			memberChanged && newMember ? newMember.user.email : booking.employee?.user.email,
-				// 		variables: {
-				// 			customer: {
-				// 				name: booking.customer.name,
-				// 				email: booking.customer.email,
-				// 				phone: booking.customer.phone
-				// 			},
-				// 			booking: {
-				// 				name: booking.service.name,
-				// 				employee: memberChanged && newMember ? newMember.user.name : booking.employee?.user.name,
-				// 				employeeId: memberChanged && newEmployeeId ? newEmployeeId : booking.employeeId,
-				// 				serviceId: booking.serviceId,
-				// 				serviceDuration: booking.service.duration,
-				// 				servicePrice: booking.service.price,
-				// 				serviceDescription: booking.service.description,
-				// 				start: {
-				// 					date: dateStart.toFormat('yyyy-MM-dd'),
-				// 					year: dateStart.year,
-				// 					month: dateStart.month,
-				// 					day: dateStart.day,
-				// 					hour: dateStart.hour.toString().padStart(2, '0'),
-				// 					minute: dateStart.minute.toString().padStart(2, '0')
-				// 				},
-				// 				end: {
-				// 					date: dateEnd.toFormat('yyyy-MM-dd'),
-				// 					year: dateEnd.year,
-				// 					month: dateEnd.month,
-				// 					day: dateEnd.day,
-				// 					hour: dateEnd.hour.toString().padStart(2, '0'),
-				// 					minute: dateEnd.minute.toString().padStart(2, '0')
-				// 				},
-				// 				...(timeChanged && originalStartTime && originalEndTime
-				// 					? {
-				// 						originalStart: {
-				// 							date: originalStartTime.toFormat('yyyy-MM-dd'),
-				// 							year: originalStartTime.year,
-				// 							month: originalStartTime.month,
-				// 							day: originalStartTime.day,
-				// 							hour: originalStartTime.hour.toString().padStart(2, '0'),
-				// 							minute: originalStartTime.minute.toString().padStart(2, '0')
-				// 						},
-				// 						originalEnd: {
-				// 							date: originalEndTime.toFormat('yyyy-MM-dd'),
-				// 							year: originalEndTime.year,
-				// 							month: originalEndTime.month,
-				// 							day: originalEndTime.day,
-				// 							hour: originalEndTime.hour.toString().padStart(2, '0'),
-				// 							minute: originalEndTime.minute.toString().padStart(2, '0')
-				// 						},
-				// 						isRescheduled: true
-				// 					}
-				// 					: {}),
-				// 				...(memberChanged
-				// 					? {
-				// 						originalEmployee: booking.employee?.user.name,
-				// 						newEmployee: newMember?.user.name,
-				// 						isStaffReassigned: true
-				// 					}
-				// 					: {})
-				// 			}
-				// 		},
-				// 		branch: organization
-				// 	})
-				// 	.catch((error) => {
-				// 		console.error('Error sending notification email:', error);
-				// 	});
 			}
 		}
 	} else {

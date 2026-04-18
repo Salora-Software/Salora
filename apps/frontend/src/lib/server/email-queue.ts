@@ -14,16 +14,18 @@ export const enqueueTemplateEmail = async (
 		organizationId: string;
 		bookingId: string;
 		targets: QueueTargetInfo;
+		origin: string;
 	}
 ): Promise<void> => {
 	if (!emailQueue) return;
 
-	const { templateType, organizationId, bookingId, targets } = params;
+	const { templateType, organizationId, bookingId, targets, origin } = params;
 	const baseJob = {
-		version: 'v2' as const,
+		version: 'v3' as const,
 		templateType,
 		organizationId,
-		bookingId
+		bookingId,
+		origin
 	};
 
 	const jobs: EmailQueueMessage[] = [];

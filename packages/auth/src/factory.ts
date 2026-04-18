@@ -1,4 +1,5 @@
-import { betterAuth } from 'better-auth';
+import { generateRandomString } from "better-auth/crypto";
+import { betterAuth, type AuthContext } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink, openAPI, organization } from 'better-auth/plugins';
 import { schema, type DatabaseType } from '@salora/database';
@@ -43,7 +44,7 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 					return `${saltHex}:${hashHex}`;
 				},
 				verify: async ({ hash, password }) => {
-					const [saltHex, originalHash] = hash.split(':');
+					const [saltHex, originalHash] = hash.split(':') as [string, string];
 					const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
 					const encoder = new TextEncoder();
 
@@ -112,6 +113,3 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 		]
 	});
 };
-
-// Exporteer het type zodat je dit in andere bestanden kunt gebruiken
-export type Auth = ReturnType<typeof createAuth>;

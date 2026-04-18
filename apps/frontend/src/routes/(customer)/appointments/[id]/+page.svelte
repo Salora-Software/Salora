@@ -30,6 +30,7 @@
 	let { data } = $props();
 	let branch = $derived(data.branch);
 	let error = $derived(data.error);
+
 	// svelte-ignore state_referenced_locally
 	const TIMEZONE = branch?.timeZone || 'Europe/Amsterdam';
 
@@ -67,6 +68,7 @@
 		date: DateTime<boolean>;
 		canReview: boolean;
 		duration: number; // duration in minutes
+		isPast?: boolean;
 	}
 
 	let appointments: Appointment[] = $state([]);
@@ -78,30 +80,44 @@
 
 	async function resendVerification() {
 		resendStatus = 'idle';
-		if (!resendEmail || !resendEmail.includes('@')) {
+		if (!resendEmail || !resendEmail.includes('@') || !branch?.id) {
 			resendStatus = 'error';
 			return;
 		}
 		// Replace with actual trpc or API call
-		const data = trpc.appointment.sendMagicLink.mutate({
+		const { data, error } = await signIn.magicLink({
 			email: resendEmail,
-			branchId: branch.id
+			callbackURL: `/appointments/${branch.id}`
 		});
-		if ((await data).success) resendStatus = 'success';
-		else resendStatus = 'error';
+		if (error) resendStatus = 'error';
+		else resendStatus = 'success';
 	}
 	onMount(() => {
 		(async () => {
-			if (error) {
+			if (error || !branch?.id) {
 				return;
 			}
-			const response = await trpc.appointment.getAppointments.query({
+			const response = (await trpc.appointment.getAppointments.query({
 				branchId: branch.id
+			})) as any[];
+			const now = DateTime.now();
+			appointments = response.map((a: any) => {
+				const status = a.booking?.status || 'Upcoming';
+				const endTime = DateTime.fromJSDate(a.endTime);
+				// If appointment has ended, mark as COMPLETED
+				const finalStatus =
+					endTime < now && status !== 'CANCELLED' ? 'COMPLETED' : (status as AppointmentStatus);
+				return {
+					id: a.id,
+					service: a.booking?.service?.name || '',
+					assigned: a.booking?.employee?.user?.name || '',
+					status: finalStatus,
+					date: DateTime.fromJSDate(a.startTime).setZone(TIMEZONE),
+					canReview: finalStatus === 'COMPLETED',
+					duration: a.booking?.duration || 0,
+					isPast: endTime < now
+				};
 			});
-			appointments = response.appointments.map((a) => ({
-				...a,
-				status: a.status as AppointmentStatus
-			}));
 			activeTab = appointments.some((a) => a.status !== 'COMPLETED' && a.status !== 'CANCELLED')
 				? 'Upcoming'
 				: appointments.some((a) => a.status === 'COMPLETED')
@@ -158,6 +174,7 @@
 			</div>
 		</div>
 	{:else}
+		{error}
 		<div class="bg-background flex min-h-screen flex-col items-center justify-center">
 			<div
 				class="bg-card border-border w-full max-w-md rounded-2xl border p-8 text-center shadow-lg"
@@ -193,7 +210,7 @@
 									const dateStr = cancelDialog.appt.date.setLocale(language).toFormat(formats.date);
 									const timeStr = cancelDialog.appt.date.setLocale(language).toFormat(formats.time);
 									return t.appointments.cancel_desc
-										.replace('{company}', branch.name)
+										.replace('{company}', branch?.name || '')
 										.replace('{service}', cancelDialog.appt.service)
 										.replace('{staff}', cancelDialog.appt.assigned)
 										.replace('{date}', dateStr)
@@ -209,9 +226,13 @@
 						{:else}
 							<Button
 								variant="destructive"
-								disabled={cancelDialog.loading}
+								disabled={cancelDialog.loading || cancelDialog.appt?.isPast}
 								onclick={async () => {
-									if (!cancelDialog.appt) return;
+									if (!cancelDialog.appt || !branch?.id) return;
+									if (cancelDialog.appt.isPast) {
+										cancelDialog.error = t.errors.default;
+										return;
+									}
 									cancelDialog.loading = true;
 									cancelDialog.error = '';
 									try {
@@ -275,7 +296,7 @@
 											.setLocale(language)
 											.toFormat(formats.time);
 										return t.appointments.cancel_desc
-											.replace('{company}', branch.name)
+											.replace('{company}', branch?.name || '')
 											.replace('{service}', cancelDialog.appt.service)
 											.replace('{staff}', cancelDialog.appt.assigned)
 											.replace('{date}', dateStr)
@@ -291,9 +312,13 @@
 							{:else}
 								<Button
 									variant="destructive"
-									disabled={cancelDialog.loading}
+									disabled={cancelDialog.loading || cancelDialog.appt?.isPast}
 									onclick={async () => {
-										if (!cancelDialog.appt) return;
+										if (!cancelDialog.appt || !branch?.id) return;
+										if (cancelDialog.appt.isPast) {
+											cancelDialog.error = t.errors.default;
+											return;
+										}
 										cancelDialog.loading = true;
 										cancelDialog.error = '';
 										try {
@@ -421,13 +446,13 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={env.PUBLIC_CDN_URL + branch.logo}
-											alt={branch.name}
+											src={env.PUBLIC_CDN_URL + branch?.logo}
+											alt={branch?.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>
 										<div class="flex-1">
 											<div class="flex items-center gap-2">
-												<span class="text-foreground text-base font-semibold">{branch.name}</span>
+												<span class="text-foreground text-base font-semibold">{branch?.name}</span>
 											</div>
 											<div class="text-muted-foreground text-xs">
 												{appt.service} | {appt.assigned}
@@ -449,19 +474,22 @@
 									<Separator class="my-0" />
 									<div class="grid w-full grid-cols-2 gap-2 lg:gap-4">
 										<a
-											href={branch.website + '?book' || '#'}
+											href={branch?.website + '?book' || '#'}
 											class="bg-muted text-muted-foreground border-border hover:bg-accent cursor-pointer rounded-lg border py-2 text-center text-sm font-medium transition"
 											>{t.appointments.book_again}</a
 										>
 										<Button
 											variant="destructive"
+											disabled={appt.isPast}
 											class="w-full rounded-lg py-2"
 											onclick={() => {
-												cancelDialog.open = true;
-												cancelDialog.appt = appt;
+												if (!appt.isPast) {
+													cancelDialog.open = true;
+													cancelDialog.appt = appt;
+												}
 											}}
 										>
-											{t.appointments.cancel}
+											{appt.isPast ? 'Voltooid' : t.appointments.cancel}
 										</Button>
 									</div>
 								</div>
@@ -482,13 +510,13 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={env.PUBLIC_CDN_URL + branch.logo}
-											alt={branch.name}
+											src={env.PUBLIC_CDN_URL + branch?.logo}
+											alt={branch?.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>
 										<div class="flex-1">
 											<div class="flex items-center gap-2">
-												<span class="text-foreground text-base font-semibold">{branch.name}</span>
+												<span class="text-foreground text-base font-semibold">{branch?.name}</span>
 												{#if appt.status === 'COMPLETED'}
 													<span
 														class="ml-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-500 dark:bg-green-900 dark:text-green-200"
@@ -516,7 +544,7 @@
 									<Separator class="my-0" />
 									<div class="grid w-full grid-cols-2 gap-2 lg:gap-4">
 										<a
-											href={branch.website + '?book' || '#'}
+											href={branch?.website + '?book' || '#'}
 											class="bg-muted text-muted-foreground border-border hover:bg-accent cursor-pointer rounded-lg border py-2 text-center text-sm font-medium transition"
 											>{t.appointments.book_again}</a
 										>
@@ -544,13 +572,13 @@
 								>
 									<div class="flex items-center gap-4">
 										<img
-											src={env.PUBLIC_CDN_URL + branch.logo}
-											alt={branch.name}
+											src={env.PUBLIC_CDN_URL + branch?.logo}
+											alt={branch?.name}
 											class="bg-muted h-14 w-14 rounded-xl object-cover"
 										/>
 										<div class="flex-1">
 											<div class="flex items-center gap-2">
-												<span class="text-foreground text-base font-semibold">{branch.name}</span>
+												<span class="text-foreground text-base font-semibold">{branch?.name}</span>
 												{#if appt.status === 'CANCELLED'}
 													<span
 														class="ml-1 rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-500 dark:bg-red-900 dark:text-red-200"
@@ -578,7 +606,7 @@
 									<Separator class="my-0" />
 									<div class="grid w-full grid-cols-1 gap-2 lg:gap-4">
 										<a
-											href={branch.website + '?book' || '#'}
+											href={branch?.website + '?book' || '#'}
 											class="bg-muted text-muted-foreground border-border hover:bg-accent cursor-pointer rounded-lg border py-2 text-center text-sm font-medium transition"
 											>{t.appointments.book_again}</a
 										>

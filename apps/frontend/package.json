@@ -73,6 +73,7 @@
 		"@neodrag/svelte": "^2.3.3",
 		"@prisma/client": "^7.3.0",
 		"@salora/availability": "workspace:*",
+		"@salora/auth": "workspace:*",
 		"@salora/database": "workspace:*",
 		"@salora/emails": "workspace:*",
 		"@salora/mailer": "workspace:*",

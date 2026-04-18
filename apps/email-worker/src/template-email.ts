@@ -8,6 +8,7 @@ import type {
 import { and, eq } from "drizzle-orm";
 import type { Env } from "./types";
 import { createAuth, generateDirectMagicLink } from "@salora/auth";
+import { createEvent, type EventAttributes } from "ics";
 
 interface ResolvedTemplateEmail {
 	senderName: string;
@@ -179,22 +180,6 @@ const ICS_ELIGIBLE_TYPES = new Set([
 	"EMAIL_CANCELED",
 ]);
 
-const escapeIcsText = (value: string): string =>
-	value
-		.replace(/\\/g, "\\\\")
-		.replace(/;/g, "\\;")
-		.replace(/,/g, "\\,")
-		.replace(/\r\n|\n|\r/g, "\\n");
-
-const toIcsUtcDateTime = (date: Date): string =>
-	date
-		.toISOString()
-		.replace(/[-:]/g, "")
-		.replace(/\.\d{3}Z$/, "Z");
-
-const sanitizeUidPart = (value: string): string =>
-	value.replace(/[^a-zA-Z0-9_.-]/g, "-");
-
 const buildCalendarAttachment = (args: {
 	templateType: string;
 	organizationId: string;
@@ -214,47 +199,64 @@ const buildCalendarAttachment = (args: {
 	const method = args.templateType === "EMAIL_CANCELED" ? "CANCEL" : "REQUEST";
 	const status =
 		args.templateType === "EMAIL_CANCELED" ? "CANCELLED" : "CONFIRMED";
-	const uid = `${sanitizeUidPart(args.bookingId)}-${sanitizeUidPart(args.organizationId)}@salora.app`;
-	const summary = escapeIcsText(args.serviceName || "Afspraak");
-	const description = escapeIcsText(
-		[`Afspraak bij ${args.organizationName}`, args.bookingNotes?.trim() || ""]
+
+	const start = args.startTime;
+	const end = args.endTime;
+
+	const event: EventAttributes = {
+		start: [
+			start.getUTCFullYear(),
+			start.getUTCMonth() + 1,
+			start.getUTCDate(),
+			start.getUTCHours(),
+			start.getUTCMinutes(),
+		],
+		end: [
+			end.getUTCFullYear(),
+			end.getUTCMonth() + 1,
+			end.getUTCDate(),
+			end.getUTCHours(),
+			end.getUTCMinutes(),
+		],
+		title: args.serviceName || "Afspraak",
+		description: [
+			`Afspraak bij ${args.organizationName}`,
+			args.bookingNotes?.trim() || "",
+		]
 			.filter(Boolean)
 			.join("\n\n"),
-	);
-	const location = escapeIcsText(args.organizationLocation || "Online");
-	const organizerName = escapeIcsText(
-		args.organizerName || args.organizationName,
-	);
-	const organizerEmail = (args.organizerEmail || args.organizationEmail).trim();
-	const attendeeName = escapeIcsText(args.recipientName || "Ontvanger");
+		location: args.organizationLocation || "Online",
+		status: status,
+		method: method,
+		uid: `${args.bookingId}-${args.organizationId}@salora.app`,
+		sequence: args.templateType === "EMAIL_CANCELED" ? 1 : 0,
+		organizer: {
+			name: (args.organizerName || args.organizationName).trim(),
+			email: (args.organizerEmail || args.organizationEmail).trim(),
+		},
+		attendees: [
+			{
+				name: (args.recipientName || "Ontvanger").trim(),
+				email: args.recipientEmail.trim(),
+				rsvp: true,
+				partstat: "NEEDS-ACTION",
+				role: "REQ-PARTICIPANT",
+			},
+		],
+		productId: "-//Salora//Appointments//NL",
+	};
 
-	const lines = [
-		"BEGIN:VCALENDAR",
-		"PRODID:-//Salora//Appointments//NL",
-		"VERSION:2.0",
-		"CALSCALE:GREGORIAN",
-		`METHOD:${method}`,
-		"BEGIN:VEVENT",
-		`UID:${uid}`,
-		`DTSTAMP:${toIcsUtcDateTime(new Date())}`,
-		`DTSTART:${toIcsUtcDateTime(args.startTime)}`,
-		`DTEND:${toIcsUtcDateTime(args.endTime)}`,
-		`SUMMARY:${summary}`,
-		`DESCRIPTION:${description}`,
-		`LOCATION:${location}`,
-		`STATUS:${status}`,
-		`SEQUENCE:${args.templateType === "EMAIL_CANCELED" ? "1" : "0"}`,
-		`ORGANIZER;CN=${organizerName}:MAILTO:${organizerEmail}`,
-		`ATTENDEE;CN=${attendeeName};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:MAILTO:${args.recipientEmail}`,
-		"END:VEVENT",
-		"END:VCALENDAR",
-	];
+	const { error, value } = createEvent(event);
 
-	const content = `${lines.join("\r\n")}\r\n`;
+	if (error || !value) {
+		console.error("Failed to create ICS event", error);
+		throw error || new Error("Failed to generate ICS content");
+	}
 
+	// Note: ics library generates the VCALENDAR wrapper by default when method is provided
 	return {
 		filename: "invite.ics",
-		content,
+		content: value,
 		mimeType: `text/calendar; charset=UTF-8; method=${method}`,
 	};
 };

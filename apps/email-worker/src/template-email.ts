@@ -1,6 +1,10 @@
 import { createDb, schema } from "@salora/database";
 import { renderEmail } from "@salora/emails";
-import type { EmailTargetAudience, TemplateEmailQueueMessage } from "@salora/mailer";
+import type {
+	EmailAttachment,
+	EmailTargetAudience,
+	TemplateEmailQueueMessage,
+} from "@salora/mailer";
 import { and, eq } from "drizzle-orm";
 import type { Env } from "./types";
 import { createAuth, generateDirectMagicLink } from "@salora/auth";
@@ -11,6 +15,7 @@ interface ResolvedTemplateEmail {
 	to: string;
 	subject: string;
 	body: string;
+	attachments?: EmailAttachment[];
 }
 
 const DEFAULT_SENDER = "noreply@salora.app";
@@ -167,6 +172,91 @@ const formatTime = (date: Date, timeZone: string): string =>
 		minute: "2-digit",
 		timeZone,
 	}).format(date);
+
+const ICS_ELIGIBLE_TYPES = new Set([
+	"EMAIL_CREATED",
+	"EMAIL_APPROVED",
+	"EMAIL_CANCELED",
+]);
+
+const escapeIcsText = (value: string): string =>
+	value
+		.replace(/\\/g, "\\\\")
+		.replace(/;/g, "\\;")
+		.replace(/,/g, "\\,")
+		.replace(/\r\n|\n|\r/g, "\\n");
+
+const toIcsUtcDateTime = (date: Date): string =>
+	date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+const sanitizeUidPart = (value: string): string =>
+	value.replace(/[^a-zA-Z0-9_.-]/g, "-");
+
+const buildCalendarAttachment = (args: {
+	templateType: string;
+	organizationId: string;
+	organizationName: string;
+	organizationLocation: string;
+	organizationEmail: string;
+	bookingId: string;
+	serviceName: string;
+	startTime: Date;
+	endTime: Date;
+	recipientEmail: string;
+	recipientName: string;
+	organizerName: string;
+	organizerEmail: string;
+	bookingNotes?: string | null;
+}): EmailAttachment => {
+	const method =
+		args.templateType === "EMAIL_CANCELED" ? "CANCEL" : "REQUEST";
+	const status =
+		args.templateType === "EMAIL_CANCELED" ? "CANCELLED" : "CONFIRMED";
+	const uid = `${sanitizeUidPart(args.bookingId)}-${sanitizeUidPart(args.organizationId)}@salora.app`;
+	const summary = escapeIcsText(args.serviceName || "Afspraak");
+	const description = escapeIcsText(
+		[
+			`Afspraak bij ${args.organizationName}`,
+			args.bookingNotes?.trim() || "",
+		]
+			.filter(Boolean)
+			.join("\n\n"),
+	);
+	const location = escapeIcsText(args.organizationLocation || "Online");
+	const organizerName = escapeIcsText(args.organizerName || args.organizationName);
+	const organizerEmail = (args.organizerEmail || args.organizationEmail).trim();
+	const attendeeName = escapeIcsText(args.recipientName || "Ontvanger");
+
+	const lines = [
+		"BEGIN:VCALENDAR",
+		"PRODID:-//Salora//Appointments//NL",
+		"VERSION:2.0",
+		"CALSCALE:GREGORIAN",
+		`METHOD:${method}`,
+		"BEGIN:VEVENT",
+		`UID:${uid}`,
+		`DTSTAMP:${toIcsUtcDateTime(new Date())}`,
+		`DTSTART:${toIcsUtcDateTime(args.startTime)}`,
+		`DTEND:${toIcsUtcDateTime(args.endTime)}`,
+		`SUMMARY:${summary}`,
+		`DESCRIPTION:${description}`,
+		`LOCATION:${location}`,
+		`STATUS:${status}`,
+		`SEQUENCE:${args.templateType === "EMAIL_CANCELED" ? "1" : "0"}`,
+		`ORGANIZER;CN=${organizerName}:MAILTO:${organizerEmail}`,
+		`ATTENDEE;CN=${attendeeName};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:MAILTO:${args.recipientEmail}`,
+		"END:VEVENT",
+		"END:VCALENDAR",
+	];
+
+	const content = `${lines.join("\r\n")}\r\n`;
+
+	return {
+		filename: "invite.ics",
+		content,
+		mimeType: `text/calendar; charset=UTF-8; method=${method}`,
+	};
+};
 
 export const resolveTemplateEmail = async (
 	payload: TemplateEmailQueueMessage,
@@ -356,12 +446,54 @@ export const resolveTemplateEmail = async (
 		mailProps as any,
 	);
 
+	const calendarStart = firstCalendarItem?.startTime;
+	const calendarEnd =
+		firstCalendarItem?.endTime ??
+		(calendarStart
+			? new Date(
+				calendarStart.getTime() +
+					(Math.max(booking?.duration ?? 60, 5) * 60 * 1000),
+			)
+			: undefined);
+
+	let attachments: EmailAttachment[] | undefined;
+	if (
+		!isTestTemplate &&
+		payload.bookingId &&
+		ICS_ELIGIBLE_TYPES.has(payload.templateType) &&
+		calendarStart &&
+		calendarEnd
+	) {
+		attachments = [
+			buildCalendarAttachment({
+				templateType: payload.templateType,
+				organizationId: payload.organizationId,
+				organizationName: organization.name || "Salora",
+				organizationLocation: organization.location || "",
+				organizationEmail: organization.email || env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
+				bookingId: payload.bookingId,
+				serviceName: booking?.service?.name || "Afspraak",
+				startTime: calendarStart,
+				endTime: calendarEnd,
+				recipientEmail,
+				recipientName: targetAudience === "EMPLOYEE" ? employeeName : customerName,
+				organizerName: employeeName || organization.name || "Salora",
+				organizerEmail:
+					employeeEmail ||
+					organization.email ||
+					env.MAIL_EMAIL_SENDER ||
+					DEFAULT_SENDER,
+				bookingNotes: booking?.notes,
+			}),
+		];
+	}
+
 	return {
 		senderName: organization.name || "Salora",
 		from: env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
 		to: recipientEmail,
 		subject,
 		body,
+		attachments,
 	};
 };
-// Small edit

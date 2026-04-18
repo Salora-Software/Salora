@@ -73,7 +73,7 @@ export const deleteCalendarItemHandler = async ({
 					customerEmail: booking.customer?.email,
 					employeeEmail: booking.employee?.user?.email
 				},
-				origin: req.headers.get("host") || ''
+				origin: url.origin || ''
 			});
 		}
 	}

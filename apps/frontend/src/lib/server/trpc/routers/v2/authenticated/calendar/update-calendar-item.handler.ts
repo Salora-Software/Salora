@@ -6,7 +6,6 @@ import { getOrganization } from '$lib/server/general';
 import type { PrivateContext } from '$lib/server/trpc/context';
 import type { UpdateCalendarItemInput } from './update-calendar-item.schema';
 import { enqueueTemplateEmail } from '../../../../../email-queue';
-import { url } from 'better-auth';
 
 export const updateCalendarItemHandler = async ({
 	input: { id, startTime, endTime },

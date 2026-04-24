@@ -39,10 +39,16 @@ export const fetchBookingData = async (
 					availabilities: true,
 					calendarItems: {
 						// Using where closure for dates (assuming string format in SQLite)
-						where: (items, { and, lt, gt }) =>
+						where: (items, { and, lt, gt, notInArray }) =>
 							and(
 								lt(items.startTime, searchSpan.end!.toJSDate()),
-								gt(items.endTime, searchSpan.start!.toJSDate())
+								gt(items.endTime, searchSpan.start!.toJSDate()),
+								notInArray(
+									items.bookingId,
+									db.select({ id: schema.booking.id })
+										.from(schema.booking)
+										.where(eq(schema.booking.status, 'CANCELLED'))
+								)
 							)
 					}
 				}

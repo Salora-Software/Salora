@@ -47,17 +47,47 @@
 	let searchValue: string = $state(page.url.searchParams.get('search') || '');
 	let searchDebounced = new Debounced(() => searchValue, 300);
 	let prevData: any = $state(null);
+	let organizationId = $derived(activeBranch?.id || data.session.session.activeOrganizationId || '');
 
+	let skip = $derived(currentPage * pageSize);
+	let normalizedSearch = $derived(searchDebounced.current.trim() || undefined);
+
+	function getCustomersQueryKey(skip: number, take: number, search?: string) {
+		return ['customers', organizationId, skip, take, search ?? ''];
+	}
+
+	function prefetchCustomersPage(pageIndex: number) {
+		const totalPages = Math.ceil(totalCount / pageSize);
+		if (pageIndex < 0 || pageIndex >= totalPages || !organizationId) return;
+
+		const pageSkip = pageIndex * pageSize;
+		data.queryClient.prefetchQuery({
+			queryKey: getCustomersQueryKey(pageSkip, pageSize, normalizedSearch),
+			queryFn: () =>
+				trpc.v2.authenticated.customers.getCustomers.query({
+					organizationId,
+					skip: pageSkip,
+					take: pageSize,
+					search: normalizedSearch
+				}),
+			staleTime: 1000 * 60 * 5
+		});
+	}
+
+	$effect(() => {
+		prefetchCustomersPage(currentPage + 1);
+		prefetchCustomersPage(currentPage - 1);
+	});
 	let customersQuery = $derived(
 		trpcQuery.v2.authenticated.customers.getCustomers.createQuery(
 			{
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId,
-				skip: currentPage * pageSize || 0,
+				organizationId,
+				skip: skip || 0,
 				take: pageSize || 10,
-				search: searchDebounced.current.trim() || undefined
+				search: normalizedSearch
 			},
 			{
-				queryKey: ['customers', currentPage, pageSize, searchDebounced.current],
+				queryKey: getCustomersQueryKey(skip || 0, pageSize || 10, normalizedSearch),
 				placeholderData: () => {
 					return keepPreviousData(prevData);
 				}
@@ -154,7 +184,7 @@
 	function updateParams() {
 		const params = page.url.searchParams;
 		params.set('page', (currentPage + 1).toString());
-		params.set('search', searchDebounced.current);
+		params.set('search', searchDebounced.current.trim());
 		const url = `${window.location.pathname}?${params.toString()}`;
 		window.history.replaceState({}, '', url);
 	}
@@ -523,45 +553,10 @@
 									currentPage = newPageIndex;
 									pagination = { pageIndex: currentPage, pageSize };
 								}
-								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex + 1, pageSize, searchDebounced.current],
-									queryFn: () =>
-										trpc.v2.authenticated.customers.getCustomers.query({
-											organizationId:
-												activeBranch?.id || data.session.session.activeOrganizationId || '',
-											skip: ((pageNum as number) - 1) * pageSize,
-											take: pageSize,
-											search: searchDebounced.current.trim() || undefined
-										}),
-									staleTime: 1000 * 60 * 5 // 5 minutes
-								});
-								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex - 1, pageSize, searchDebounced.current],
-									queryFn: () =>
-										trpc.v2.authenticated.customers.getCustomers.query({
-											organizationId:
-												activeBranch?.id || data.session.session.activeOrganizationId || '',
-											skip: ((pageNum as number) - 1) * pageSize,
-											take: pageSize,
-											search: searchDebounced.current.trim() || undefined
-										}),
-									staleTime: 1000 * 60 * 5 // 5 minutes
-								});
 							}}
 							onmouseenter={() => {
 								const newPageIndex = (pageNum as number) - 1;
-								data.queryClient.prefetchQuery({
-									queryKey: ['customers', newPageIndex, pageSize, searchDebounced.current],
-									queryFn: () =>
-										trpc.v2.authenticated.customers.getCustomers.query({
-											organizationId:
-												activeBranch?.id || data.session.session.activeOrganizationId || '',
-											skip: ((pageNum as number) - 1) * pageSize,
-											take: pageSize,
-											search: searchDebounced.current.trim() || undefined
-										}),
-									staleTime: 1000 * 60 * 5 // 5 minutes
-								});
+								prefetchCustomersPage(newPageIndex);
 							}}
 							class="min-w-12"
 						>

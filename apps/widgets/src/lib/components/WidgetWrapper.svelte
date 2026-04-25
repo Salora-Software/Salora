@@ -10,7 +10,7 @@
 	import { LoaderCircle } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
 
-	let { variant = 'widget', branchId, endpoint = 'https://app.salora.app' } = $props();
+	let { variant = 'widget', branchId, endpoint = 'http://localhost:5173' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
 

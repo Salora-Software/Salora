@@ -9,11 +9,7 @@
 
 <Button onclick={() => (open = true)}>Open Widget</Button>
 <Dialog.Root bind:open>
-	<Dialog.Content
-		class={cn(
-			'h-[500px] w-max! max-w-none! gap-0 border-none   bg-transparent p-0 transition-all duration-300'
-		)}
-	>
+	<Dialog.Content class={cn('w-max! max-w-none! p-0 border-none')}>
 		<WidgetWrapper branchId={page.params.id} />
 	</Dialog.Content>
 </Dialog.Root>

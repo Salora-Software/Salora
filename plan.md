@@ -44,7 +44,7 @@ Build a Cloudflare Queue based email pipeline that keeps request-time TRPC mutat
 - `/root/Salora/packages/mailer/src/index.ts` — remove queue producer dependency and keep pure SMTP failover transport logic.
 - `/root/Salora/packages/emails/src/renderEmail.ts` — keep as rendering entrypoint and enforce template input validation usage.
 - `/root/Salora/packages/database/src/db/schema.ts` — reuse `communication_setting` for org SMTP config; optionally add minimal dedupe table if D1 idempotency is chosen.
-- `/root/Salora/packages/trpc-types/src/**` (or new shared package path) — shared queue event/message type contracts for producer and consumer.
+- `/root/Salora/packages/shared-types/src/**` (or new shared package path) — shared queue event/message type contracts for producer and consumer.
 
 **Verification**
 

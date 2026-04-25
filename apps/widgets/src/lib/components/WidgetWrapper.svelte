@@ -9,6 +9,7 @@
 	import Themer from '$lib/components/Themer.svelte';
 	import { LoaderCircle } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
+	import { createOrpcClient } from '$lib/orpc';
 
 	let { variant = 'widget', branchId, endpoint = 'http://localhost:5173' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
@@ -18,6 +19,7 @@
 	setMode(mode);
 
 	const trpc = createTrpcClient(endpoint);
+	const orpc = createOrpcClient(endpoint);
 
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
@@ -26,7 +28,7 @@
 	onMount(async () => {
 		try {
 			// Gebruik v1.getBranch zoals in de originele layout.server.ts
-			branchData = await trpc.v1.getBranch.query({
+			branchData = await orpc.v1.organisation.getOrganisation({
 				id: branchId
 			});
 		} catch (e) {

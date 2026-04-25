@@ -12,6 +12,12 @@
     },
   ],
   "queues": {
+    "producers": [
+      {
+        "binding": "EMAIL_QUEUE",
+        "queue": "email-jobs",
+      },
+    ],
     "consumers": [
       {
         "queue": "email-jobs",

@@ -4,14 +4,14 @@ import { parseEnv } from '@/lib/env';
 import { createApp } from '@/lib/factory';
 
 export default {
-  async fetch(request: Request, env: Record<string, string>, ctx: ExecutionContext) {
-    const parsedEnv = parseEnv(env);
-    const app = createApp(parsedEnv);
+	async fetch(request: Request, env: Record<string, unknown>, ctx: ExecutionContext) {
+		const parsedEnv = parseEnv(env);
+		const app = createApp(parsedEnv);
 
-    app.get('/hello', () => {
-      throw new Error('kapoet');
-    });
+		app.get('/hello', () => {
+			throw new Error('kapoet');
+		});
 
-    return app.fetch(request, env, ctx);
-  },
+		return app.fetch(request, env, ctx);
+	},
 };

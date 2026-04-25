@@ -1,8 +1,10 @@
 import { base } from '../bases/public';
 import { aliveHandler } from './alive.handler';
-import { protectedHandler } from './protected.handler';
+import { appointmentRouter } from './appointment/_router';
+import { organisationRouter } from './organisation/_router';
 
 export const router = base.tag('v1').router({
-  alive: aliveHandler,
-  protected: protectedHandler,
+	alive: aliveHandler,
+	appointment: appointmentRouter,
+	organisation: organisationRouter,
 });

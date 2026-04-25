@@ -23,11 +23,10 @@
 		saveContactToLocalStorage,
 		loadContactFromLocalStorage,
 		type BookingValues,
-		type BookingButton,
-		type TRPCClient
+		type BookingButton
 	} from '$lib/booking-utils.js';
 	import { tick, getContext } from 'svelte';
-	import type { RouterOutput } from '@salora/shared-types';
+	import type { ORPCClient, ORPCRouterOutput, RouterOutput } from '@salora/shared-types';
 	import { DateTime, type Interval } from 'luxon';
 	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
 	import type { Attachment } from 'svelte/attachments';
@@ -58,7 +57,7 @@
 
 	let { branch, collapsed = $bindable(false), cardWidth = $bindable(0) }: Props = $props();
 
-	const trpc = getContext<TRPCClient>('trpc');
+	const orpc = getContext<ORPCClient>('orpc');
 
 	const monthOptions = [
 		'Januari',
@@ -123,7 +122,7 @@
 				}
 
 				occupancyData = await loadOccupancy(
-					trpc,
+					orpc,
 					new Date().getFullYear(),
 					new Date().getMonth() + 1,
 					bookingState.appointment.value,
@@ -167,9 +166,9 @@
 	);
 	let maxSelectableDate = $derived(today(getLocalTimeZone()).add({ days: branch.bookingPeriod }));
 	let occupancyData = $state<RouterOutput['appointment']['getOccupancy'] | undefined>(undefined);
-	let availabilityData = $state<RouterOutput['appointment']['getAvailability'] | undefined>(
-		undefined
-	);
+	let availabilityData = $state<
+		ORPCRouterOutput['v1']['appointment']['getAvailability'] | undefined
+	>(undefined);
 
 	let selectedService = $derived(
 		branch?.services.find((service: any) => service.id === bookingState.appointment.value)
@@ -178,12 +177,13 @@
 	// Reinvented: Get timeslots for a specific date (no caching)
 	function getTimeSlotsForDate(date: DateValue) {
 		if (!availabilityData) return [];
-		return availabilityData.slots.map((slot) => ({
-			interval: slot.interval,
-			start: slot.interval.start,
-			end: slot.interval.end,
-			available: slot.available
-		}));
+		return availabilityData.slots;
+	}
+
+	function sortTimeSlots(timeSlots: NonNullable<typeof availabilityData>['slots']) {
+		return [...timeSlots].sort(
+			(a, b) => (a.interval.start?.toMillis() || 0) - (b.interval.start?.toMillis() || 0)
+		);
 	}
 
 	function isDateDisabled(date: DateValue): boolean {
@@ -213,7 +213,7 @@
 
 		selectedStep = bookingSteps[index];
 		if (!selectedStep) {
-			const result = await createBooking(trpc, bookingState, branch);
+			const result = await createBooking(orpc, bookingState, branch);
 			if (!result.success) {
 				bookingSteps = bookingSteps.map((step, i) => ({
 					...step,
@@ -352,7 +352,7 @@
 							<div class="flex flex-wrap items-center justify-center gap-4">
 								{#each branch.members as employee}
 									<div class="flex flex-col items-center gap-2">
-										<Avatar.Root class="h-[64px] w-[64px] rounded-[5px]">
+										<Avatar.Root class="h-16 w-16 rounded-[5px]">
 											<Avatar.Image src="/images/user.svg" alt="@shadcn" />
 											<Avatar.Fallback>
 												<img src="/images/placeholder-small.svg" alt="" />
@@ -364,7 +364,7 @@
 									</div>
 								{/each}
 								<div class="flex flex-col items-center gap-2">
-									<Avatar.Root class="h-[64px] w-[64px] rounded-[5px]">
+									<Avatar.Root class="h-16 w-16 rounded-[5px]">
 										<Avatar.Image src="/images/user.svg" alt="@shadcn" />
 										<Avatar.Fallback>
 											<img src="/images/placeholder-small.svg" alt="" />
@@ -376,7 +376,7 @@
 						{:else if selectedStep?.name == 'Datum & Tijd'}
 							<ScrollArea
 								id="calendar-scroll-area"
-								class="h-[349px] [&>[data-scroll-area-scrollbar]]:!fixed [&>[data-scroll-area-scrollbar]]:!right-[2px] [&>[data-scroll-area-scrollbar]]:py-[2.5px]"
+								class="h-87.25 *:data-scroll-area-scrollbar:fixed! *:data-scroll-area-scrollbar:right-0.5! *:data-scroll-area-scrollbar:py-[2.5px]"
 							>
 								<Calendar
 									type="single"
@@ -398,7 +398,7 @@
 										).setZone(branch?.timeZone || 'utc', { keepLocalTime: true });
 
 										availabilityData = await loadDayAvailability(
-											trpc,
+											orpc,
 											luxonDate,
 											bookingState.appointment.value,
 											branch?.id
@@ -427,7 +427,7 @@
 											bookingState.date.calendarValue = undefined;
 										}
 										occupancyData = await loadOccupancy(
-											trpc,
+											orpc,
 											year,
 											month,
 											bookingState.appointment.value,
@@ -446,7 +446,7 @@
 											.toFormat('cccc, dd MMMM yyyy')}
 									</h3>
 									<div class="mb-2 grid grid-cols-2 gap-2">
-										{#each getTimeSlotsForDate(bookingState.date.calendarValue).sort((a, b) => (a.start?.toMillis() || 0) - (b.start?.toMillis() || 0)) as slot}
+										{#each sortTimeSlots(getTimeSlotsForDate(bookingState.date.calendarValue)) as slot}
 											<button
 												disabled={!slot.available}
 												class:bg-widget-time-slot-selected={bookingState.date.timeValue?.equals(
@@ -455,16 +455,12 @@
 												class:text-white={bookingState.date.timeValue?.equals(slot.interval)}
 												onclick={() => {
 													if (!slot.available) return;
-													if (slot.interval.isValid) {
-														bookingState.date.timeValue = slot.interval;
-														goToStep(index + 1, false);
-													}
+													bookingState.date.timeValue = slot.interval;
+													goToStep(index + 1, false);
 												}}
-												class="border-widget-input-border text-widget-content-text bg-widget-time-slot-bg hover:bg-widget-time-slot-hover h-10 w-full rounded-md border transition-all duration-100 disabled:cursor-not-allowed disabled:border-none disabled:!bg-transparent disabled:hover:bg-transparent"
+												class="border-widget-input-border text-widget-content-text bg-widget-time-slot-bg hover:bg-widget-time-slot-hover h-10 w-full rounded-md border transition-all duration-100 disabled:cursor-not-allowed disabled:border-none disabled:bg-transparent! disabled:hover:bg-transparent"
 											>
-												{slot.start?.setZone(branch?.timeZone || 'utc').toFormat('HH:mm')} - {slot.end
-													?.setZone(branch?.timeZone || 'utc')
-													.toFormat('HH:mm')}
+												{slot.interval?.toFormat('HH:mm')}
 											</button>
 										{/each}
 									</div>
@@ -491,7 +487,7 @@
 								onclick={() => goToStep(index - 1, false)}>Terug</Button
 							>
 							<Button
-								class="widget-button ml-auto w-[94px]"
+								class="widget-button ml-auto w-23.5"
 								disabled={isLoadingNextStep}
 								onclick={async () => {
 									isLoadingNextStep = true;

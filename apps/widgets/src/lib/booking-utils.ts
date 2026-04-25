@@ -1,7 +1,7 @@
 import { toast } from 'svelte-sonner';
 import type { DateValue } from '@internationalized/date';
 import { DateTime, Interval } from 'luxon';
-import type { RouterOutput, AppRouter } from '@salora/shared-types';
+import type { RouterOutput, AppRouter, ORPCClient, ORPCRouterOutput } from '@salora/shared-types';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import type { createTRPCProxyClient } from '@trpc/client';
 
@@ -38,10 +38,9 @@ export interface BookingButton {
 
 // Caches
 const occupancyCache = new Map<string, RouterOutput['appointment']['getOccupancy']>();
-const availabilityCache = new Map<string, RouterOutput['appointment']['getAvailability']>();
 
 export async function loadOccupancy(
-	trpc: TRPCClient,
+	orpc: ORPCClient,
 	year: number,
 	month: number,
 	serviceId: string,
@@ -55,7 +54,7 @@ export async function loadOccupancy(
 	const end = start.endOf('month');
 
 	try {
-		const response = await trpc.appointment.getOccupancy.query({
+		const response = await orpc.v1.appointment.getOccupancy({
 			branchId: branchId,
 			serviceId,
 			range: Interval.fromDateTimes(start, end).toISO()
@@ -69,32 +68,23 @@ export async function loadOccupancy(
 }
 
 export async function loadDayAvailability(
-	trpc: TRPCClient,
+	orpc: ORPCClient,
 	date: DateTime,
 	serviceId: string,
 	branchId: string
-): Promise<RouterOutput['appointment']['getAvailability'] | undefined> {
-	const key = `${date.toISODate()}-${serviceId}-${branchId}`;
-	if (availabilityCache.has(key)) return availabilityCache.get(key);
-
-	try {
-		const response = await trpc.appointment.getAvailability.query({
-			branchId,
-			serviceId,
-			date: date.toISODate()!
-		});
-		availabilityCache.set(key, response);
-		return response;
-	} catch (e) {
-		console.error('Failed to load day availability', e);
-		return undefined;
-	}
+): Promise<ORPCRouterOutput['v1']['appointment']['getAvailability'] | undefined> {
+	const response = await orpc.v1.appointment.getAvailability({
+		branchId,
+		serviceId,
+		date: date.toISODate()!
+	});
+	return response;
 }
 
 export async function createBooking(
-	trpc: TRPCClient,
+	orpc: ORPCClient,
 	values: BookingValues,
-	branch: any
+	branch: ORPCRouterOutput['v1']['organisation']['getOrganisation']
 ): Promise<{ success: boolean; employeeId?: string }> {
 	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
 
@@ -104,9 +94,8 @@ export async function createBooking(
 		return { success: false };
 	}
 	try {
-		const response = await trpc.appointment.createBooking.mutate({
+		const response = await orpc.v1.appointment.createBooking({
 			serviceId: values.appointment.value,
-			branchId: branch.id,
 			organizationId: branch.id,
 			date: date.toJSDate(),
 			contact: {

@@ -1,6 +1,6 @@
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
-import type { ORPCClient } from '@salora/shared-types';
+import { orpcCustomJsonSerializers, type ORPCClient } from '@salora/shared-types';
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
 
@@ -46,6 +46,7 @@ export const createOrpcClient = (backendUrl?: string): ORPCClient =>
 	createORPCClient<ORPCClient>(
 		new RPCLink({
 			url: `${normalizeBackendUrl(backendUrl)}/orpc`,
+			customJsonSerializers: orpcCustomJsonSerializers,
 			fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
 				try {
 					const response = await fetch(input, init);
@@ -73,7 +74,8 @@ export const orpc = createOrpcClient(resolvedBackendUrl);
 
 export const orpcS: ORPCClient = createORPCClient<ORPCClient>(
 	new RPCLink({
-		url: `${resolvedBackendUrl}/orpc`
+		url: `${resolvedBackendUrl}/orpc`,
+		customJsonSerializers: orpcCustomJsonSerializers,
 	})
 ); // Server fetch without toast
 
@@ -81,6 +83,7 @@ export const orpcOnServer = (fetchFn: typeof fetch, backendUrl?: string): ORPCCl
 	createORPCClient<ORPCClient>(
 		new RPCLink({
 			url: `${normalizeBackendUrl(backendUrl ?? resolvedBackendUrl)}/orpc`,
+			customJsonSerializers: orpcCustomJsonSerializers,
 			fetch: fetchFn as any
 		})
 	);

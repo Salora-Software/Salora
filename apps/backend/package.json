@@ -20,6 +20,7 @@
 		"@salora/database": "workspace:*",
 		"@salora/mailer": "workspace:*",
 		"@salora/scheduler": "workspace:*",
+		"@salora/shared-types": "workspace:*",
 		"better-auth": "^1.6.2",
 		"cuid": "^3.0.0",
 		"drizzle-orm": "^0.45.2",

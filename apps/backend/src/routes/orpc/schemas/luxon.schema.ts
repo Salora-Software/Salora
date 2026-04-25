@@ -1,53 +1,56 @@
 import { DateTime, Interval } from "luxon";
 import { z } from "zod";
 
-export const luxonDate = z.preprocess(
-  (arg) => {
-    if (DateTime.isDateTime(arg)) return arg;
-    if (typeof arg === "string") {
-      const parsedDate = DateTime.fromISO(arg);
-      if (parsedDate.isValid) return parsedDate;
-    }
-    return arg;
-  },
-  z.custom<DateTime>((val) => DateTime.isDateTime(val), {
-    message: "Invalid Luxon DateTime",
-  }),
-);
+const luxonDateInput = z.union([
+	z.custom<DateTime>((value) => DateTime.isDateTime(value), {
+		message: "Invalid Luxon DateTime",
+	}),
+	z.string(),
+]);
 
-export const luxonInterval = z.preprocess(
-  (arg) => {
-    if (Interval.isInterval(arg)) return arg;
+export const luxonDate = luxonDateInput.transform((value, ctx) => {
+	if (DateTime.isDateTime(value)) return value;
 
-    if (typeof arg === "string") {
-      const parsedInterval = Interval.fromISO(arg);
-      if (parsedInterval.isValid) return parsedInterval;
-    }
+	const parsedDate = DateTime.fromISO(value);
+	if (parsedDate.isValid) return parsedDate;
 
-    if (
-      typeof arg === "object" &&
-      arg !== null &&
-      "start" in arg &&
-      "end" in arg
-    ) {
-      const startValue = (arg as { start: unknown }).start;
-      const endValue = (arg as { end: unknown }).end;
+	ctx.addIssue({
+		code: z.ZodIssueCode.custom,
+		message: "Invalid Luxon DateTime",
+	});
+	return z.NEVER;
+});
 
-      const start = DateTime.isDateTime(startValue)
-        ? startValue
-        : DateTime.fromISO(String(startValue));
-      const end = DateTime.isDateTime(endValue)
-        ? endValue
-        : DateTime.fromISO(String(endValue));
+const luxonIntervalInput = z.union([
+	z.custom<Interval>((value) => Interval.isInterval(value), {
+		message: "Invalid Luxon Interval",
+	}),
+	z.string(),
+	z.object({
+		start: luxonDateInput,
+		end: luxonDateInput,
+	}),
+]);
 
-      if (start.isValid && end.isValid) {
-        return Interval.fromDateTimes(start, end);
-      }
-    }
+export const luxonInterval = luxonIntervalInput.transform((value, ctx) => {
+	if (Interval.isInterval(value)) return value;
 
-    return arg;
-  },
-  z.custom<Interval>((val) => Interval.isInterval(val), {
-    message: "Invalid Luxon Interval",
-  }),
-);
+	if (typeof value === "string") {
+		const parsedInterval = Interval.fromISO(value);
+		if (parsedInterval.isValid) return parsedInterval;
+	}
+
+	if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
+		const startValue = (value as { start: DateTime }).start;
+		const endValue = (value as { end: DateTime }).end;
+
+		const parsedInterval = Interval.fromDateTimes(startValue, endValue);
+		if (parsedInterval.isValid) return parsedInterval;
+	}
+
+	ctx.addIssue({
+		code: 'custom',
+		message: "Invalid Luxon Interval",
+	});
+	return z.NEVER;
+});

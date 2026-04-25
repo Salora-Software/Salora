@@ -11,7 +11,7 @@
 	import { cn } from '$lib/utils';
 	import { createOrpcClient } from '$lib/orpc';
 
-	let { variant = 'widget', branchId, endpoint = 'http://localhost:5173' } = $props();
+	let { variant = 'widget', branchId, endpoint = 'http://localhost:8788' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
 
@@ -24,6 +24,7 @@
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
 	setContext('trpc', trpc);
+	setContext('orpc', orpc);
 
 	onMount(async () => {
 		try {

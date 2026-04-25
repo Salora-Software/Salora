@@ -12,6 +12,7 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
+		"luxon": "^3.7.2",
 		"@trpc/server": "^11.10.0",
 		"@orpc/client": "^1.13.14",
 		"@orpc/server": "^1.13.14"

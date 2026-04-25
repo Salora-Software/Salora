@@ -18,6 +18,9 @@
 		},
 		{
 			"path": "../frontend"
+		},
+		{
+			"path": "../backend"
 		}
 	]
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias

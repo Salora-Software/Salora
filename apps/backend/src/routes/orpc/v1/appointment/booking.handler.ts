@@ -11,6 +11,7 @@ import {
 	getBookingCutoffDateTime,
 } from '@/lib/appointment/appointment-context.service';
 import { enqueueTemplateEmail } from '@/lib/email-queue';
+import { ERROR_MESSAGES } from '@/lib/error-messages';
 
 import { createBookingInputSchema } from './booking.schema';
 
@@ -42,11 +43,11 @@ export const createBookingHandler = base
 		const bookingCutoff = getBookingCutoffDateTime(timeZone, organization.minimumBookingTime);
 
 		if (!requestedInterval.isValid) {
-			throw new ORPCError('BAD_REQUEST', { message: 'invalid_date' });
+			throw new ORPCError('BAD_REQUEST', { message: ERROR_MESSAGES.INVALID_DATE });
 		}
 
 		if (requestedStart < bookingCutoff) {
-			throw new ORPCError('BAD_REQUEST', { message: 'slot_too_soon' });
+			throw new ORPCError('BAD_REQUEST', { message: ERROR_MESSAGES.SLOT_TOO_SOON });
 		}
 
 		const employeesToUse = employeeId
@@ -54,7 +55,7 @@ export const createBookingHandler = base
 			: employees;
 
 		if (employeesToUse.length === 0) {
-			throw new ORPCError('BAD_REQUEST', { message: 'no_employees_for_service' });
+			throw new ORPCError('BAD_REQUEST', { message: ERROR_MESSAGES.NO_EMPLOYEES_FOR_SERVICE });
 		}
 
 		const orgIntervals = getIntervalsForDate(organization.openingTimes, requestedStart, timeZone);
@@ -96,13 +97,13 @@ export const createBookingHandler = base
 		}
 
 		if (!bestEmployeeId) {
-			throw new ORPCError('BAD_REQUEST', { message: 'slot_not_available' });
+			throw new ORPCError('BAD_REQUEST', { message: ERROR_MESSAGES.SLOT_NOT_AVAILABLE });
 		}
 
 		const bestEmployee = employeesToUse.find((employee) => employee.member.id === bestEmployeeId);
 
 		if (!bestEmployee) {
-			throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'employee_lookup_failed' });
+			throw new ORPCError('INTERNAL_SERVER_ERROR', { message: ERROR_MESSAGES.EMPLOYEE_LOOKUP_FAILED });
 		}
 
 		const ctxAuth = await auth.$context;
@@ -122,7 +123,7 @@ export const createBookingHandler = base
 		}
 
 		if (!user) {
-			throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'failed_to_create_user' });
+			throw new ORPCError('INTERNAL_SERVER_ERROR', { message: ERROR_MESSAGES.FAILED_TO_CREATE_USER });
 		}
 
 		let customer = await db.query.customer.findFirst({

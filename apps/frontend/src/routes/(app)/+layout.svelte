@@ -53,7 +53,6 @@
 				</Breadcrumb.Root>
 			</div>
 			<div class="flex items-center gap-2">
-				<DarkToggle />
 				<Button
 					onclick={() =>
 						window.open(
@@ -65,6 +64,7 @@
 				>
 					<SquareArrowOutUpRight />
 				</Button>
+				<DarkToggle />
 				<NotificationComponent />
 			</div>
 		</div>

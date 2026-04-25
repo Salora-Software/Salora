@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 
 import { protectedBase } from '../../bases/protected';
 import { enqueueTemplateEmail } from '@/lib/email-queue';
+import { ERROR_MESSAGES } from '@/lib/error-messages';
 
 import { cancelAppointmentInputSchema } from './booking.schema';
 

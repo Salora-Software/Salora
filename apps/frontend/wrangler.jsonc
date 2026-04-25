@@ -50,5 +50,5 @@
 		"MAIL_EMAIL_SENDER": "noreply@example.com",
 		"TRUSTED_IPS": "",
 		"PUBLIC_FRONTEND_URL": "http://localhost:5173"
-	}
+	},
 }

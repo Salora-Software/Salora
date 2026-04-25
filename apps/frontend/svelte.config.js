@@ -4,6 +4,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const deployTarget = process.env.DEPLOY_TARGET;
 const useWorkerAdapter = deployTarget === 'worker';
+console.log(`Using ${useWorkerAdapter ? 'Cloudflare Worker' : 'Node.js'} adapter for SvelteKit...`);
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -23,7 +24,7 @@ const config = {
 					configPath: 'wrangler.jsonc',
 					environment: process.env.NODE_ENV,
 					persist: {
-						path: '../../.wrangler/state'
+						path: '../../.wrangler/state/v3'
 					}
 				}
 			})

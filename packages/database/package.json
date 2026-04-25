@@ -1,34 +1,36 @@
 {
-  "name": "@salora/database",
-  "version": "0.0.1",
-  "main": "./index.ts",
-  "types": "./index.ts",
-  "type": "module",
-  "exports": {
-    ".": "./index.ts",
-    "./node": "./src/node.ts",
-    "./worker": "./index.worker.ts"
-  },
-  "scripts": {
-    "db:push": "bunx drizzle-kit push",
-    "db:studio": "bunx drizzle-kit studio",
-    "db:generate": "bunx drizzle-kit generate",
-    "db:migrate": "bunx drizzle-kit migrate",
-    "services:up": "docker compose -f ../../docker-compose.yml up -d",
-    "services:stop": "docker compose -f ../../docker-compose.yml stop",
-    "services:down": "docker compose -f ../../docker-compose.yml down"
-  },
-  "dependencies": {
-    "@libsql/client": "^0.17.2",
-    "drizzle-orm": "^0.45.1",
-    "postgres": "^3.4.8"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.3.8",
-    "@types/node": "^25.5.0",
-    "dotenv": "^17.2.4",
-    "drizzle-kit": "^0.31.10",
-    "tsx": "^4.21.0",
-    "typescript": "latest"
-  }
+	"name": "@salora/database",
+	"version": "0.0.1",
+	"main": "./index.ts",
+	"types": "./index.ts",
+	"type": "module",
+	"exports": {
+		".": "./index.ts",
+		"./node": "./src/node.ts",
+		"./worker": "./index.worker.ts"
+	},
+	"scripts": {
+		"db:push": "bunx drizzle-kit push",
+		"db:studio": "bunx drizzle-kit studio",
+		"db:generate": "bunx drizzle-kit generate",
+		"db:migrate": "bunx drizzle-kit migrate",
+		"db:worker:apply:local": "wrangler d1 migrations apply DB --config=../../apps/frontend/wrangler.jsonc --persist-to ../../.wrangler/state --local",
+		"services:up": "docker compose -f ../../docker-compose.yml up -d",
+		"services:stop": "docker compose -f ../../docker-compose.yml stop",
+		"services:down": "docker compose -f ../../docker-compose.yml down"
+	},
+	"dependencies": {
+		"@libsql/client": "^0.17.2",
+		"drizzle-orm": "^0.45.1",
+		"postgres": "^3.4.8"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.3.8",
+		"@types/node": "^25.5.0",
+		"dotenv": "^17.2.4",
+		"drizzle-kit": "^0.31.10",
+		"tsx": "^4.21.0",
+		"typescript": "latest",
+		"wrangler": "^4.85.0"
+	}
 }

@@ -42,32 +42,6 @@
 				"build/**"
 			]
 		},
-		"lint": {},
-		"check": {},
-		"db:generate": {
-			"cache": false
-		},
-		"generate:worker": {
-			"cache": false
-		},
-		"db:push": {
-			"cache": false
-		},
-		"services:up": {
-			"cache": false
-		},
-		"build:worker": {
-			"cache": false,
-			"dependsOn": [
-				"^generate:worker",
-				"^build:worker"
-			],
-			"outputs": [
-				"dist/**",
-				".svelte-kit/**",
-				"build/**"
-			]
-		},
 		"build:embed": {
 			"cache": false,
 			"dependsOn": [
@@ -79,21 +53,58 @@
 				"build/**"
 			]
 		},
-		"dev": {
-			"dependsOn": [
-				"^db:generate",
-				"^services:up"
-			],
+		"build:worker": {
 			"cache": false,
-			"persistent": true
+			"dependsOn": [
+				"^build:worker"
+			],
+			"outputs": [
+				"dist/**",
+				".svelte-kit/**",
+				"build/**"
+			]
+		},
+		"check": {},
+		"db:generate": {
+			"cache": false
+		},
+		"db:push": {
+			"cache": false
+		},
+		"db:worker:apply:local": {
+			"cache": false
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true,
+			"dependsOn": [
+				"^db:worker:apply:local"
+			]
 		},
 		"dev:worker": {
 			"cache": false,
-			"persistent": true
+			"persistent": true,
+			"dependsOn": [
+				"^db:worker:apply:local"
+			]
+		},
+		"frontend#dev": {
+			"cache": false,
+			"persistent": true,
+			"dependsOn": [
+				"^db:worker:apply:local"
+			],
+			"with": [
+				"email-worker#dev:worker"
+			]
+		},
+		"lint": {},
+		"services:up": {
+			"cache": false
 		},
 		"start": {
-			"persistent": true,
-			"cache": false
+			"cache": false,
+			"persistent": true
 		}
 	}
 }

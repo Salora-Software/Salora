@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bunx --bun vite dev --host",
-		"dev:worker": "DEPLOY_TARGET=worker bunx wrangler dev --inspector-port 9229",
+		"dev:worker": "DEPLOY_TARGET=worker bunx --bun vite dev --host",
 		"start": "PORT=5173 node ./build",
 		"start:docker": "PORT=5173 node ./build",
 		"build": "bunx vite build",

@@ -11,7 +11,7 @@
 <Dialog.Root bind:open>
 	<Dialog.Content
 		class={cn(
-			'h-[500px] max-h-[calc(100%-1rem)] w-[840px] max-w-[calc(100%-1rem)] gap-0 border-none   bg-transparent p-0 transition-all duration-300'
+			'h-[500px] w-max! max-w-none! gap-0 border-none   bg-transparent p-0 transition-all duration-300'
 		)}
 	>
 		<WidgetWrapper branchId={page.params.id} />

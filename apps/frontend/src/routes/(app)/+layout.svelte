@@ -4,7 +4,7 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { page } from '$app/state';
-	import { afterNavigate, onNavigate } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate } from '$app/navigation';
 
 	let { children, data } = $props();
 
@@ -14,6 +14,8 @@
 	import DarkToggle from '$lib/components/DarkToggle.svelte';
 	import NotificationComponent from '$lib/components/NotificationComponent.svelte';
 	import { cn } from '$lib/utils';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { SquareArrowOutUpRight } from 'lucide-svelte';
 	let open = $state(true);
 
 	onNavigate(() => {
@@ -52,6 +54,17 @@
 			</div>
 			<div class="flex items-center gap-2">
 				<DarkToggle />
+				<Button
+					onclick={() =>
+						window.open(
+							`http://localhost:5174/popup/${data.branchesState.getActiveBranch()?.id}`,
+							'_blank'
+						)}
+					variant="outline"
+					size="icon-lg"
+				>
+					<SquareArrowOutUpRight />
+				</Button>
 				<NotificationComponent />
 			</div>
 		</div>

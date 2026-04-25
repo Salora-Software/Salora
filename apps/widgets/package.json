@@ -7,6 +7,7 @@
 		"start": "PORT=5173 node ./build",
 		"start:docker": "PORT=5173 node ./build",
 		"dev": "bunx --bun vite dev --host --port 5174",
+		"dev:worker": "DEPLOY_TARGET=worker bun run dev",
 		"build": "bunx --bun vite build",
 		"build:docker": "DEPLOY_TARGET=docker bunx --bun vite build",
 		"build:worker": "DEPLOY_TARGET=worker bunx --bun vite build",

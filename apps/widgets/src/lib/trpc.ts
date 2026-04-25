@@ -9,7 +9,7 @@ import { t } from './translation';
 import superjson from './superjson';
 
 export type TRPCRouterClient = TRPCClient<AppRouter>;
-const DEFAULT_BACKEND_URL = 'https://app.salora.app';
+const DEFAULT_BACKEND_URL = 'http://localhost:5173';
 
 const normalizeBackendUrl = (url?: string | null): string => {
 	if (!url) return DEFAULT_BACKEND_URL;

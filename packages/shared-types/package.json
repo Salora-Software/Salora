@@ -1,19 +1,19 @@
 {
-  "name": "@salora/shared-types",
-  "version": "0.0.1",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@trpc/server": "^11.10.0",
-    "@orpc/client": "^1.13.14",
-    "@orpc/server": "^1.13.14"
-  }
+	"name": "@salora/shared-types",
+	"version": "0.0.1",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@trpc/server": "^11.10.0",
+		"@orpc/client": "^1.13.14",
+		"@orpc/server": "^1.13.14"
+	}
 }

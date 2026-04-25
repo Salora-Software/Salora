@@ -3,7 +3,7 @@
 	import { createTrpcClient } from '$lib/trpc';
 	import BookingWidget from './BookingWidget.svelte';
 	import { BitsConfig } from 'bits-ui';
-	import type { RouterOutput } from '@salora/trpc-types';
+	import type { RouterOutput } from '@salora/shared-types';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
 	import Themer from '$lib/components/Themer.svelte';

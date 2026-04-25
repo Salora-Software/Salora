@@ -6,7 +6,9 @@ import type { PrivateContext } from '$lib/server/trpc/context';
 import type { GetCalendarInput } from './get-calendar.schema';
 
 function getClosedIntervals(range: Interval, openIntervals: Interval[]): Interval[] {
-	const filtered: Interval[] = openIntervals.filter((interval): interval is Interval => !!interval && !!interval.start && !!interval.end);
+	const filtered: Interval[] = openIntervals.filter(
+		(interval): interval is Interval => !!interval && !!interval.start && !!interval.end
+	);
 	const sorted = filtered.sort(
 		(a, b) => (a.start as DateTime).toMillis() - (b.start as DateTime).toMillis()
 	);

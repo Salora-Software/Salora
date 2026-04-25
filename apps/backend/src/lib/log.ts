@@ -1,6 +1,6 @@
-import pino from 'pino';
+import pino from "pino";
 
-import type { Env } from './env';
+import type { Env } from "./env";
 
 export function createLogger(env: Env) {
   return pino({

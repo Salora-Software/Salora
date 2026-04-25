@@ -3,6 +3,7 @@
 Build a Cloudflare Queue based email pipeline that keeps request-time TRPC mutations lightweight, uses organization SMTP first with fallback SMTP from env, and minimizes sensitive data in queue messages by passing IDs only. The implementation keeps your existing template and communication-setting model while replacing Redis/Bun worker flow with Worker-native producer/consumer logic.
 
 **Steps**
+
 1. Phase 1: Define shared queue contract and boundaries
 2. Create a shared package/module for queue message types and validation schema (e.g. `EmailQueueMessageV1` with `jobId`, `organizationId`, `templateType`, `targetType`, `targetId`, `locale`, `initiatorUserId`, `createdAt`, `attempt`).
 3. Add strict zod validation for inbound queue payload in the consumer; reject malformed messages early and throw typed errors for retryable vs non-retryable cases.
@@ -33,6 +34,7 @@ Build a Cloudflare Queue based email pipeline that keeps request-time TRPC mutat
 28. Decommission Redis email queue code in `apps/email-worker/index.ts` and queue-related Redis interfaces in `packages/mailer` once production cutover is stable.
 
 **Relevant files**
+
 - `/root/Salora/apps/frontend/src/lib/server/trpc/routers/v1/authenticated/communication/router.ts` — replace direct send orchestration with queue enqueue calls and keep validation/user-facing errors.
 - `/root/Salora/apps/frontend/wrangler.jsonc` — add producer queue binding and environment mapping.
 - `/root/Salora/apps/frontend/src/app.d.ts` (or worker env types file) — add typed `EMAIL_QUEUE` binding in runtime env.
@@ -45,6 +47,7 @@ Build a Cloudflare Queue based email pipeline that keeps request-time TRPC mutat
 - `/root/Salora/packages/trpc-types/src/**` (or new shared package path) — shared queue event/message type contracts for producer and consumer.
 
 **Verification**
+
 1. Local dev: run frontend worker and email-worker consumer with Wrangler queue simulation; enqueue from `sendTestEmail` and verify consumer receives and sends.
 2. Unit tests: validate queue message schema parsing, provider resolution order (org first, fallback second), and retryable/non-retryable classification.
 3. Integration tests: enqueue with missing org SMTP and confirm fallback SMTP sends successfully.
@@ -54,12 +57,14 @@ Build a Cloudflare Queue based email pipeline that keeps request-time TRPC mutat
 7. Production readiness check: verify structured logs include `jobId` and provider outcome for each attempt.
 
 **Decisions**
+
 - Included: Cloudflare Queue architecture, SMTP-first provider selection, fallback SMTP from env, minimized payload with ID-based lookup in consumer.
 - Excluded: full audit-trail pipeline and mandatory DLQ analytics in v1, per your preference to avoid heavy audit requirements.
 - Assumption: existing DB access from Worker environment is available for consumer-side lookup of organization communication settings and template data.
 - Assumption: at-least-once semantics are acceptable when protected by idempotency key checks.
 
 **Further Considerations**
+
 1. Idempotency backend recommendation: D1 table for deterministic dedupe across regions and restarts; KV is acceptable for simpler setup with eventual consistency tradeoff.
 2. Template source recommendation: keep DB-managed body/subject for current UX, but introduce a typed template registry for critical transactional emails over time.
 3. Optional phase-2 hardening: add Dead Letter Queue and replay tooling after initial production stability is confirmed.

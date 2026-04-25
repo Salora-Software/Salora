@@ -45,7 +45,8 @@ export const fetchBookingData = async (
 								gt(items.endTime, searchSpan.start!.toJSDate()),
 								notInArray(
 									items.bookingId,
-									db.select({ id: schema.booking.id })
+									db
+										.select({ id: schema.booking.id })
 										.from(schema.booking)
 										.where(eq(schema.booking.status, 'CANCELLED'))
 								)

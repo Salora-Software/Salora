@@ -1,1 +1,1 @@
-export { default as Loader } from "./spinner.svelte";
+export { default as Loader } from './spinner.svelte';

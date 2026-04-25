@@ -26,6 +26,7 @@ npm run cf-typegen
 See [docs/architecture/backend-structure.md](../../docs/architecture/backend-structure.md) for detailed folder organization and module purposes.
 
 Quick overview:
+
 ```
 src/
 ├── lib/              # Factories & configuration (app, auth, logger, db)
@@ -40,16 +41,19 @@ src/
 For developers (especially AI agents), consult these resources **before making changes**:
 
 ### Architecture Decisions
+
 - [Factory Pattern](../../docs/adr/001-factory-pattern.md) — Why centralized app setup
 - [ORPC Route Versioning](../../docs/adr/002-orpc-routing.md) — API versioning strategy
 
 ### Architecture Guides
+
 - [Backend Structure Overview](../../docs/architecture/backend-structure.md) — Folder layout & module purposes
 - [ORPC Routes Architecture](../../docs/architecture/orpc-routes.md) — Route handling, base classes, versioning
 - [Middleware Flow](../../docs/architecture/middleware-flow.md) — Request pipeline & context binding
 - [Type Safety & Avoiding `any`](../../docs/architecture/type-safety.md) — Type patterns, current issues to fix
 
 ### Patterns & Examples
+
 - [Pattern Catalog](../../docs/patterns.md) — Middleware, handlers, factories, versioning patterns
 
 ## Key Principles
@@ -74,13 +78,14 @@ export default {
     registerEvents(app);
 
     return app.fetch(request, env, ctx);
-  }
+  },
 };
 ```
 
 ## Known Issues to Fix
 
 See [#43 - Zet documentatie-infrastructuur op](https://github.com/sentje-development/monorepo/issues/43):
+
 - Remove `any` types from `src/lib/factory.ts` (orpcHandler, openapiHandler)
 - Fix null coercion in `src/lib/auth.ts`
 - Complete JSDoc comments for type hints

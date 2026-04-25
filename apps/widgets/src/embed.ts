@@ -37,7 +37,9 @@ script?.parentNode?.insertBefore(container, script);
 
 const scriptEl = script instanceof HTMLScriptElement ? script : null;
 const branchId =
-	scriptEl?.dataset.id || scriptEl?.dataset.branchId || new URLSearchParams(window.location.search).get('branchId');
+	scriptEl?.dataset.id ||
+	scriptEl?.dataset.branchId ||
+	new URLSearchParams(window.location.search).get('branchId');
 const endpoint =
 	scriptEl?.dataset.endpoint ||
 	scriptEl?.dataset.backendUrl ||

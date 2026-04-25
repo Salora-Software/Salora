@@ -1,6 +1,10 @@
-import type { EmailQueueMessage } from '@salora/mailer';
+import type { EmailQueueMessage } from "@salora/mailer";
 
-type TemplateType = 'EMAIL_APPROVED' | 'EMAIL_DENIED' | 'EMAIL_CANCELED' | 'EMAIL_CREATED';
+type TemplateType =
+	| "EMAIL_APPROVED"
+	| "EMAIL_DENIED"
+	| "EMAIL_CANCELED"
+	| "EMAIL_CREATED";
 
 interface QueueTargetInfo {
 	customerEmail?: string | null;
@@ -19,16 +23,10 @@ export const enqueueTemplateEmail = async (
 ): Promise<void> => {
 	if (!emailQueue) return;
 
-	const {
-		templateType,
-		organizationId,
-		bookingId,
-		targets,
-		origin,
-	} = params;
+	const { templateType, organizationId, bookingId, targets, origin } = params;
 
 	const baseJob = {
-		version: 'v3' as const,
+		version: "v3" as const,
 		templateType,
 		organizationId,
 		bookingId,
@@ -40,14 +38,14 @@ export const enqueueTemplateEmail = async (
 	if (targets.customerEmail) {
 		jobs.push({
 			...baseJob,
-			targetAudience: 'CUSTOMER',
+			targetAudience: "CUSTOMER",
 		});
 	}
 
 	if (targets.employeeEmail) {
 		jobs.push({
 			...baseJob,
-			targetAudience: 'EMPLOYEE',
+			targetAudience: "EMPLOYEE",
 		});
 	}
 

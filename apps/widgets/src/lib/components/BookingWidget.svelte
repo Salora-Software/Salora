@@ -27,7 +27,7 @@
 		type TRPCClient
 	} from '$lib/booking-utils.js';
 	import { tick, getContext } from 'svelte';
-	import type { RouterOutput } from '@salora/trpc-types';
+	import type { RouterOutput } from '@salora/shared-types';
 	import { DateTime, type Interval } from 'luxon';
 	import ScrollArea from './ui/scroll-area/scroll-area.svelte';
 	import type { Attachment } from 'svelte/attachments';

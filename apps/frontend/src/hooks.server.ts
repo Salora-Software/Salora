@@ -55,7 +55,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		response.headers.set('Access-Control-Allow-Credentials', 'true');
 	}
 
-	console.log("at end of handle")
+	console.log('at end of handle');
 
 	return response;
 };

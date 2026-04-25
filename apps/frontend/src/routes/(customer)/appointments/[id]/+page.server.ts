@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, parent, fetch }) => {
 
 	const session = (await parent()).session;
 	if (!session) {
-		return { branch, error: 'UNAUTHORIZED', };
+		return { branch, error: 'UNAUTHORIZED' };
 	}
 
 	return { branch, error: null };

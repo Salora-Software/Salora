@@ -2,7 +2,7 @@
 import { createTRPCProxyClient, httpLink, type TRPCClient, type TRPCLink } from '@trpc/client';
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
-import type { AppRouter, RouterOutput } from '@salora/trpc-types';
+import type { AppRouter, RouterOutput } from '@salora/shared-types';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
 import { t } from './translation';

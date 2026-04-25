@@ -19,7 +19,13 @@ const config = {
 		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 		adapter: useWorkerAdapter
 			? adapterCloudflare({
-				
+				platformProxy: {
+					configPath: 'wrangler.jsonc',
+					environment: process.env.NODE_ENV,
+					persist: {
+						path: '../../.wrangler/state'
+					}
+				}
 			})
 			: adapterNode()
 	}

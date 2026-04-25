@@ -39,7 +39,7 @@ export const translations = {
 		},
 		login: {
 			login: 'Inloggen',
-			loginDescription: 'Vul je e-email hieronder om in te loggen',
+			loginDescription: 'Vul je e-email hieronder om in te ',
 			signUp: 'Aanmelden',
 			signUpDescription: 'Vul je naam hieronder in om een nieuw account aan te maken',
 			name: 'Naam',

@@ -4,7 +4,7 @@ import { schema } from '@salora/database';
 import { and, count, eq, exists, gte, lt, lte } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { GetDashboardStatsInput } from './get-dashboard-stats.schema';
-import { type PrivateContext } from '$lib/server/trpc/context';
+import { type PrivateContext } from '@/middleware/trpc';
 import type { ProcedureResolverOptions } from '@trpc/server/unstable-core-do-not-import';
 
 export const getDashboardStatsHandler = async ({

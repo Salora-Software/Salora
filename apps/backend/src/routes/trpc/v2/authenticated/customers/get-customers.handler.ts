@@ -1,5 +1,5 @@
 import { count, desc, eq, like, and, or, type SQL } from 'drizzle-orm';
-import type { PrivateContext } from '$lib/server/trpc/context';
+import type { PrivateContext } from '@/middleware/trpc';
 import { schema } from '@salora/database';
 import type { GetCustomersInput } from './get-customers.schema';
 

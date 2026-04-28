@@ -2,10 +2,10 @@ import { DateTime } from 'luxon';
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { schema } from '@salora/database';
-import { getOrganization } from '$lib/server/general';
-import type { PrivateContext } from '$lib/server/trpc/context';
+import { getOrganization } from '@/lib/general';
+import type { PrivateContext } from '@/middleware/trpc';
 import type { UpsertCalendarItemInput } from './upsert-calendar-item.schema';
-import { enqueueTemplateEmail } from '../../../../../email-queue';
+import { enqueueTemplateEmail } from "@/lib/email-queue";
 
 export const upsertCalendarItemHandler = async ({
 	input,

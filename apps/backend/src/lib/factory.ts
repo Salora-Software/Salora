@@ -18,48 +18,51 @@ import { loggerMiddleware } from "@/middleware/log";
 import { orpcMiddleware } from "@/middleware/orpc";
 import { createBetterAuthRoutes } from "@/routes/auth";
 import { createORPCRoutes } from "@/routes/orpc";
+import { createTrpcRoutes } from "@/routes/trpc";
 import { createScalarRoutes } from "@/routes/scalar";
 import { createAuth } from "@salora/auth";
 
 export interface AppBindings {
-  Variables: {
-    logger: Logger;
-    env: Env;
-    drizzle: ReturnType<typeof createDb>;
-    corsChecked: boolean;
-    auth: ReturnType<typeof createAuth>;
-    orpcHandler: RPCHandler<any>;
-    openapiHandler: OpenAPIHandler<any>;
-    emailQueue?: Queue<EmailQueueMessage>;
-  };
+	Variables: {
+		logger: Logger;
+		env: Env;
+		drizzle: ReturnType<typeof createDb>;
+		corsChecked: boolean;
+		auth: ReturnType<typeof createAuth>;
+		orpcHandler: RPCHandler<any>;
+		trpcHandler: any;
+		openapiHandler: OpenAPIHandler<any>;
+		emailQueue?: Queue<EmailQueueMessage>;
+	};
 }
 
 export function createRouter() {
-  return new Hono<AppBindings>();
+	return new Hono<AppBindings>();
 }
 
 export function createApp(env: Record<string, unknown>) {
-  // Parse env variables
-  const parsedEnv = parseEnv(env);
+	// Parse env variables
+	const parsedEnv = parseEnv(env);
 
-  const router = createRouter();
+	const router = createRouter();
 
-  // Register middleware
-  router.use(createEnvMiddleware(parsedEnv));
-  router.use(
-    requestId({
-      generator: cuid,
-    }),
-  );
-  router.use(loggerMiddleware);
-  router.use(drizzleMiddleware);
-  router.use(createAuthMiddleware(parsedEnv));
-  router.use(orpcMiddleware);
+	// Register middleware
+	router.use(createEnvMiddleware(parsedEnv));
+	router.use(
+		requestId({
+			generator: cuid,
+		}),
+	);
+	router.use(loggerMiddleware);
+	router.use(drizzleMiddleware);
+	router.use(createAuthMiddleware(parsedEnv));
+	router.use(orpcMiddleware);
 
-  // Register routes
-  createBetterAuthRoutes(router);
-  createORPCRoutes(router);
-  createScalarRoutes(router);
-  registerEvents(router);
-  return router;
+	// Register routes
+	createBetterAuthRoutes(router);
+	createTrpcRoutes(router);
+	createORPCRoutes(router);
+	createScalarRoutes(router);
+	registerEvents(router);
+	return router;
 }

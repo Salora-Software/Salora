@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, setContext } from 'svelte';
-	import { createTrpcClient } from '$lib/trpc';
 	import BookingWidget from './BookingWidget.svelte';
 	import { BitsConfig } from 'bits-ui';
 	import type { RouterOutput } from '@salora/shared-types';
@@ -18,12 +17,10 @@
 	const mode = 'light';
 	setMode(mode);
 
-	const trpc = createTrpcClient(endpoint);
 	const orpc = createOrpcClient(endpoint);
 
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
-	setContext('trpc', trpc);
 	setContext('orpc', orpc);
 
 	onMount(async () => {

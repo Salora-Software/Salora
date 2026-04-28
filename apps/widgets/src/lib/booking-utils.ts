@@ -2,8 +2,8 @@ import { toast } from 'svelte-sonner';
 import type { DateValue } from '@internationalized/date';
 import { DateTime, Interval } from 'luxon';
 import type { RouterOutput, AppRouter, ORPCClient, ORPCRouterOutput } from '@salora/shared-types';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import type { createTRPCProxyClient } from '@trpc/client';
+import { normalizePhoneForSubmit } from '$lib/phone.js';
 
 export type TRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
 
@@ -86,7 +86,7 @@ export async function createBooking(
 	values: BookingValues,
 	branch: ORPCRouterOutput['v1']['organisation']['getOrganisation']
 ): Promise<{ success: boolean; employeeId?: string }> {
-	const parsedPhone = parsePhoneNumberFromString(values.contact.phone || '');
+	const phone = normalizePhoneForSubmit(values.contact.phone || '');
 
 	let date = values.date.timeValue?.start;
 	if (!date) {
@@ -100,7 +100,7 @@ export async function createBooking(
 			date: date.toJSDate(),
 			contact: {
 				email: values.contact.email,
-				phone: parsedPhone?.number,
+				phone,
 				firstName: values.contact.firstName,
 				lastName: values.contact.lastName,
 				notes: values.contact.notes

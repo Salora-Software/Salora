@@ -12,6 +12,7 @@ import { parseEnv } from "@/lib/env";
 import type { Env } from "@/lib/env";
 import type { Logger } from "@/lib/log";
 import { createAuthMiddleware } from "@/middleware/auth";
+import { corsMiddleware } from "@/middleware/cors";
 import { drizzleMiddleware } from "@/middleware/drizzle";
 import { createEnvMiddleware } from "@/middleware/env";
 import { loggerMiddleware } from "@/middleware/log";
@@ -47,6 +48,7 @@ export function createApp(env: Record<string, unknown>) {
 	const router = createRouter();
 
 	// Register middleware
+	router.use(corsMiddleware);
 	router.use(createEnvMiddleware(parsedEnv));
 	router.use(
 		requestId({

@@ -9,6 +9,7 @@ export const createAuth = (db: DatabaseType, origin: string) => {
 	// 3. Retourneer de Better Auth instance
 	return betterAuth({
 		baseURL: origin,
+		basePath: "/auth",
 		emailAndPassword: {
 			enabled: true,
 			password: {

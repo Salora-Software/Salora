@@ -11,6 +11,8 @@ import { getErrorMessage, t } from './translation';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTrpcQueryProxy } from './createTrpcQueryProxy';
 
+const backendUrl = env.PUBLIC_BACKEND_BASE || '' + '/api/trpc';
+
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {
 		return observable((observer) => {
@@ -54,7 +56,7 @@ export const trpc = createTRPCProxyClient<AppRouter>({
 	links: [
 		customLink,
 		httpLink({
-			url: '/api/trpc',
+			url: backendUrl,
 			transformer: SuperJSON
 		})
 	]
@@ -65,7 +67,7 @@ export const trpcQuery = createTrpcQueryProxy<AppRouter>(trpc);
 export const trpcS = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpLink({
-			url: '/api/trpc',
+			url: backendUrl,
 			transformer: SuperJSON
 		})
 	]
@@ -75,7 +77,7 @@ export const trpcOnServer = (fetch: FetchEsque) =>
 		links: [
 			customLink,
 			httpLink({
-				url: '/api/trpc',
+				url: backendUrl,
 				transformer: SuperJSON,
 				fetch
 			})

@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { router as createRouter, publicProcedure } from '@/middleware/trpc';
 
 export const protectedProcedure = publicProcedure.use(async (opts) => {
+	console.log("headers:", opts.ctx.headers)
 	const session = await opts.ctx.auth.api.getSession({
 		headers: new Headers(opts.ctx.headers)
 	});

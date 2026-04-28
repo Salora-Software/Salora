@@ -6,6 +6,7 @@ import { toast } from 'svelte-sonner';
 import { t } from './translation';
 export const { signIn, signUp, signOut, useSession, organization, magicLink } = createAuthClient({
 	basePath: '/api/auth',
+	baseURL: env.PUBLIC_BACKEND_BASE,
 	fetchOptions: {
 		onError: (error) => {
 			const errorKey = typeof error.error.code === 'string' ? error.error.code : 'default';

@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { router as v1 } from './v1/router';
 import { router as v2 } from './v2/_router';
-import { publicProcedure } from '@/middleware/trpc';
+import { publicProcedure, router } from '@/middleware/trpc';
 
 export const appRouter = router({
 	ping: publicProcedure

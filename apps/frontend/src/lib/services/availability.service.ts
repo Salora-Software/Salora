@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { DateTime, Interval } from 'luxon';
 import { schema, type DatabaseType } from '@salora/database';
-import { eq, and, gt, lt } from 'drizzle-orm';
+import { eq, and, gt, lt, or, isNull } from 'drizzle-orm';
 import { getIntervalsForDate } from '@salora/availability';
 import {
 	mapToBlockedPeriods,
@@ -39,15 +39,18 @@ export const fetchBookingData = async (
 					availabilities: true,
 					calendarItems: {
 						// Using where closure for dates (assuming string format in SQLite)
-						where: (items, { and, lt, gt, notInArray }) =>
+						where: (items, { and, lt, gt, notInArray, or, isNull }) =>
 							and(
 								lt(items.startTime, searchSpan.end!.toJSDate()),
 								gt(items.endTime, searchSpan.start!.toJSDate()),
-								notInArray(
-									items.bookingId,
-									db.select({ id: schema.booking.id })
-										.from(schema.booking)
-										.where(eq(schema.booking.status, 'CANCELLED'))
+								or(
+									isNull(items.bookingId),
+									notInArray(
+										items.bookingId,
+										db.select({ id: schema.booking.id })
+											.from(schema.booking)
+											.where(eq(schema.booking.status, 'CANCELLED'))
+									)
 								)
 							)
 					}

@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import type { AddTimeOffInput } from './add-time-off.schema';
 import { schema } from '@salora/database';
 import type { PrivateContext } from '$lib/server/trpc/context';
+import { inArray } from 'drizzle-orm';
 
 export const addTimeOffHandler = async ({
 	input,
@@ -44,6 +45,43 @@ export const addTimeOffHandler = async ({
 		throw new TRPCError({
 			code: 'FORBIDDEN',
 			message: 'insufficient_permissions'
+		});
+	}
+
+	if (startTime >= endTime) {
+		throw new TRPCError({
+			code: 'BAD_REQUEST',
+			message: 'start_time_must_be_before_end_time'
+		});
+	}
+
+	// 1. Check for overlapping bookings or existing time-off
+	const conflictingItems = await db.query.calendarItem.findMany({
+		where: (ci, { and, eq, lt, gt, inArray }) =>
+			and(
+				eq(ci.employeeId, memberId),
+				inArray(ci.type, [schema.CalendarItemTypes.BOOKING, schema.CalendarItemTypes.TIME_OFF]),
+				lt(ci.startTime, endTime),
+				gt(ci.endTime, startTime)
+			),
+		with: {
+			booking: true
+		}
+	});
+
+	const activeConflicts = conflictingItems.filter(
+		(item) =>
+			item.type !== schema.CalendarItemTypes.BOOKING ||
+			(item.booking && item.booking.status !== 'CANCELLED')
+	);
+
+	if (activeConflicts.length > 0) {
+		const hasBookingConflict = activeConflicts.some(
+			(i) => i.type === schema.CalendarItemTypes.BOOKING
+		);
+		throw new TRPCError({
+			code: 'CONFLICT',
+			message: hasBookingConflict ? 'overlap_with_existing_booking' : 'overlap_with_existing_time_off'
 		});
 	}
 

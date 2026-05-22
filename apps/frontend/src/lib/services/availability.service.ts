@@ -39,25 +39,32 @@ export const fetchBookingData = async (
 					availabilities: true,
 					calendarItems: {
 						// Using where closure for dates (assuming string format in SQLite)
-						where: (items, { and, lt, gt, notInArray, or, isNull }) =>
+						where: (items, { and, lt, gt }) =>
 							and(
 								lt(items.startTime, searchSpan.end!.toJSDate()),
-								gt(items.endTime, searchSpan.start!.toJSDate()),
-								or(
-									isNull(items.bookingId),
-									notInArray(
-										items.bookingId,
-										db.select({ id: schema.booking.id })
-											.from(schema.booking)
-											.where(eq(schema.booking.status, 'CANCELLED'))
-									)
-								)
+								gt(items.endTime, searchSpan.start!.toJSDate())
 							)
 					}
 				}
 			}
 		}
 	});
+
+	// Handle CANCELLED bookings in memory to avoid D1 subquery edge cases
+	const cancelledBookings = await db.query.booking.findMany({
+		where: eq(schema.booking.status, 'CANCELLED'),
+		columns: { id: true }
+	});
+	const cancelledBookingIds = new Set(cancelledBookings.map((b) => b.id));
+
+	// Filter out cancelled bookings from calendarItems
+	for (const emp of employees) {
+		if (emp.member && emp.member.calendarItems) {
+			emp.member.calendarItems = emp.member.calendarItems.filter(
+				(item) => !item.bookingId || !cancelledBookingIds.has(item.bookingId)
+			);
+		}
+	}
 
 	return { organization, service, employees };
 };

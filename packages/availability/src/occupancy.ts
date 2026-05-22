@@ -23,18 +23,29 @@ export const buildBookedMinutesPerDate = (
     const items = employee.member.calendarItems || [];
 
     for (const item of items) {
-      if (item.type !== "BOOKING") continue;
+      if (item.type !== "BOOKING" && item.type !== "TIME_OFF") continue;
 
-      const durationMinutes =
-        (item.endTime.getTime() - item.startTime.getTime()) / 60000;
-      const dateStr = DateTime.fromJSDate(item.startTime)
-        .setZone(timeZone)
-        .toISODate()!;
-
-      bookedMinutesPerDate.set(
-        dateStr,
-        (bookedMinutesPerDate.get(dateStr) || 0) + durationMinutes,
-      );
+      const start = DateTime.fromJSDate(item.startTime).setZone(timeZone);
+      const end = DateTime.fromJSDate(item.endTime).setZone(timeZone);
+      
+      let current = start.startOf("day");
+      while (current < end) {
+        const nextDay = current.plus({ days: 1 }).startOf("day");
+        const intervalEnd = end < nextDay ? end : nextDay;
+        const intervalStart = start > current ? start : current;
+        
+        const durationMinutes = (intervalEnd.toMillis() - intervalStart.toMillis()) / 60000;
+        
+        if (durationMinutes > 0) {
+          const dateStr = current.toISODate()!;
+          bookedMinutesPerDate.set(
+            dateStr,
+            (bookedMinutesPerDate.get(dateStr) || 0) + durationMinutes,
+          );
+        }
+        
+        current = nextDay;
+      }
     }
   }
 

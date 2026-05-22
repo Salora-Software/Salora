@@ -104,7 +104,7 @@ export const getOccupancyHandler = async ({ input, ctx: { db } }: GetOccupancyOp
 				}
 
 				for (const item of employee.member.calendarItems || []) {
-					if (item.type !== 'BOOKING') continue;
+					if (item.type !== 'BOOKING' && item.type !== 'TIME_OFF') continue;
 
 					const bookingInterval = Interval.fromDateTimes(
 						DateTime.fromJSDate(item.startTime).setZone(timeZone),

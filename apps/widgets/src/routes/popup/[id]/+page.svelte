@@ -1,9 +1,10 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { onMount } from 'svelte';
+	import { onMount, setContext } from 'svelte';
 	import { cn } from '$lib/utils.js';
 	import { page } from '$app/state';
 	import BookingWidget from '$lib/components/BookingWidget.svelte';
+	import { createTrpcClient } from '$lib/trpc.js';
 	let open = $state(true);
 	let { data } = $props();
 	let branch = $derived(data.branch);
@@ -16,6 +17,8 @@
 			}
 		});
 	});
+	const trpc = createTrpcClient();
+	setContext('trpc', trpc);
 </script>
 
 <Dialog.Root

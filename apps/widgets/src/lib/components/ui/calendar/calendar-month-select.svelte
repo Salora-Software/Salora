@@ -20,7 +20,14 @@
 >
 	<CalendarPrimitive.MonthSelect bind:ref class="absolute inset-0 opacity-0" {...restProps}>
 		{#snippet child({ props, monthItems, selectedMonthItem })}
-			<select {...props} {value} {onchange}>
+			<select
+				{...props}
+				{value}
+				onchange={(event) => {
+					props?.onchange?.(event);
+					onchange?.(event);
+				}}
+			>
 				{#each monthItems as monthItem (monthItem.value)}
 					<option
 						value={monthItem.value}

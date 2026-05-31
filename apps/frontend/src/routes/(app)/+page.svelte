@@ -504,7 +504,7 @@
 	<Card.Header>
 		<Card.Title>
 			Afspraken
-			<span class="text-muted-foreground text-xs"> (Komende 24 uur) </span>
+			<span class="text-muted-foreground text-xs"> (Vandaag & Morgen) </span>
 		</Card.Title>
 	</Card.Header>
 	<Card.Content>
@@ -643,9 +643,9 @@
 		{:else}
 			<div class="flex h-40 flex-col items-center justify-center">
 				<CalendarDays class="text-muted-foreground mb-4 h-12 w-12" />
-				<p class="text-foreground text-lg font-medium">Geen afspraken in de komende 24 uur</p>
+				<p class="text-foreground text-lg font-medium">Geen afspraken voor vandaag en morgen</p>
 				<p class="text-muted-foreground max-w-md text-center text-sm">
-					Er zijn momenteel geen afspraken gepland in de komende 24 uur. Probeer het later opnieuw.
+					Er zijn momenteel geen afspraken gepland voor vandaag en morgen. Probeer het later opnieuw.
 				</p>
 			</div>
 		{/if}

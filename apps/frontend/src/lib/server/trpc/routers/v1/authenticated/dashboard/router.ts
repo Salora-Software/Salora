@@ -34,14 +34,14 @@ export const router = createRouter({
 			// Get current time in the organization's timezone
 			const now = DateTime.now().setZone(branch.timeZone);
 
-			// Use provided date range or default to the next 24 hours
+			// Use provided date range or default to today and tomorrow
 			let startTime, endTime;
 			if (input?.startDate && input?.endDate) {
 				startTime = DateTime.fromISO(input.startDate).setZone(branch.timeZone).startOf('day');
 				endTime = DateTime.fromISO(input.endDate).setZone(branch.timeZone).endOf('day');
 			} else {
 				startTime = now.startOf('day');
-				endTime = now.plus({ hours: 24 });
+				endTime = now.plus({ days: 1 }).endOf('day');
 			}
 
 			// Convert to UTC Date objects for database query

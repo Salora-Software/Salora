@@ -50,6 +50,13 @@
       "when": 1775028631518,
       "tag": "0006_add_comm_setting_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784718709789,
+      "tag": "0007_strong_puck",
+      "breakpoints": true
     }
   ]
 }

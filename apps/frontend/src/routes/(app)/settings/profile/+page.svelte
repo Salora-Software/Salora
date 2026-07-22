@@ -12,7 +12,6 @@
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { env } from '$env/dynamic/public';
 	import { compressImage } from '$lib/utils';
-	import { PUBLIC_CDN_URL } from '$env/static/public';
 	let { data } = $props();
 	let loading = $state({
 		name: false,
@@ -102,7 +101,7 @@
 						{/if}
 					</span>
 				</div>
-				<Avatar.Image src={PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
+				<Avatar.Image src={env.PUBLIC_CDN_URL + data.session.user.image} alt="@shadcn" />
 				<Avatar.Fallback>
 					<img src="/images/placeholder-small.svg" alt="" />
 				</Avatar.Fallback>

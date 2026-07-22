@@ -48,12 +48,18 @@ export const importAmeliaDataHandler = async ({
 		const ameliaToSaloraCustomers = new Map<string | number, string>();
 		const ameliaToSaloraServices = new Map<string | number, string>();
 
-		const [existingCustomers, existingServices, existingCalendarItems, existingMembers] = await Promise.all([
-			db.query.customer.findMany({ where: eq(schema.customer.organizationId, organizationId) }),
-			db.query.service.findMany({ where: eq(schema.service.organizationId, organizationId) }),
-			db.query.calendarItem.findMany({ where: and(eq(schema.calendarItem.organizationId, organizationId), eq(schema.calendarItem.type, "BOOKING")) }),
-			db.query.member.findMany({ where: eq(schema.member.organizationId, organizationId) })
-		]);
+		const [existingCustomers, existingServices, existingCalendarItems, existingMembers] =
+			await Promise.all([
+				db.query.customer.findMany({ where: eq(schema.customer.organizationId, organizationId) }),
+				db.query.service.findMany({ where: eq(schema.service.organizationId, organizationId) }),
+				db.query.calendarItem.findMany({
+					where: and(
+						eq(schema.calendarItem.organizationId, organizationId),
+						eq(schema.calendarItem.type, 'BOOKING')
+					)
+				}),
+				db.query.member.findMany({ where: eq(schema.member.organizationId, organizationId) })
+			]);
 
 		console.log('[IMPORT] Fetched existing data:', {
 			customers: existingCustomers.length,
@@ -91,13 +97,16 @@ export const importAmeliaDataHandler = async ({
 		if (ameliaData.services && Array.isArray(ameliaData.services)) {
 			console.log('[IMPORT] Processing', ameliaData.services.length, 'services...');
 			for (const ameliaService of ameliaData.services) {
-				const existingService = existingServices.find(s => s.name === ameliaService.name);
-				const durationInMinutes = ameliaService.duration ? Math.floor(ameliaService.duration / 60) : 60;
+				const existingService = existingServices.find((s) => s.name === ameliaService.name);
+				const durationInMinutes = ameliaService.duration
+					? Math.floor(ameliaService.duration / 60)
+					: 60;
 				const serviceCreatedAt = earliestServiceDates.get(ameliaService.id) || new Date();
 
 				if (existingService) {
 					serviceUpdates.push(
-						db.update(schema.service)
+						db
+							.update(schema.service)
 							.set({
 								duration: durationInMinutes,
 								price: ameliaService.price || existingService.price,
@@ -124,34 +133,45 @@ export const importAmeliaDataHandler = async ({
 						updatedAt: serviceCreatedAt
 					});
 					ameliaToSaloraServices.set(ameliaService.id, saloraServiceId);
-					existingServices.push({ id: saloraServiceId, name: ameliaService.name || 'Unknown Service', duration: durationInMinutes } as any);
+					existingServices.push({
+						id: saloraServiceId,
+						name: ameliaService.name || 'Unknown Service',
+						duration: durationInMinutes
+					} as any);
 					servicesImported++;
 				}
 			}
-			console.log('[IMPORT] Services processed:', { toInsert: servicesToInsert.length, toUpdate: serviceUpdates.length });
+			console.log('[IMPORT] Services processed:', {
+				toInsert: servicesToInsert.length,
+				toUpdate: serviceUpdates.length
+			});
 		}
 
 		// 2. Process Customers
-		const emailMap = new Map(existingCustomers.map(c => [c.email, c]));
-		const phoneMap = new Map(existingCustomers.filter(c => c.phone).map(c => [c.phone, c]));
-		const nameMap = new Map(existingCustomers.map(c => [c.name.toLowerCase(), c]));
+		const emailMap = new Map(existingCustomers.map((c) => [c.email, c]));
+		const phoneMap = new Map(existingCustomers.filter((c) => c.phone).map((c) => [c.phone, c]));
+		const nameMap = new Map(existingCustomers.map((c) => [c.name.toLowerCase(), c]));
 
 		if (ameliaData.customers && Array.isArray(ameliaData.customers)) {
 			console.log('[IMPORT] Processing', ameliaData.customers.length, 'customers...');
 			for (const ameliaCustomer of ameliaData.customers) {
 				const email = ameliaCustomer.email || null;
 				const phone = ameliaCustomer.phone || null;
-				const customerName = `${ameliaCustomer.firstName} ${ameliaCustomer.lastName}`.trim() || 'Unknown';
+				const customerName =
+					`${ameliaCustomer.firstName} ${ameliaCustomer.lastName}`.trim() || 'Unknown';
 				const customerCreatedAt = earliestCustomerDates.get(ameliaCustomer.id) || new Date();
 
 				let existingCustomer = null;
 				if (email && emailMap.has(email)) existingCustomer = emailMap.get(email);
-				if (!existingCustomer && phone && phoneMap.has(phone)) existingCustomer = phoneMap.get(phone);
-				if (!existingCustomer && nameMap.has(customerName.toLowerCase())) existingCustomer = nameMap.get(customerName.toLowerCase());
+				if (!existingCustomer && phone && phoneMap.has(phone))
+					existingCustomer = phoneMap.get(phone);
+				if (!existingCustomer && nameMap.has(customerName.toLowerCase()))
+					existingCustomer = nameMap.get(customerName.toLowerCase());
 
 				if (existingCustomer) {
 					customerUpdates.push(
-						db.update(schema.customer)
+						db
+							.update(schema.customer)
 							.set({
 								name: customerName,
 								phone: phone || existingCustomer.phone,
@@ -179,7 +199,12 @@ export const importAmeliaDataHandler = async ({
 						createdAt: customerCreatedAt,
 						updatedAt: customerCreatedAt
 					});
-					const newCustomer = { id: saloraCustomerId, email: safeEmail, phone, name: customerName } as any;
+					const newCustomer = {
+						id: saloraCustomerId,
+						email: safeEmail,
+						phone,
+						name: customerName
+					} as any;
 					existingCustomers.push(newCustomer);
 					emailMap.set(safeEmail, newCustomer);
 					if (phone) phoneMap.set(phone, newCustomer);
@@ -188,7 +213,10 @@ export const importAmeliaDataHandler = async ({
 					customersImported++;
 				}
 			}
-			console.log('[IMPORT] Customers processed:', { toInsert: customersToInsert.length, toUpdate: customerUpdates.length });
+			console.log('[IMPORT] Customers processed:', {
+				toInsert: customersToInsert.length,
+				toUpdate: customerUpdates.length
+			});
 		}
 
 		// 3. Process Appointments (Bookings & Calendar Items)
@@ -200,8 +228,12 @@ export const importAmeliaDataHandler = async ({
 			console.log('[IMPORT] Processing', ameliaData.appointments.length, 'appointments...');
 			// Create a quick lookup for existing calendar items by time
 			const calendarItemTimes = existingCalendarItems
-				.filter(c => c.startTime)
-				.map(c => ({ id: c.id, bookingId: c.bookingId, time: new Date(c.startTime as any).getTime() }));
+				.filter((c) => c.startTime)
+				.map((c) => ({
+					id: c.id,
+					bookingId: c.bookingId,
+					time: new Date(c.startTime as any).getTime()
+				}));
 
 			for (const ameliaAppointment of ameliaData.appointments) {
 				const saloraCustomerId = ameliaToSaloraCustomers.get(ameliaAppointment.customerId);
@@ -210,31 +242,35 @@ export const importAmeliaDataHandler = async ({
 				if (!saloraCustomerId || !saloraServiceId) continue;
 
 				const startTimeStr = new Date(ameliaAppointment.bookingStart);
-				const endTimeStr = ameliaAppointment.bookingEnd ? new Date(ameliaAppointment.bookingEnd) : new Date(startTimeStr.getTime() + 60 * 60 * 1000);
+				const endTimeStr = ameliaAppointment.bookingEnd
+					? new Date(ameliaAppointment.bookingEnd)
+					: new Date(startTimeStr.getTime() + 60 * 60 * 1000);
 
 				if (isNaN(startTimeStr.getTime())) continue;
 
 				const StatusMap: Record<string, 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'> = {
-					'pending': 'PENDING',
-					'confirmed': 'CONFIRMED',
-					'cancelled': 'CANCELLED',
-					'completed': 'COMPLETED'
+					pending: 'PENDING',
+					confirmed: 'CONFIRMED',
+					cancelled: 'CANCELLED',
+					completed: 'COMPLETED'
 				};
 				const status = StatusMap[(ameliaAppointment.status || '').toLowerCase()] || 'CONFIRMED';
 				const notes = ameliaAppointment.internalNotes || null;
 
 				const targetTime = startTimeStr.getTime();
-				const existingAppt = calendarItemTimes.find(c => Math.abs(c.time - targetTime) < 2000);
+				const existingAppt = calendarItemTimes.find((c) => Math.abs(c.time - targetTime) < 2000);
 
 				if (existingAppt && existingAppt.bookingId) {
 					bookingUpdates.push(
-						db.update(schema.booking)
+						db
+							.update(schema.booking)
 							.set({ status, notes, updatedAt: new Date() })
 							.where(eq(schema.booking.id, existingAppt.bookingId))
 							.execute()
 					);
 					bookingUpdates.push(
-						db.update(schema.calendarItem)
+						db
+							.update(schema.calendarItem)
 							.set({ notes, updatedAt: new Date() })
 							.where(eq(schema.calendarItem.id, existingAppt.id))
 							.execute()
@@ -245,9 +281,11 @@ export const importAmeliaDataHandler = async ({
 
 				// Generate New Booking
 				const bookingId = randomUUID();
-				const createdDate = ameliaAppointment.created ? new Date(ameliaAppointment.created) : new Date();
-				const customer = existingCustomers.find(c => c.id === saloraCustomerId);
-				const service = existingServices.find(s => s.id === saloraServiceId);
+				const createdDate = ameliaAppointment.created
+					? new Date(ameliaAppointment.created)
+					: new Date();
+				const customer = existingCustomers.find((c) => c.id === saloraCustomerId);
+				const service = existingServices.find((s) => s.id === saloraServiceId);
 				const appointmentTitle = `${customer?.name || 'Unknown Customer'} - ${service?.name || 'Unknown Service'}`;
 				const fallbackDuration = service && 'duration' in service ? (service as any).duration : 60;
 
@@ -272,7 +310,7 @@ export const importAmeliaDataHandler = async ({
 					employeeId: defaultEmployeeId,
 					startTime: startTimeStr,
 					endTime: endTimeStr,
-					type: "BOOKING",
+					type: 'BOOKING',
 					notes,
 					bookingId: bookingId,
 					createdAt: createdDate,
@@ -282,7 +320,10 @@ export const importAmeliaDataHandler = async ({
 				calendarItemTimes.push({ id: 'new', bookingId, time: targetTime });
 				bookingsImported++;
 			}
-			console.log('[IMPORT] Appointments processed:', { toInsert: bookingsToInsert.length, toUpdate: bookingUpdates.length });
+			console.log('[IMPORT] Appointments processed:', {
+				toInsert: bookingsToInsert.length,
+				toUpdate: bookingUpdates.length
+			});
 		}
 
 		// Execute Batch Queries
@@ -309,7 +350,10 @@ export const importAmeliaDataHandler = async ({
 
 		// Run grouped updates concurrently using Promise.all chunks
 		console.log('[IMPORT] Executing batch updates...');
-		for (const chunk of chunkArray([...serviceUpdates, ...customerUpdates, ...bookingUpdates], 50)) {
+		for (const chunk of chunkArray(
+			[...serviceUpdates, ...customerUpdates, ...bookingUpdates],
+			50
+		)) {
 			console.log(`[IMPORT] Updating ${chunk.length} records...`);
 			await Promise.all(chunk);
 		}
@@ -331,7 +375,10 @@ export const importAmeliaDataHandler = async ({
 		};
 	} catch (error) {
 		const message = error instanceof Error ? error.message : 'Unknown error occurred';
-		console.error('[IMPORT] Error during import:', { message, stack: error instanceof Error ? error.stack : undefined });
+		console.error('[IMPORT] Error during import:', {
+			message,
+			stack: error instanceof Error ? error.stack : undefined
+		});
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
 			message: `Failed to sync Amelia data: ${message}`

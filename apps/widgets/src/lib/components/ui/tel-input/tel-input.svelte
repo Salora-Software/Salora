@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
+	import { formatPhoneInput } from '$lib/phone.js';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import type { WithElementRef } from 'bits-ui';
 	import Phone from 'lucide-svelte/icons/phone';
-	import { AsYouType } from 'libphonenumber-js';
 
 	let {
 		ref = $bindable(null),
@@ -19,10 +19,7 @@
 
 	function handleInput(e: Event) {
 		const input = e.target as HTMLInputElement;
-		// Simple regex: allow +, digits, and spaces
-		let val = input.value.replace(/[^0-9+ ]/g, '');
-		const formatter = new AsYouType('NL');
-		val = formatter.input(val);
+		const val = formatPhoneInput(input.value);
 		value = val;
 		input.value = val;
 	}
@@ -31,7 +28,7 @@
 <div class="flex rounded-md shadow-sm shadow-black/4">
 	<div
 		class={cn(
-			'border-input bg-background/50 text-muted-foreground ring-offset-background relative inline-flex items-center self-stretch rounded-l-lg rounded-r-none border border-r-0 py-2 pe-2 ps-3 transition-shadow has-[:disabled]:pointer-events-none has-[:disabled]:opacity-50',
+			'border-input bg-background/50 text-muted-foreground ring-offset-background relative inline-flex items-center self-stretch rounded-l-lg rounded-r-none border border-r-0 py-2 pe-2 ps-3 transition-shadow has-disabled:pointer-events-none has-disabled:opacity-50',
 			className
 		)}
 	>

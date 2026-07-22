@@ -148,14 +148,14 @@ export const upsertCalendarItemHandler = async ({
 				const originalStartTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.startTime, {
-								zone: organization.timeZone
-							})
+							zone: organization.timeZone
+						})
 						: null;
 				const originalEndTime =
 					timeChanged && newStatus !== 'CANCELLED'
 						? DateTime.fromJSDate(existingItem.endTime, {
-								zone: organization.timeZone
-							})
+							zone: organization.timeZone
+						})
 						: null;
 
 				let newMember = null;

@@ -1,4 +1,4 @@
-# _template
+# \_template
 
 To install dependencies:
 

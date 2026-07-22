@@ -5,7 +5,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 // Define the schema for public environment variables
 const publicSchema = z.object({
 	PUBLIC_CDN_URL: z.string().url().default('https://cdn.salora.app'),
-	PUBLIC_FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+	PUBLIC_FRONTEND_URL: z.string().url().default('http://localhost:5173')
 });
 
 // Define the schema for private environment variables
@@ -13,7 +13,10 @@ const privateSchema = z.object({
 	DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 	// Mail Configuration
 	MAIL_FALLBACK_SERVER: z.string().min(1, 'MAIL_FALLBACK_SERVER is required'),
-	MAIL_FALLBACK_PORT: z.string().default('587').transform((val) => parseInt(val, 10)),
+	MAIL_FALLBACK_PORT: z
+		.string()
+		.default('587')
+		.transform((val) => parseInt(val, 10)),
 	MAIL_FALLBACK_USERNAME: z.string().min(1, 'MAIL_FALLBACK_USERNAME is required'),
 	MAIL_FALLBACK_PASSWORD: z.string().min(1, 'MAIL_FALLBACK_PASSWORD is required'),
 	MAIL_EMAIL_SENDER: z.string().email().optional(),
@@ -24,10 +27,13 @@ const privateSchema = z.object({
 	S3_BUCKET: z.string().min(1, 'S3_BUCKET is required'),
 
 	// Security
-	TRUSTED_IPS: z.string().default('127.0.0.1,::1').transform((val) => val.split(',').map(ip => ip.trim())),
+	TRUSTED_IPS: z
+		.string()
+		.default('127.0.0.1,::1')
+		.transform((val) => val.split(',').map((ip) => ip.trim())),
 
 	// App Specific
-	DEPLOY_TARGET: z.enum(['worker', 'node', 'docker']).default('node'),
+	DEPLOY_TARGET: z.enum(['worker', 'node', 'docker']).default('node')
 });
 
 // Combine schemas for server-side validation
@@ -38,7 +44,10 @@ const parseResult = serverEnvSchema.safeParse({ ...publicEnv, ...privateEnv });
 
 if (!parseResult.success) {
 	// In Cloudflare Workers, console.error shows up in logs
-	console.error('❌ Invalid environment variables:', JSON.stringify(parseResult.error.format(), null, 4));
+	console.error(
+		'❌ Invalid environment variables:',
+		JSON.stringify(parseResult.error.format(), null, 4)
+	);
 }
 
 export const env = parseResult.data;

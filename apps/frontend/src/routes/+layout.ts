@@ -1,8 +1,14 @@
 import { browser } from '$app/environment';
-import type { LayoutLoad } from './$types';
 import { QueryClient } from '@tanstack/svelte-query';
+import type { LayoutLoad } from './$types';
+import { getSession } from '$lib/auth-client';
 
-export const load: LayoutLoad = async ({ data }) => {
+export const ssr = false;
+
+export const load: LayoutLoad = async ({
+
+}) => {
+	const { data } = await getSession();
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
@@ -13,6 +19,6 @@ export const load: LayoutLoad = async ({ data }) => {
 
 	return {
 		queryClient,
-		session: data.session ?? null
+		session: data
 	};
 };

@@ -1,32 +1,32 @@
 <script lang="ts">
 	import { onMount, setContext } from 'svelte';
-	import { createTrpcClient } from '$lib/trpc';
 	import BookingWidget from './BookingWidget.svelte';
 	import { BitsConfig } from 'bits-ui';
-	import type { RouterOutput } from '@salora/trpc-types';
+	import type { RouterOutput } from '@salora/shared-types';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
 	import Themer from '$lib/components/Themer.svelte';
 	import { LoaderCircle } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
+	import { createOrpcClient } from '$lib/orpc';
 
-	let { variant = 'widget', branchId, endpoint = 'https://app.salora.app' } = $props();
+	let { variant = 'widget', branchId, endpoint = 'http://localhost:8788' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
 
 	const mode = 'light';
 	setMode(mode);
 
-	const trpc = createTrpcClient(endpoint);
+	const orpc = createOrpcClient(endpoint);
 
 	// Maak de data beschikbaar voor alle diepe componenten (simuleert SSR data)
 	setContext('branch', () => branchData);
-	setContext('trpc', trpc);
+	setContext('orpc', orpc);
 
 	onMount(async () => {
 		try {
 			// Gebruik v1.getBranch zoals in de originele layout.server.ts
-			branchData = await trpc.v1.getBranch.query({
+			branchData = await orpc.v1.organisation.getOrganisation({
 				id: branchId
 			});
 		} catch (e) {

@@ -167,7 +167,7 @@ export const getDashboardStatsHandler = async ({
 	const appointmentChange =
 		lastPeriodBookings.length > 0
 			? ((currentPeriodBookings.length - lastPeriodBookings.length) / lastPeriodBookings.length) *
-				100
+			100
 			: 100;
 	const revenueChange =
 		lastPeriodRevenue > 0

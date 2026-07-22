@@ -18,7 +18,7 @@ export const router = createRouter({
 	ping: publicProcedure
 		.input(z.void())
 		.output(z.any())
-		.query(async ({ }) => {
+		.query(async ({}) => {
 			return ' pong';
 		}),
 	getBranch: publicProcedure
@@ -67,10 +67,11 @@ export const router = createRouter({
 			const [orgResult, servicesResult, membersResult] = await Promise.all([
 				db.select().from(schema.organization).where(eq(schema.organization.id, id)).limit(1),
 				db.select().from(schema.service).where(eq(schema.service.organizationId, id)),
-				db.select({
-					member: schema.member,
-					user: schema.user
-				})
+				db
+					.select({
+						member: schema.member,
+						user: schema.user
+					})
 					.from(schema.member)
 					.innerJoin(schema.user, eq(schema.user.id, schema.member.userId))
 					.where(eq(schema.member.organizationId, id))
@@ -94,22 +95,24 @@ export const router = createRouter({
 					return a.sortingIndex - b.sortingIndex;
 				}),
 
-				members: membersResult.map(row => ({
-					...row.member,
-					user: row.user
-				})).sort((a, b) => {
-					const roleOrder: Record<string, number> = { owner: 0, admin: 1, employee: 2 };
-					const roleA = roleOrder[a.role] ?? 3;
-					const roleB = roleOrder[b.role] ?? 3;
+				members: membersResult
+					.map((row) => ({
+						...row.member,
+						user: row.user
+					}))
+					.sort((a, b) => {
+						const roleOrder: Record<string, number> = { owner: 0, admin: 1, employee: 2 };
+						const roleA = roleOrder[a.role] ?? 3;
+						const roleB = roleOrder[b.role] ?? 3;
 
-					if (roleA !== roleB) {
-						return roleA - roleB;
-					}
+						if (roleA !== roleB) {
+							return roleA - roleB;
+						}
 
-					const createdA = new Date(a.createdAt!).getTime();
-					const createdB = new Date(b.createdAt!).getTime();
-					return createdA - createdB;
-				})
+						const createdA = new Date(a.createdAt!).getTime();
+						const createdB = new Date(b.createdAt!).getTime();
+						return createdA - createdB;
+					})
 			};
 
 			return branch;

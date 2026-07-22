@@ -57,7 +57,7 @@ export const translations = {
 			invalid_phone_number: 'Ongeldig telefoonnummer',
 			slot_not_available: 'De ingevoerde tijd is niet beschikbaar',
 			max_members_reached: 'Het maximum aantal medewerkers is bereikt',
-			invalid_password: 'Ongeldig wachtwoord',
+			invalid_password: 'Ongeldig wachtwoord'
 		},
 		roles: {
 			owner: 'Eigenaar',

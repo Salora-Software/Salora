@@ -1,4 +1,3 @@
-
 interface AmeliaCustomer {
 	id: string | number;
 	firstName: string;
@@ -48,7 +47,9 @@ export async function getAmeliaDataFromMySQL(): Promise<AmeliaData> {
 
 		const ameliaData: AmeliaData = await response.json();
 
-		console.log(`Fetched ${ameliaData.customers?.length || 0} customers, ${ameliaData.services?.length || 0} services, ${ameliaData.appointments?.length || 0} appointments`);
+		console.log(
+			`Fetched ${ameliaData.customers?.length || 0} customers, ${ameliaData.services?.length || 0} services, ${ameliaData.appointments?.length || 0} appointments`
+		);
 
 		return ameliaData;
 	} catch (error) {

@@ -50,6 +50,7 @@ export const aggregateAvailability = (
 
   // Retourneer gesorteerd op tijd
   return Array.from(slotMap.values()).sort(
-    (a, b) => (a.interval.start?.toMillis() || 0) - (b.interval.start?.toMillis() || 0),
+    (a, b) =>
+      (a.interval.start?.toMillis() || 0) - (b.interval.start?.toMillis() || 0),
   );
 };

@@ -1,0 +1,49 @@
+import { TRPCError } from '@trpc/server';
+import { schema } from '@salora/database';
+// import { deleteImage, validateUploadedFileSize } from '@/lib/s3';
+import type { ConfirmLogoUploadInput } from './confirm-logo.schema';
+import type { PrivateContext } from '@/middleware/trpc';
+import { eq } from 'drizzle-orm';
+
+export const confirmLogoUploadHandler = async ({
+	input: { organizationId, imageId },
+	ctx: { db }
+}: {
+	input: ConfirmLogoUploadInput;
+	ctx: PrivateContext;
+}) => {
+	// Reconstruct the imageKey from the imageId to prevent path manipulation
+	const imageKey = `organizations/${organizationId}/logo_${imageId}.png`;
+
+	// Validate that the uploaded file doesn't exceed 2MB
+	// const isValidSize = await validateUploadedFileSize(imageKey, 2 * 1024 * 1024);
+	// if (!isValidSize) {
+	// 	// Delete the oversized file
+	// 	await deleteImage(imageKey);
+	// 	throw new TRPCError({
+	// 		code: 'BAD_REQUEST',
+	// 		message: 'uploaded_file_exceeds_2mb_limit_and_has_been_deleted'
+	// 	});
+	// }
+
+	// Get current logo to delete it
+	const org = await db.query.organization.findFirst({
+		where: (org, { eq }) => eq(org.id, organizationId),
+		columns: { logo: true }
+	});
+
+	// Delete old logo if it exists
+	if (org?.logo) {
+		// deleteImage(org.logo[0] === '/' ? org.logo.substring(1) : org.logo).catch((e) => {
+		// 	console.error('Error deleting old logo:', e);
+		// });
+	}
+
+	// Update organization with new logo path
+	await db
+		.update(schema.organization)
+		.set({ logo: `/${imageKey}` })
+		.where(eq(schema.organization.id, organizationId));
+
+	return `/${imageKey}`;
+};

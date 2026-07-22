@@ -35,8 +35,9 @@ const getTemplateVariableWarnings = (
 	const bodyValidation = validateTemplateRecordVariables(bodyRecord, allowedPaths);
 	const unknown = [...new Set([...subjectValidation.unknown, ...bodyValidation.unknown])];
 
-	return unknown.map((path) =>
-		`Onbekende variabele: {{ ${path} }}. Gebruik dot-path variabelen zoals {{ customer.name }}.`
+	return unknown.map(
+		(path) =>
+			`Onbekende variabele: {{ ${path} }}. Gebruik dot-path variabelen zoals {{ customer.name }}.`
 	);
 };
 

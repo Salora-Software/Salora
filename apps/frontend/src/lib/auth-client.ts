@@ -4,8 +4,8 @@ import { createAuthClient } from 'better-auth/svelte';
 
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
-export const { signIn, signUp, signOut, useSession, organization, magicLink } = createAuthClient({
-	basePath: '/api/auth',
+export const { signIn, signUp, signOut, useSession, organization, magicLink, getSession } = createAuthClient({
+	baseURL: new URL(env.PUBLIC_BACKEND_BASE).origin + '/auth',
 	fetchOptions: {
 		onError: (error) => {
 			const errorKey = typeof error.error.code === 'string' ? error.error.code : 'default';

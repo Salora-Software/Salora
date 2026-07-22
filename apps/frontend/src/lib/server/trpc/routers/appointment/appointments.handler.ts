@@ -26,11 +26,7 @@ export const getAppointmentsHandler = async ({
 	}
 
 	const appointments = await db.query.calendarItem.findMany({
-		where: (ci, { eq, and }) =>
-			and(
-				eq(ci.organizationId, branchId),
-				eq(ci.type, 'BOOKING')
-			),
+		where: (ci, { eq, and }) => and(eq(ci.organizationId, branchId), eq(ci.type, 'BOOKING')),
 		with: {
 			booking: {
 				with: {
@@ -58,7 +54,11 @@ export const getAppointmentsHandler = async ({
 	const now = DateTime.now();
 	return filteredAppointments.map((app) => {
 		const endTime = DateTime.fromJSDate(app.endTime);
-		if (endTime < now && app.booking?.status !== 'COMPLETED' && app.booking?.status !== 'CANCELLED') {
+		if (
+			endTime < now &&
+			app.booking?.status !== 'COMPLETED' &&
+			app.booking?.status !== 'CANCELLED'
+		) {
 			// If the appointment has ended, override status to COMPLETED
 			return {
 				...app,

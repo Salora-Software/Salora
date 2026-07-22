@@ -39,7 +39,6 @@
 	modeStorageKey={`lumabooking-mode-${branch?.id}`}
 	themeStorageKey={`lumabooking-theme-${branch?.id}`}
 />
-<Toaster position={'top-right'} richColors />
 <main class="h-screen w-screen">
 	<Themer colorTheme={theme.current}>
 		{@render children()}

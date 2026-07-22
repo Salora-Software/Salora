@@ -51,7 +51,8 @@ export const addTimeOffHandler = async ({
 
 	// Create TimeOff and CalendarItem in a transaction
 	const results = await db.batch([
-		db.insert(schema.timeOff)
+		db
+			.insert(schema.timeOff)
 			.values({
 				id: timeOffId,
 				memberId: memberId,

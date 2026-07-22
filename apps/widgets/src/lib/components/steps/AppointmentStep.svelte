@@ -2,7 +2,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Select from '$lib/components/ui/select';
 	import type { BookingValues } from '$lib/booking-utils.js';
-	import type { RouterOutput } from '@salora/trpc-types';
+	import type { RouterOutput } from '@salora/shared-types';
 
 	interface Props {
 		bookingState: BookingValues;

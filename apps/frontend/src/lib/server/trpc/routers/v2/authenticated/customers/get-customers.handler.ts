@@ -14,11 +14,11 @@ export const getCustomersHandler = async ({
 		eq(schema.customer.organizationId, organizationId),
 		...(search && search.trim() !== ''
 			? [
-					or(
-						like(schema.customer.name, `%${search}%`),
-						like(schema.customer.email, `%${search}%`)
-					) as SQL
-				]
+				or(
+					like(schema.customer.name, `%${search}%`),
+					like(schema.customer.email, `%${search}%`)
+				) as SQL
+			]
 			: [])
 	];
 

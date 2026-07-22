@@ -10,14 +10,17 @@
 		"skipLibCheck": false,
 		"sourceMap": true,
 		"strict": true,
-		"moduleResolution": "bundler",
+		"moduleResolution": "bundler"
 	},
 	"references": [
 		{
-			"path": "../../packages/trpc-types"
+			"path": "../../packages/shared-types"
 		},
 		{
 			"path": "../frontend"
+		},
+		{
+			"path": "../backend"
 		}
 	]
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias

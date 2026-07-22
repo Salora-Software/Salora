@@ -268,16 +268,12 @@ export const router = createRouter({
 
 				// 1. Update de rol van de medewerker
 				batchQueries.push(
-					db.update(schema.member)
-						.set({ role })
-						.where(eq(schema.member.id, employeeId))
+					db.update(schema.member).set({ role }).where(eq(schema.member.id, employeeId))
 				);
 
 				// 2. Update de gekoppelde user
 				batchQueries.push(
-					db.update(schema.user)
-						.set({ name, email })
-						.where(eq(schema.user.id, member.userId))
+					db.update(schema.user).set({ name, email }).where(eq(schema.user.id, member.userId))
 				);
 
 				// 3. Update de availability
@@ -293,8 +289,7 @@ export const router = createRouter({
 				// 4. Verwijder oude availability
 				if (removeItems && removeItems.length > 0) {
 					batchQueries.push(
-						db.delete(schema.availability)
-							.where(inArray(schema.availability.id, removeItems))
+						db.delete(schema.availability).where(inArray(schema.availability.id, removeItems))
 					);
 				}
 
@@ -302,7 +297,8 @@ export const router = createRouter({
 				for (const time of updatedTimes) {
 					if (time.id) {
 						batchQueries.push(
-							db.update(schema.availability)
+							db
+								.update(schema.availability)
 								.set({
 									dayOfWeek: time.dayOfWeek,
 									startTimeUtc: time.startTimeUtc,

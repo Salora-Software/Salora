@@ -11,7 +11,7 @@ export const getIntervalsForDate = (
   date: DateTime,
   timeZone: string,
 ) => {
-  const targetWeekday =  date.weekday;
+  const targetWeekday = date.weekday;
 
   return shifts
     .filter((s) => s.dayOfWeek === targetWeekday)

@@ -49,6 +49,7 @@
     "TRUSTED_IPS": "",
     "PUBLIC_FRONTEND_URL": "http://localhost:5173",
   },
+
   "env": {
     "dev": {
       "name": "salora-dev", // Aparte Worker in Cloudflare Dashboard

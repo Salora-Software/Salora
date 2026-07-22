@@ -21,7 +21,7 @@ const config = {
 		adapter: useWorkerAdapter
 			? adapterCloudflare({
 				platformProxy: {
-					configPath: 'wrangler.jsonc',
+					configPath: '../../wrangler.jsonc',
 					environment: process.env.NODE_ENV,
 					persist: {
 						path: '../../.wrangler/state/v3'

@@ -51,15 +51,24 @@
   },
 
   "env": {
-    "dev": {
+    "development": {
       "name": "salora-dev", // Aparte Worker in Cloudflare Dashboard
       "vars": {
         "PUBLIC_FRONTEND_URL": "https://dev.salora.app",
+        "DEPLOY_TARGET": "worker",
+        "SKIP_DEPENDENCY_INSTALL": "true",
+        "PUBLIC_CDN_URL": "https://cdn.salora.app",
+        "MAIL_FALLBACK_SERVER": "example.smtp.com",
+        "MAIL_FALLBACK_PORT": "587",
+        "MAIL_FALLBACK_USERNAME": "usernam",
+        "MAIL_FALLBACK_PASSWORD": "password",
+        "MAIL_EMAIL_SENDER": "noreply@example.com",
+        "TRUSTED_IPS": "",
       },
       "d1_databases": [
         {
           "binding": "DB",
-          "migrations_dir": "../../packages/database/drizzle",
+          "migrations_dir": "packages/database/drizzle",
           "database_name": "salora-db-dev",
           "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",
         },

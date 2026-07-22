@@ -14,7 +14,7 @@
 		"db:studio": "bunx drizzle-kit studio",
 		"db:generate": "bunx drizzle-kit generate",
 		"db:migrate": "bunx drizzle-kit migrate",
-		"db:worker:apply:local": "wrangler d1 migrations apply DB --config=../../apps/frontend/wrangler.jsonc --persist-to ../../.wrangler/state --local",
+		"db:worker:apply:local": "CI=true wrangler d1 migrations apply DB --config=../../wrangler.jsonc --persist-to ../../.wrangler/state --local -e development",
 		"services:up": "docker compose -f ../../docker-compose.yml up -d",
 		"services:stop": "docker compose -f ../../docker-compose.yml stop",
 		"services:down": "docker compose -f ../../docker-compose.yml down"

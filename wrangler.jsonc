@@ -51,7 +51,7 @@
   },
   "env": {
     "dev": {
-      "name": "salora-frontend-dev", // Aparte Worker in Cloudflare Dashboard
+      "name": "salora-dev", // Aparte Worker in Cloudflare Dashboard
       "vars": {
         "PUBLIC_FRONTEND_URL": "https://dev.salora.app",
       },

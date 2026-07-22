@@ -1,18 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "salora-frontend",
-  "main": ".svelte-kit/cloudflare/_worker.js",
+  "main": "apps/frontend/.svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-03-20",
   "upload_source_maps": true,
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "binding": "ASSETS",
-    "directory": ".svelte-kit/cloudflare",
+    "directory": "apps/frontend/.svelte-kit/cloudflare",
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "migrations_dir": "../../packages/database/drizzle",
+      "migrations_dir": "packages/database/drizzle",
       "database_name": "salora-frontend",
       "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
     },

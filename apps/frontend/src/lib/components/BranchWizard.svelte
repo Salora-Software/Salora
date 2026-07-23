@@ -45,6 +45,7 @@
 			queryClient: QueryClient;
 		};
 	} = $props();
+	console.log(data);
 
 	const loading = $state({
 		branchLogo: false

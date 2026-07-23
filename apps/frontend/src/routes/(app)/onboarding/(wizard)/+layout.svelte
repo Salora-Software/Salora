@@ -31,19 +31,43 @@
 			id: 'settings',
 			label: 'Instellingen', // Bevat 2 stappen -> krijgt een 2x zo brede balk!
 			steps: [
-				{ id: 'opening-hours', path: '/onboarding/opening-hours' },
-				{ id: 'smtp', path: '/onboarding/smtp' }
+				{
+					id: 'opening-hours',
+					path: '/onboarding/opening-hours',
+					title: 'Openingstijden',
+					description: 'Stel hier de openingstijden van je bedrijf in'
+				},
+				{
+					id: 'smtp',
+					path: '/onboarding/smtp',
+					title: 'E-mail instellingen',
+					description: 'Stel hier de SMTP-instellingen in'
+				}
 			]
 		},
 		{
 			id: 'products',
 			label: 'Producten',
-			steps: [{ id: 'products', path: '/onboarding/products' }]
+			steps: [
+				{
+					id: 'products',
+					path: '/onboarding/products',
+					title: 'Producten',
+					description: 'Voeg hier je producten toe'
+				}
+			]
 		},
 		{
 			id: 'employees',
 			label: 'Medewerkers',
-			steps: [{ id: 'employees', path: '/onboarding/employees' }]
+			steps: [
+				{
+					id: 'employees',
+					path: '/onboarding/employees',
+					title: 'Medewerkers',
+					description: 'Voeg hier je medewerkers toe'
+				}
+			]
 		}
 	];
 

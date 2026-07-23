@@ -1,136 +1,122 @@
 <script lang="ts">
+	import { Input } from '$lib/components/ui/input/index';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button } from '$lib/components/ui/button/index';
-	import { Separator } from '$lib/components/ui/separator/index';
-	import * as Card from '$lib/components/ui/card/index';
-	import { Minus, Plus } from 'lucide-svelte';
+	import { Plus, Trash2 } from 'lucide-svelte';
 	import { t } from '$lib/translation';
-	type TimeSlot = {
+
+	export type TimeSlot = {
 		id?: string;
 		day: number;
-		openHour: string;
-		openMinute: string;
-		closeHour: string;
-		closeMinute: string;
+		openTime: string;
+		closeTime: string;
 	};
+
 	let {
-		class: className,
+		class: className = '',
 		schedules = $bindable([]),
-		ondelete = $bindable(async () => {}),
+		ondelete = async () => {},
 		...restProps
 	}: {
+		class?: string;
 		schedules: TimeSlot[];
 		ondelete?: (schedule: TimeSlot) => void | Promise<void>;
 		[key: string]: any;
 	} = $props();
-	let sortedSchedules = $state(
-		schedules.sort((a, b) => {
-			if (a.day !== b.day) {
-				return a.day - b.day;
-			}
-			const aOpenTime = `${a.openHour}:${a.openMinute}`;
-			const bOpenTime = `${b.openHour}:${b.openMinute}`;
-			return aOpenTime.localeCompare(bOpenTime);
+
+	let sortedSchedules = $derived(
+		[...schedules].sort((a, b) => {
+			if (a.day !== b.day) return a.day - b.day;
+			return a.openTime.localeCompare(b.openTime);
 		})
 	);
-	$effect(() => {
-		sortedSchedules = schedules.sort((a, b) => a.day - b.day);
-	});
 
-	function addSlot(schedule: TimeSlot, index: number) {
-		let slotDay = schedules[index].day;
+	function addSlot(index: number) {
+		const targetDay = schedules[index]?.day ?? 0;
 		schedules = [
 			...schedules.slice(0, index + 1),
-			{ day: slotDay, openHour: '', openMinute: '', closeHour: '', closeMinute: '' },
+			{ day: targetDay, openTime: '09:00', closeTime: '17:00' },
 			...schedules.slice(index + 1)
 		];
 	}
 
-	function removeSlot(schedule: TimeSlot, index: number) {
+	function removeSlot(schedule: TimeSlot) {
+		schedules = schedules.filter((s) => s !== schedule);
 		ondelete(schedule);
 	}
 </script>
 
-<div class="grid grid-cols-6 items-center gap-4 font-semibold">
-	<span>Weekdag</span>
-	<span>Openingstijd</span>
-	<span></span>
-	<span>Sluitingstijd</span>
-	<span></span>
-	<span>Acties</span>
-</div>
-
-{#each sortedSchedules as schedule, index}
-	<div class="grid grid-cols-6 items-center gap-4 border-b py-2">
-		<Select.Root type="single" bind:value={schedule.day as unknown as string}>
-			<Select.Trigger class="w-full rounded border px-2 py-1"
-				>{t.days[schedule.day as keyof typeof t.days]}
-			</Select.Trigger>
-			<Select.Content>
-				{#each Object.values(t.days).filter((day) => typeof day === 'string') as day}
-					<Select.Item value={t.days[day as keyof typeof t.days] as string}>{day}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<div class="flex items-center gap-4">
-			<Select.Root type="single" bind:value={schedule.openHour}>
-				<Select.Trigger class="w-full rounded border px-2 py-1">{schedule.openHour}</Select.Trigger>
-				<Select.Content>
-					{#each Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')) as h}
-						<Select.Item value={h}>{h}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-			:
-		</div>
-		<Select.Root type="single" bind:value={schedule.openMinute}>
-			<Select.Trigger class="w-full rounded border px-2 py-1">{schedule.openMinute}</Select.Trigger>
-			<Select.Content>
-				{#each ['00', '15', '30', '45'] as m}
-					<Select.Item value={m}>{m}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-
-		<div class="flex items-center gap-4">
-			<Select.Root type="single" bind:value={schedule.closeHour}>
-				<Select.Trigger class="w-full rounded border px-2 py-1">{schedule.closeHour}</Select.Trigger
-				>
-				<Select.Content>
-					{#each Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')) as h}
-						<Select.Item value={h}>{h}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-			:
-		</div>
-
-		<Select.Root type="single" bind:value={schedule.closeMinute}>
-			<Select.Trigger class="w-full rounded border px-2 py-1">{schedule.closeMinute}</Select.Trigger
-			>
-			<Select.Content>
-				{#each ['00', '15', '30', '45'] as m}
-					<Select.Item value={m}>{m}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-
-		<div class="flex space-x-2">
-			<Button class="h-8 w-8  px-2 py-1 text-sm" onclick={() => addSlot(schedule, index)}>
-				<Plus />
-			</Button>
-			{#if index !== 0}
-				<Button
-					class="h-8 w-8 px-2 py-1 text-sm"
-					onclick={() => {
-						///remove this current slot
-						schedules = schedules.filter((scheduleLoop, indexLoop) => scheduleLoop !== schedule);
-						removeSlot(schedule, index);
-					}}
-				>
-					<Minus />
-				</Button>
-			{/if}
-		</div>
+<div class="w-full max-w-3xl {className}" {...restProps}>
+	<div
+		class="grid grid-cols-12 gap-4 border-b border-neutral-200 pb-2 text-sm font-medium text-neutral-500"
+	>
+		<div class="col-span-4 pl-2">Weekdag</div>
+		<div class="col-span-6">Tijden</div>
+		<div class="col-span-2 pr-2 text-right">Acties</div>
 	</div>
-{/each}
+
+	<div class="divide-y divide-neutral-100">
+		{#each sortedSchedules as schedule, index (schedule.id ?? index)}
+			<div
+				class="grid grid-cols-12 items-center gap-4 py-2 transition-colors hover:bg-neutral-50/50"
+			>
+				<!-- DAG SELECTOR -->
+				<div class="col-span-4">
+					<Select.Root type="single" bind:value={schedule.day as unknown as string}>
+						<Select.Trigger class="h-10 w-full border-neutral-200 bg-white">
+							{t.days[schedule.day as keyof typeof t.days] ?? 'Kies dag'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each Object.entries(t.days) as [dayKey, dayLabel]}
+								<Select.Item value={dayKey}>{dayLabel}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				<!-- COMPACTE TIJDEN GROEP -->
+				<div class="col-span-6">
+					<div
+						class="focus-within:border-primary focus-within:ring-primary flex h-10 w-fit items-center rounded-lg border border-neutral-200 bg-white px-1 shadow-sm transition-shadow focus-within:ring-1"
+					>
+						<Input
+							type="time"
+							bind:value={schedule.openTime}
+							class="h-8 border-0 bg-transparent px-2 font-medium shadow-none focus-visible:ring-0"
+						/>
+						<!-- Subtiele scheidingslijn -->
+						<div class="mx-1 h-4 w-px bg-neutral-200"></div>
+						<Input
+							type="time"
+							bind:value={schedule.closeTime}
+							class="h-8 border-0 bg-transparent px-2 font-medium shadow-none focus-visible:ring-0"
+						/>
+					</div>
+				</div>
+
+				<!-- ACTIES -->
+				<div class="col-span-2 flex items-center justify-end gap-1">
+					<Button
+						variant="ghost"
+						size="icon"
+						class="h-9 w-9 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+						onclick={() => addSlot(index)}
+					>
+						<Plus class="h-4 w-4" />
+					</Button>
+
+					{#if schedules.length > 1}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="h-9 w-9 text-neutral-400 hover:bg-red-50 hover:text-red-600"
+							onclick={() => removeSlot(schedule)}
+						>
+							<Trash2 class="h-4 w-4" />
+						</Button>
+					{/if}
+				</div>
+			</div>
+		{/each}
+	</div>
+</div>

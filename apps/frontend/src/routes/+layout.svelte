@@ -13,7 +13,7 @@
 </script>
 
 <!-- No JavaScript Banner -->
-<noscript>
+<!-- <noscript><noscript>
 	<div
 		style="
 		position: fixed;
@@ -121,7 +121,7 @@
 			</p>
 		</div>
 	</div>
-</noscript>
+</noscript> -->
 
 {#if dev && false}
 	<RenderScan />

@@ -2,10 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 import { BranchesState, SessionUserState, BranchWizardState } from '$lib/runes.svelte';
 
-export const ssr = false;
-
 export const load: LayoutLoad = async ({ parent, url, data }) => {
 	let session = (await parent()).session;
+	console.log('layout load', session, url.pathname, data);
 	if (!session) redirect(307, '/login');
 	let sessionState = new SessionUserState(session);
 	let branchesState = new BranchesState();

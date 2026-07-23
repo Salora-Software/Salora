@@ -1,13 +1,19 @@
+import { Env } from "@/lib/env";
 import { cors } from "hono/cors";
 
-export const corsMiddleware = cors({
-	origin: [
-		"http://localhost:5173",
-		"http://localhost:8788",
-		"http://localhost:3000",
-	],
-	allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-	allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	credentials: true,
-	maxAge: 86400,
-});
+export function createCorsMiddleware(env: Env) {
+  const allowedOrigins = env.TRUSTED_IPS;
+
+  return cors({
+    origin: (origin) => {
+      if (allowedOrigins.includes(origin)) {
+        return origin;
+      }
+      return null;
+    },
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: true, // Zorgt voor Access-Control-Allow-Credentials: true
+    maxAge: 86400,
+  });
+}

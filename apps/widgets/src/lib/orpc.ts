@@ -49,7 +49,10 @@ export const createOrpcClient = (backendUrl?: string): ORPCClient =>
 			customJsonSerializers: orpcCustomJsonSerializers,
 			fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
 				try {
-					const response = await fetch(input, init);
+					const response = await fetch(input, {
+						...init,
+						credentials: 'include'
+					});
 					if (!response.ok) {
 						const clone = response.clone();
 						try {
@@ -76,6 +79,11 @@ export const orpcS: ORPCClient = createORPCClient<ORPCClient>(
 	new RPCLink({
 		url: `${resolvedBackendUrl}/orpc`,
 		customJsonSerializers: orpcCustomJsonSerializers,
+		fetch: async (url, options) =>
+			fetch(url, {
+				...options,
+				credentials: 'include'
+			})
 	})
 ); // Server fetch without toast
 

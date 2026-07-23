@@ -2,7 +2,7 @@
 	"name": "backend",
 	"type": "module",
 	"scripts": {
-		"dev:worker": "NODE_ENV=development wrangler dev --env dev --port 8788 --persist-to ../../.wrangler/state --local",
+		"dev:worker": "wrangler dev --port 8788 --persist-to ../../.wrangler/state --config ../../wrangler.jsonc --local --env development",
 		"build": "wrangler build",
 		"start": "wrangler dev",
 		"deploy": "wrangler deploy --minify",

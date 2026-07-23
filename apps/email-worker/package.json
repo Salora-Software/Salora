@@ -2,7 +2,7 @@
 	"name": "email-worker",
 	"module": "src/index.ts",
 	"scripts": {
-		"dev:worker": "wrangler dev --config=../../wrangler.jsonc --persist-to ../../.wrangler/state --local",
+		"dev:worker": "wrangler dev --config=../../wrangler.jsonc --persist-to ../../.wrangler/state --local --port 8789 --inspector-port 9230",
 		"deploy": "wrangler deploy",
 		"build:worker": "bun build --bun ./src/index.ts --outdir ./dist --target=browser --external cloudflare:sockets",
 		"check": "tsc --noEmit"

@@ -12,10 +12,6 @@ export default {
     const parsedEnv = parseEnv(env);
     const app = createApp(parsedEnv);
 
-    app.get("/hello", () => {
-      throw new Error("kapoet");
-    });
-
     return app.fetch(request, env, ctx);
   },
 };

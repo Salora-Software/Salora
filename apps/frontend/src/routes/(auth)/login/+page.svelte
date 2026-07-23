@@ -60,6 +60,7 @@
 							id="email"
 							type="email"
 							placeholder="johndoe@example.com"
+							class="h-10"
 							required
 						/>
 					</div>
@@ -75,7 +76,13 @@
 								{t.login.forgotPassword}
 							</button>
 						</div>
-						<PasswordInput error={authError.errored} id="password" bind:value={password} required />
+						<PasswordInput
+							error={authError.errored}
+							id="password"
+							bind:value={password}
+							required
+							class="h-10"
+						/>
 					</div>
 					<Button
 						disabled={authError.loading}

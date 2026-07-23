@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "salora-frontend",
-  "main": "apps/frontend/.svelte-kit/cloudflare/_worker.js",
+  "main": "apps/backend/src/index.ts",
   "compatibility_date": "2026-03-20",
   "upload_source_maps": true,
   "compatibility_flags": ["nodejs_compat"],
@@ -46,8 +46,7 @@
     "MAIL_FALLBACK_USERNAME": "usernam",
     "MAIL_FALLBACK_PASSWORD": "password",
     "MAIL_EMAIL_SENDER": "noreply@example.com",
-    "TRUSTED_IPS": "",
-    "PUBLIC_FRONTEND_URL": "http://localhost:5173",
+    "TRUSTED_IPS": "app.salora.app",
   },
 
   "env": {
@@ -63,7 +62,7 @@
         "MAIL_FALLBACK_USERNAME": "usernam",
         "MAIL_FALLBACK_PASSWORD": "password",
         "MAIL_EMAIL_SENDER": "noreply@example.com",
-        "TRUSTED_IPS": "",
+        "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173",
       },
       "d1_databases": [
         {

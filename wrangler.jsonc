@@ -5,10 +5,10 @@
   "compatibility_date": "2026-03-20",
   "upload_source_maps": true,
   "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "apps/frontend/.svelte-kit/cloudflare",
-  },
+  //   "assets": {
+  //     "binding": "ASSETS",
+  //     "directory": "apps/frontend/.svelte-kit/cloudflare",
+  //   },
   "d1_databases": [
     {
       "binding": "DB",

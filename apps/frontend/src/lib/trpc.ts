@@ -11,7 +11,7 @@ import { getErrorMessage, t } from './translation';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTrpcQueryProxy } from './createTrpcQueryProxy';
 
-const backendUrl = (env.PUBLIC_BACKEND_BASE || '');
+const backendUrl = env.PUBLIC_BACKEND_BASE || '';
 
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {
@@ -84,6 +84,17 @@ export const trpcS = createTRPCProxyClient<AppRouter>({
 		})
 	]
 });
+export const trpcOnServer = (fetch: FetchEsque) =>
+	createTRPCProxyClient<AppRouter>({
+		links: [
+			customLink,
+			httpLink({
+				url: '/api/trpc',
+				transformer: SuperJSON,
+				fetch
+			})
+		]
+	});
 
 export type RouterInput = inferRouterInputs<AppRouter>;
 export type RouterOutput = inferRouterOutputs<AppRouter>;

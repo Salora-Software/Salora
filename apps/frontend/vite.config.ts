@@ -14,6 +14,7 @@ export default defineConfig({
 		allowedHosts: ['salora.hexidev.nl', 'dev.salora.app']
 	},
 	ssr: {
-		external: ['@libsql/client']
+		external: ['@libsql/client'],
+		noExternal: ['@tanstack/svelte-query', '@orpc/tanstack-query', '@orpc/client']
 	}
 }); //

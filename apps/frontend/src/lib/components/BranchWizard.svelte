@@ -716,7 +716,7 @@
 						<div class=" relative space-y-6 text-gray-700">
 							<div class="space-y-3">
 								<h1 class="text-4xl leading-tight font-light">
-									Welkom bij
+									Welkom
 									<span class="font-bold text-black">Salora!</span>
 									<span class="relative">
 										<div class="absolute top-4 right-3.75">

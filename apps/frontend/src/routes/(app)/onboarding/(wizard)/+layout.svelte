@@ -5,15 +5,16 @@
 	import { Button } from '$lib/components/ui/button/index';
 	import { setWizardState } from './wizardState.svelte';
 	import { fade, fly } from 'svelte/transition';
+	import { Loader2 } from 'lucide-svelte';
 
 	let { children } = $props();
 
 	// Maak de wizard state beschikbaar voor alle kind-pagina's
 	const wizard = setWizardState();
 
-	// Defineer hier je groepen en de bijbehorende substappen (routes)
 	type Step = { id: string; path: string; title?: string; description?: string };
 	type Group = { id: string; label: string; steps: Step[] };
+
 	const groups: Group[] = [
 		{
 			id: 'company',
@@ -29,7 +30,7 @@
 		},
 		{
 			id: 'settings',
-			label: 'Instellingen', // Bevat 2 stappen -> krijgt een 2x zo brede balk!
+			label: 'Instellingen',
 			steps: [
 				{
 					id: 'opening-hours',
@@ -71,46 +72,49 @@
 		}
 	];
 
-	// Maak een platte array van alle losse stappen voor navigatie en indexering
 	let flatSteps = $derived(groups.flatMap((g) => g.steps));
-
-	// Bepaal de huidige actieve stap index
 	let currentStepIndex = $derived(flatSteps.findIndex((s) => page.url.pathname.includes(s.path)));
 
 	let isFirstStep = $derived(currentStepIndex <= 0);
 	let isLastStep = $derived(currentStepIndex === flatSteps.length - 1);
 
+	// Titel en Omschrijving ophalen (met fallback vanuit wizard state)
+	let currentTitle = $derived(wizard.stepTitle || flatSteps[currentStepIndex]?.title || '');
+	let currentDescription = $derived(
+		wizard.stepDescription || flatSteps[currentStepIndex]?.description || ''
+	);
+
 	function goBack() {
 		if (!isFirstStep) {
+			wizard.reset();
 			goto(flatSteps[currentStepIndex - 1].path);
 		}
 	}
 
-	function goNext() {
-		if (isLastStep) {
-			goto('/dashboard');
-		} else {
-			goto(flatSteps[currentStepIndex + 1].path);
+	async function goNext() {
+		// 1. Voer eerst de geregistreerde actie uit op de actieve pagina (bijv. API/oRPC call)
+		const success = await wizard.executeOnNext();
+
+		// 2. Als de actie succesvol was (of er was geen actie), navigeer door
+		if (success) {
+			if (isLastStep) {
+				goto('/dashboard');
+			} else {
+				wizard.reset();
+				goto(flatSteps[currentStepIndex + 1].path);
+			}
 		}
 	}
 
-	/**
-	 * Berekent het vulpercentage (0% tot 100%) van de progress bar voor een specifieke groep.
-	 */
-	function getGroupProgress(group: (typeof groups)[0]): number {
+	function getGroupProgress(group: Group): number {
 		const stepPaths = group.steps.map((s) => s.path);
-
-		// Vind de indexen van de stappen in deze groep binnen flatSteps
 		const indices = stepPaths.map((p) => flatSteps.findIndex((s) => s.path === p));
 		const minIndex = Math.min(...indices);
 		const maxIndex = Math.max(...indices);
 
-		// Als we de groep nog niet bereikt hebben
 		if (currentStepIndex < minIndex) return 0;
-		// Als we voorbij deze groep zijn
 		if (currentStepIndex > maxIndex) return 100;
 
-		// Als we NU in deze groep zitten, bereken de relatieve voortgang binnen de groep
 		const progressInGroup = currentStepIndex - minIndex + 1;
 		return (progressInGroup / group.steps.length) * 100;
 	}
@@ -153,25 +157,38 @@
 			<div class="grid grid-cols-1 grid-rows-1">
 				{#key page.url.pathname}
 					<div class="col-start-1 row-start-1 w-full" out:fade={{ duration: 100 }}>
-						<Card.Root class=" w-full rounded-2xl border border-neutral-100 bg-white shadow-sm ">
-							<Card.Content>
-								<!-- HEADER -->
+						<Card.Root class="w-full rounded-2xl border border-neutral-100 bg-white shadow-sm">
+							<Card.Content class="p-6 md:p-8">
 								<div class="mb-8 space-y-1">
 									<h1 class="text-2xl font-bold tracking-tight text-neutral-900">
-										{flatSteps[currentStepIndex]?.title}
+										{currentTitle}
 									</h1>
-									<p class="text-sm text-neutral-500">
-										{flatSteps[currentStepIndex]?.description}
-									</p>
+									{#if currentDescription}
+										<p class="text-sm text-neutral-500">
+											{currentDescription}
+										</p>
+									{/if}
 								</div>
+
 								{@render children()}
 
 								<div class="mt-8 flex items-center justify-between">
-									<Button disabled={isFirstStep} variant="outline" onclick={goBack} class="px-6"
-										>Terug</Button
+									<Button
+										disabled={isFirstStep || wizard.isSubmitting}
+										variant="outline"
+										onclick={goBack}
+										class="px-6"
 									>
-									<Button onclick={goNext} disabled={!wizard.canGoNext}>
-										{isLastStep ? 'Afronden' : 'Volgende'}
+										Terug
+									</Button>
+
+									<Button onclick={goNext} disabled={!wizard.canGoNext || wizard.isSubmitting}>
+										{#if wizard.isSubmitting}
+											<Loader2 class="h-4 w-4 animate-spin" />
+											Verwerken...
+										{:else}
+											{isLastStep ? 'Afronden' : 'Volgende'}
+										{/if}
 									</Button>
 								</div>
 							</Card.Content>

@@ -4,16 +4,23 @@
 	import * as Select from '$lib/components/ui/select/index';
 	import { Building2 } from 'lucide-svelte';
 	import { getWizardState } from '../wizardState.svelte';
+	import { orpc, orpcT } from '$lib/orpc';
+	import { createQuery } from '@tanstack/svelte-query';
+	import { z } from 'zod';
 
 	const wizard = getWizardState();
+	const { data } = $props();
+
+	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
+	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
 
 	// Formulier State
 	let companyName = $state('Hex Media');
 	let selectedCountry = $state('NL');
-	let zipcode = $state('');
-	let houseNumber = $state('');
-	let address = $state('');
-	let city = $state('');
+	let zipcode = $state('9765 EC');
+	let houseNumber = $state('8');
+	let address = $state('Paterswolde');
+	let city = $state('Onlandseweg');
 	let selectedCurrency = $state('EUR');
 
 	// Landen opties
@@ -23,9 +30,44 @@
 		{ value: 'DE', label: 'Duitsland', flag: '🇩🇪' }
 	];
 
-	// Valideer of 'Volgende' in de layout actief mag worden
+	// Zod Schema voor formuliervalidatie
+	const companyFormSchema = z.object({
+		companyName: z.string().trim().min(1, 'Bedrijfsnaam is verplicht'),
+		selectedCountry: z.string().min(1, 'Land is verplicht'),
+		zipcode: z.string().trim().min(1, 'Postcode is verplicht'),
+		houseNumber: z.string().trim().min(1, 'Huisnummer is verplicht'),
+		address: z.string().trim().min(1, 'Adres is verplicht'),
+		city: z.string().trim().min(1, 'Plaats is verplicht'),
+		selectedCurrency: z.string().min(1, 'Valuta is verplicht')
+	});
+
+	wizard.setOnNext(async () => {
+		if (!onboardingBranch) {
+			await orpc.v1.organisation.createOrganisation({
+				name: companyName,
+				country: selectedCountry,
+				postalCode: zipcode,
+				city: city,
+				street: address,
+				streetNumber: houseNumber
+			});
+		}
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	});
+
+	// Valideer met Zod of 'Volgende' in de layout actief mag worden
 	$effect(() => {
-		if (companyName.trim().length > 0) {
+		const result = companyFormSchema.safeParse({
+			companyName,
+			selectedCountry,
+			zipcode,
+			houseNumber,
+			address,
+			city,
+			selectedCurrency
+		});
+
+		if (result.success) {
 			wizard.enableNext();
 		} else {
 			wizard.disableNext();
@@ -34,7 +76,6 @@
 </script>
 
 <div class="space-y-5">
-	<!-- BEDRIJFSNAAM -->
 	<div class="space-y-2">
 		<Label for="company-name" class="font-medium text-neutral-700">Bedrijfsnaam</Label>
 		<div class="relative">
@@ -53,7 +94,6 @@
 		</div>
 	</div>
 
-	<!-- LAND SELECT -->
 	<div class="space-y-2">
 		<Label class="font-medium text-neutral-700">Land</Label>
 		<Select.Root type="single" bind:value={selectedCountry}>
@@ -79,7 +119,6 @@
 		</Select.Root>
 	</div>
 
-	<!-- POSTCODE & HUISNUMMER -->
 	<div class="grid grid-cols-2 gap-4">
 		<div class="space-y-2">
 			<Label for="zipcode" class="font-medium text-neutral-700">Postcode</Label>
@@ -103,7 +142,6 @@
 		</div>
 	</div>
 
-	<!-- STRAATNAAM / ADRES -->
 	<div class="space-y-2">
 		<div class="flex items-center justify-between">
 			<Label for="address" class="font-medium text-neutral-700">Adres</Label>
@@ -112,7 +150,6 @@
 		<Input id="address" type="text" bind:value={address} placeholder="Hoofdstraat 1" class="h-10" />
 	</div>
 
-	<!-- PLAATS EN VALUTA IN ÉÉN RIJ -->
 	<div class="grid grid-cols-3 gap-4">
 		<div class="col-span-2 space-y-2">
 			<Label for="city" class="font-medium text-neutral-700">Plaats</Label>
@@ -122,7 +159,7 @@
 		<div class="space-y-2">
 			<Label class="font-medium text-neutral-700">Valuta</Label>
 			<Select.Root type="single" bind:value={selectedCurrency}>
-				<Select.Trigger class="h-10 w-full">
+				<Select.Trigger class="h-10! max-h-full w-full">
 					{selectedCurrency === 'EUR' ? 'EUR (€)' : selectedCurrency}
 				</Select.Trigger>
 				<Select.Content>

@@ -1,5 +1,5 @@
 <script>
-	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
 
 	import '../app.css';
 	import { ModeWatcher } from 'mode-watcher';

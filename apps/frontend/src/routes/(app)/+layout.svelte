@@ -22,7 +22,7 @@
 		data.branchesState.resetOnChangeCallbacks();
 	});
 
-	const isHiddenSidebar = $derived(() => {
+	const isHiddenSidebar = $derived.by(() => {
 		const hiddenPaths = ['/onboarding', '/onboarding/'];
 		return hiddenPaths.some((path) => page.url.pathname.startsWith(path));
 	});

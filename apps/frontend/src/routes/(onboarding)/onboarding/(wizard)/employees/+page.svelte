@@ -2,12 +2,9 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { colors } from '$lib/colors';
 	import Confetti from 'svelte-confetti';
-	import { goto } from '$app/navigation';
 </script>
 
-<div
-	class="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center space-y-8 px-6 text-center"
->
+<div>
 	<!-- Logo/Brand area -->
 	<div class="space-y-4">
 		<img
@@ -41,7 +38,9 @@
 		<Button
 			class="h-12 w-full text-base font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl"
 			onclick={async () => {
-				goto('/onboarding/company');
+				// if (nextStep) {
+				// 	await nextStep();
+				// }
 			}}
 		>
 			Laten we beginnen!

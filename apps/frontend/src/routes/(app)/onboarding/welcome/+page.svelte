@@ -46,8 +46,6 @@
 		>
 			Laten we beginnen!
 		</Button>
-
-		<p class="text-muted-foreground text-center text-xs">Duurt slechts een paar minuten</p>
 	</div>
 
 	<!-- Footer text -->
@@ -56,9 +54,6 @@
 			Door verder te gaan ga je akkoord met onze
 			<a href="/algemene-voorwaarden" class="text-primary hover:underline">Voorwaarden</a>
 			& <a href="/privacy" class="text-primary hover:underline">Privacy</a>
-		</p>
-		<p class="text-muted-foreground text-xs">
-			Salora – Eenvoudig afspraken beheren voor jouw bedrijf ❤️
 		</p>
 	</div>
 </div>

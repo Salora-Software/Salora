@@ -10,6 +10,7 @@ export const authMiddleware = base.middleware(
     },
     next,
   }) => {
+    console.log("authMiddleware called", req.raw.headers);
     const session = await auth.api.getSession({
       headers: req.raw.headers,
     });

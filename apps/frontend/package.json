@@ -83,6 +83,7 @@
 		"@salora/shared-types": "workspace:*",
 		"@tailwindcss/vite": "^4.3.3",
 		"@tanstack/query-core": "5.101.4",
+		"@tanstack/svelte-query": "^6.1.38",
 		"@tanstack/table-core": "^8.21.3",
 		"@trpc-limiter/redis": "^0.0.2",
 		"@trpc/client": "^11.18.0",

@@ -30,20 +30,20 @@
 		},
 		{
 			id: 'settings',
-			label: 'Instellingen',
+			label: 'Openingstijden',
 			steps: [
 				{
 					id: 'opening-hours',
 					path: '/onboarding/opening-hours',
 					title: 'Openingstijden',
 					description: 'Stel hier de openingstijden van je bedrijf in'
-				},
-				{
-					id: 'smtp',
-					path: '/onboarding/smtp',
-					title: 'E-mail instellingen',
-					description: 'Stel hier de SMTP-instellingen in'
 				}
+				// {
+				// 	id: 'smtp',
+				// 	path: '/onboarding/smtp',
+				// 	title: 'E-mail instellingen',
+				// 	description: 'Stel hier de SMTP-instellingen in'
+				// }
 			]
 		},
 		{

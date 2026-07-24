@@ -1,14 +1,14 @@
 import { ORPCError } from "@orpc/server";
 import { schema } from "@salora/database";
-import { eq } from "drizzle-orm";
+import { eq, exists } from "drizzle-orm";
 
-import { base } from "../../bases/public";
 import {
   getOrganizationsInputSchema,
   getOrganizationsOutputSchema,
 } from "./getOrganisations.schema";
+import { protectedBase } from "../../bases/protected";
 
-export const getOrganizationsHandler = base
+export const getOrganizationsHandler = protectedBase
   .route({ method: "GET" })
   .input(getOrganizationsInputSchema)
   .output(getOrganizationsOutputSchema)
@@ -16,9 +16,20 @@ export const getOrganizationsHandler = base
     async ({
       context: {
         var: { drizzle: db },
+        session,
       },
     }) => {
       const organization = await db.query.organization.findMany({
+        where: (org, { exists }) =>
+          exists(
+            db
+              .select()
+              .from(schema.member)
+              .where(
+                eq(schema.member.organizationId, org.id) &&
+                  eq(schema.member.userId, session.user.id),
+              ),
+          ),
         with: {
           services: true,
           openingTimes: true,
@@ -29,6 +40,7 @@ export const getOrganizationsHandler = base
           },
         },
       });
+
       return organization;
     },
   );

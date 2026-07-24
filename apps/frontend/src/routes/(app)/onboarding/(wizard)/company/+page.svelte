@@ -10,7 +10,6 @@
 
 	const wizard = getWizardState();
 	const { data } = $props();
-
 	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
 	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
 

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index';
-
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -11,19 +10,11 @@
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { SettingsInput } from './ui/settings-input';
-	import type { BranchesState, BranchesType, SessionUserType } from '$lib/runes.svelte';
-	import { createRawSnippet, onMount, tick } from 'svelte';
-	import { trpc, trpcQuery, type RouterOutput } from '$lib/trpc';
+	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type ColumnDef, getCoreRowModel } from '@tanstack/table-core';
-
-	import { type DndEvent } from 'svelte-dnd-action';
-	import { dragHandleZone, dragHandle } from 'svelte-dnd-action';
-	import {
-		createSvelteTable,
-		renderComponent,
-		renderSnippet
-	} from '$lib/components/ui/data-table/index.js';
+	import { type DndEvent, dragHandleZone, dragHandle } from 'svelte-dnd-action';
+	import { createSvelteTable, renderComponent } from '$lib/components/ui/data-table/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import ProductsAction from './Products-action.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -32,523 +23,146 @@
 	import ProductsGrabber from './Products-grabber.svelte';
 	import { flip } from 'svelte/animate';
 	import type { QueryClient } from '@tanstack/svelte-query';
-	let value = $state('services');
 
-	let {
-		data
-	}: {
-		variant?: 'card' | 'no-card';
-		class?: string | undefined;
-		data: {
-			session: SessionUserType;
-			branches: BranchesType;
-			branchesState: BranchesState;
-			queryClient: QueryClient;
-		};
-	} = $props();
-	let activeBranch = $state(data.branchesState.getActiveBranch());
-	data.branchesState.onBranchChange((branch) => {
-		if (branch) {
-			activeBranch = branch;
-		}
-	});
+	import { orpcT } from '$lib/orpc';
+	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import { getSession } from '$lib/auth-client';
 
-	const queryClient = data.queryClient;
+	let { queryClient }: { queryClient: QueryClient } = $props();
 
-	let servicesQuery = $derived(
-		trpcQuery.v1.authenticated.services.getServices.createQuery(
-			{
-				organizationId: activeBranch?.id || data.session?.session?.activeOrganizationId
-			},
-			{
-				queryKey: ['getServices', activeBranch?.id || '']
-			}
-		)
+	let activeTab = $state('services');
+
+	// --- Queries (oRPC) ---
+	// Haal de organisaties en sessie centraal op via TanStack (caching vangt dit af)
+	let sessionQuery = getSession();
+	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
+
+	let orgId = $derived(
+		sessionQuery.data?.session?.activeOrganizationId || branchesQuery.data?.[0]?.id || ''
 	);
-	const deleteService = trpcQuery.v1.authenticated.services.deleteService.createMutation({
-		mutationKey: ['deleteService'],
-		onMutate: ({ serviceId }) => {
-			//cancel all queries
-			queryClient.cancelQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-			const previousServices = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getServices']
-			>(['getServices', activeBranch?.id || '']);
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return old.filter((service) => service.id !== serviceId);
-			});
-			return { previousServices };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], context?.previousServices);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-		}
-	});
-	const createService = trpcQuery.v1.authenticated.services.createService.createMutation({
-		mutationKey: ['createService'],
-		onMutate: async (newService) => {
-			//cancel all queries
-			await queryClient.cancelQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-			const previousServices = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getServices']
-			>(['getServices', activeBranch?.id || '']);
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return [...old, { ...newService, id: '' }];
-			});
-			return { previousServices };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], context?.previousServices);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-		}
-	});
-	const updateService = trpcQuery.v1.authenticated.services.updateService.createMutation({
-		mutationKey: ['updateService'],
-		onMutate: async (updatedService) => {
-			//cancel all queries
-			await queryClient.cancelQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-			const previousServices = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getServices']
-			>(['getServices', activeBranch?.id || '']);
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return old.map((service) =>
-					service.id === updatedService.serviceId ? { ...service, ...updatedService } : service
-				);
-			});
-			return { previousServices };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getServices', activeBranch?.id || ''], context?.previousServices);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getServices', activeBranch?.id || '']
-			});
-		}
-	});
+	let activeBranch = $derived(branchesQuery.data?.find((b) => b.id === orgId));
+
+	let servicesQuery = createQuery(() => ({
+		...orpcT.v1.authenticated.services.getServices.queryOptions({ organizationId: orgId }),
+		queryKey: ['getServices', orgId],
+		enabled: !!orgId
+	}));
+
+	let packagesQuery = createQuery(() => ({
+		...orpcT.v1.authenticated.services.getPackages.queryOptions({ organizationId: orgId }),
+		queryKey: ['getPackages', orgId],
+		enabled: !!orgId
+	}));
+
+	// --- Dynamische Types ---
+	type ServiceType = NonNullable<typeof servicesQuery.data>[number];
+	type PackageType = NonNullable<typeof packagesQuery.data>[number];
 
 	let services = $derived(
 		servicesQuery.data?.sort((a, b) => a.sortingIndex - b.sortingIndex) || []
 	);
-	let packagesQuery = $derived(
-		trpcQuery.v1.authenticated.services.getPackages.createQuery(
-			{
-				organizationId: activeBranch?.id || data.session?.session?.activeOrganizationId
-			},
-			{
-				queryKey: ['getPackages', activeBranch?.id || '']
-			}
-		)
-	);
-	const deletePackage = trpcQuery.v1.authenticated.services.deletePackage.createMutation({
-		mutationKey: ['deletePackage'],
-		onMutate: ({ packageId }) => {
-			//cancel all queries
-			queryClient.cancelQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-			const previousPackages = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getPackages']
-			>(['getPackages', activeBranch?.id || '']);
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return old.filter((pkg) => pkg.id !== packageId);
-			});
-			return { previousPackages };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], context?.previousPackages);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-		}
-	});
-	const createPackage = trpcQuery.v1.authenticated.services.createPackage.createMutation({
-		mutationKey: ['createPackage'],
-		onMutate: async (newPackage) => {
-			//cancel all queries
-			await queryClient.cancelQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-			const previousPackages = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getPackages']
-			>(['getPackages', activeBranch?.id || '']);
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return [...old, { ...newPackage, id: '' }];
-			});
-			return { previousPackages };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], context?.previousPackages);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-		}
-	});
-	const updatePackage = trpcQuery.v1.authenticated.services.updatePackage.createMutation({
-		mutationKey: ['updatePackage'],
-		onMutate: async (updatedPackage) => {
-			//cancel all queries
-			await queryClient.cancelQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-			const previousPackages = queryClient.getQueryData<
-				RouterOutput['v1']['authenticated']['services']['getPackages']
-			>(['getPackages', activeBranch?.id || '']);
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], (old: any) => {
-				if (!Array.isArray(old)) return [];
-				return old.map((pkg) =>
-					pkg.id === updatedPackage.packageId ? { ...pkg, ...updatedPackage } : pkg
-				);
-			});
-			return { previousPackages };
-		},
-		onError: (err, variables, context: any) => {
-			queryClient.setQueryData(['getPackages', activeBranch?.id || ''], context?.previousPackages);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['getPackages', activeBranch?.id || '']
-			});
-		}
-	});
 	let packages = $derived(
 		packagesQuery.data?.sort((a, b) => a.sortingIndex - b.sortingIndex) || []
 	);
 
-	const columns: ColumnDef<
-		RouterOutput['v1']['authenticated']['services']['getServices'][number]
-	>[] = [
-		{
-			accessorKey: 'drag',
-			header: 'Orde',
-			cell: ({ cell }) => {
-				return renderComponent(ProductsGrabber, {
-					size: '18px',
-					class: 'text-muted-foreground '
-				});
-			},
-			enableResizing: false
-		},
-		{
-			accessorKey: 'name',
-			header: 'Dienst'
-		},
-		{
-			accessorKey: 'price',
-			header: 'Prijs',
-			cell: ({ row }) => {
-				const formatter = new Intl.NumberFormat('nl-NL', {
-					style: 'currency',
-					currency: 'EUR'
-				});
+	// --- Helpers voor Formatters ---
+	function formatPrice(value: string) {
+		let finalValue = value.replace(/[^0-9]/g, '');
+		let number = Math.round(parseFloat(finalValue)) / 100 || 0;
+		number = number < 5000 ? number : 5000;
+		return number
+			.toFixed(2)
+			.replace('.', ',')
+			.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+	}
 
-				const amountCellSnippet = createRawSnippet<[string]>((getAmount) => {
-					const amount = getAmount();
-					return {
-						render: () => `${amount}`
-					};
-				});
+	function formatDuration(value: string, isDeleting: boolean = false) {
+		let numericValue = value.replace(/\D/g, '');
+		if (isDeleting) numericValue = numericValue.slice(0, -1);
+		return (parseInt(numericValue) || '') + ' minuten';
+	}
 
-				return renderSnippet(
-					amountCellSnippet,
-					formatter.format(parseFloat(row.getValue('price')))
-				);
-			}
-		},
-		{
-			accessorKey: 'duration',
-			header: 'Duur',
-			cell: ({ row }) => {
-				const formatter = new Intl.NumberFormat('nl-NL', {
-					style: 'unit',
-					unit: 'minute'
-				});
+	function parsePrice(value: string) {
+		return parseFloat(value.replace(/[^0-9]/g, '')) / 100;
+	}
 
-				const amountCellSnippet = createRawSnippet<[string]>((getAmount) => {
-					const amount = getAmount();
-					return {
-						render: () => `${amount}`
-					};
-				});
-
-				return renderSnippet(
-					amountCellSnippet,
-					formatter.format(parseFloat(row.getValue('duration')))
-				);
-			}
-		},
-		{
-			accessorKey: 'id',
-			header: 'ID'
-		},
-		{
-			id: 'actions',
-			cell: ({ row }) => {
-				return renderComponent(ProductsAction, {
-					id: row.original.id,
-					name: row.original.name,
-					price: row.original.price,
-					duration: row.original.duration,
-					branchesState: data.branchesState,
-					values,
-					type: 'service'
-				});
-			}
-		}
-	];
-
-	const packageColumns: ColumnDef<(typeof packages)[number]>[] = [
-		{
-			accessorKey: 'drag',
-			header: 'Orde',
-			cell: ({ cell }) => {
-				return renderComponent(ProductsGrabber, {
-					size: '18px',
-					class: 'text-muted-foreground '
-				});
-			},
-			enableResizing: false
-		},
-		{
-			accessorKey: 'name',
-			header: 'Pakket'
-		},
-		{
-			accessorKey: 'price',
-			header: 'Prijs',
-			cell: ({ row }) => {
-				const formatter = new Intl.NumberFormat('nl-NL', {
-					style: 'currency',
-					currency: 'EUR'
-				});
-
-				const amountCellSnippet = createRawSnippet<[string]>((getAmount) => {
-					const amount = getAmount();
-					return {
-						render: () => `${amount}`
-					};
-				});
-
-				return renderSnippet(
-					amountCellSnippet,
-					formatter.format(parseFloat(row.getValue('price')))
-				);
-			}
-		},
-		{
-			accessorKey: 'services',
-			header: 'Diensten',
-			cell: ({ row }) => {
-				const servicesCellSnippet = createRawSnippet<[string]>((getServices) => {
-					const services = getServices();
-					return {
-						render: () => `${services}`
-					};
-				});
-
-				return renderSnippet(
-					servicesCellSnippet,
-					row.original.services.map((s) => s.name).join(', ')
-				);
-			}
-		},
-		{
-			accessorKey: 'id',
-			header: 'ID'
-		},
-		{
-			id: 'actions',
-			cell: ({ row }) => {
-				return renderComponent(ProductsAction, {
-					id: row.original.id,
-					name: row.original.name,
-					price: row.original.price,
-					branchesState: data.branchesState,
-					values,
-					type: 'package'
-				});
-			}
-		}
-	];
-	let table = $state(
-		createSvelteTable({
-			// svelte-ignore state_referenced_locally
-			data: services,
-			columns,
-			getCoreRowModel: getCoreRowModel()
-		})
-	);
-
-	let packageTable = $state(
-		createSvelteTable({
-			// svelte-ignore state_referenced_locally
-			data: packages,
-			columns: packageColumns,
-			getCoreRowModel: getCoreRowModel()
-		})
-	);
-
-	$effect(() => {
-		table = createSvelteTable({
-			data: services,
-			columns,
-			getCoreRowModel: getCoreRowModel()
-		});
+	// --- Form State ---
+	let formState = $state({
+		name: '',
+		price: '0,00',
+		duration: '30 minuten',
+		assignEmployees: [] as string[],
+		assignEmployeesOpen: false,
+		isSheetOpen: false,
+		isSaving: false,
+		editingId: undefined as string | undefined
 	});
 
-	$effect(() => {
-		packageTable = createSvelteTable({
-			data: packages,
-			columns: packageColumns,
-			getCoreRowModel: getCoreRowModel()
-		});
-	});
-	let values: {
-		name: {
-			value: string;
-		};
-		price: {
-			value: string;
-			formatter: (value: string) => string;
-		};
-		duration: {
-			value: string;
-			formatter: (value: string, typedValue?: string) => string;
-		};
-		save: {
-			loading: boolean;
-		};
-		assignEmployees: {
-			value: string[];
-			open: boolean;
-		};
-		sheet: {
-			active: boolean;
-			loading: boolean;
-			editing?: string;
-		};
-	} = $state({
-		name: {
-			value: ''
-		},
-		assignEmployees: {
-			value: [],
-			open: false,
-			selected: []
-		},
-		price: {
-			value: '',
-			formatter: (value: string) => {
-				let finalValue = value;
-				// remove the . and , from the string
-				finalValue = finalValue.replace(/[^0-9]/g, '');
-				let number = Math.round(parseFloat(finalValue)) / 100 || 0;
-				number = number < 5000 ? number : 5000;
-				finalValue = number.toFixed(2);
-				// add the . and .tofixed defaults to 10.00 but I want 10,00 and use the dot for each 3 numbers
-				finalValue = finalValue.replace('.', ',');
-				finalValue = finalValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+	// --- Mutaties (oRPC) ---
+	const invalidate = (key: string) => queryClient.invalidateQueries({ queryKey: [key, orgId] });
 
-				return finalValue;
-			}
-		},
-		duration: {
-			value: '30 minuten',
-			formatter: (value: string, typedValue?: string) => {
-				//remove all the non numeric characters
-				value = value.replace(/\D/g, '');
-				if (typedValue?.includes('deleteContent')) {
-					value = value.slice(0, -1);
-				}
-				// format as integer and add minuten
-				return (parseInt(value) || '') + ' minuten';
-			}
-		},
-		save: {
-			loading: false
-		},
-		sheet: {
-			active: false,
-			loading: true,
-			editing: undefined
-		}
-	});
-	let flipDurationMs = 300;
-	let sliderContent: {
-		active?: string;
-		items: {
-			label: string;
-		}[];
-	} = $state({
+	const deleteService = createMutation(() => ({
+		...orpcT.v1.authenticated.services.deleteService.mutationOptions(),
+		onSuccess: () => invalidate('getServices')
+	}));
+
+	const createService = createMutation(() => ({
+		...orpcT.v1.authenticated.services.createService.mutationOptions(),
+		onSuccess: () => invalidate('getServices')
+	}));
+
+	const updateService = createMutation(() => ({
+		...orpcT.v1.authenticated.services.updateService.mutationOptions(),
+		onSuccess: () => invalidate('getServices')
+	}));
+
+	const deletePackage = createMutation(() => ({
+		...orpcT.v1.authenticated.services.deletePackage.mutationOptions(),
+		onSuccess: () => invalidate('getPackages')
+	}));
+
+	const createPackage = createMutation(() => ({
+		...orpcT.v1.authenticated.services.createPackage.mutationOptions(),
+		onSuccess: () => invalidate('getPackages')
+	}));
+
+	const updatePackage = createMutation(() => ({
+		...orpcT.v1.authenticated.services.updatePackage.mutationOptions(),
+		onSuccess: () => invalidate('getPackages')
+	}));
+
+	// --- UI State & Logic ---
+	let sliderContent = $state({
 		active: 'Details',
-		items: [
-			{
-				label: 'Details'
-			},
-			{
-				label: 'Duur & Prijs'
-			}
-		]
+		items: [{ label: 'Details' }, { label: 'Duur & Prijs' }]
 	});
 
-	// Update slider content when value changes
 	$effect(() => {
 		sliderContent.items = [
-			{
-				label: 'Details'
-			},
-			{
-				label: value === 'services' ? 'Duur & Prijs' : 'Prijs'
-			}
+			{ label: 'Details' },
+			{ label: activeTab === 'services' ? 'Duur & Prijs' : 'Prijs' }
 		];
-		// Reset to Details tab when switching tabs
 		sliderContent.active = 'Details';
 	});
 
-	function handleDndConsider(e: CustomEvent<DndEvent>) {
-		services = e.detail.items as RouterOutput['v1']['authenticated']['services']['getServices'];
-	}
+	const flipDurationMs = 300;
+	const dropTargetStyle = { border: 'none' };
+
 	function handleDndFinalize(e: CustomEvent<DndEvent>) {
-		// update the sortingIndex of the services
-		let newServices = e.detail.items.map((item, index) => {
-			return {
-				...item,
-				sortingIndex: index
-			};
-		}) as RouterOutput['v1']['authenticated']['services']['getServices'];
-		// update the services in the database. however, only if the sortingIndex has changed. so loop through each and check if the sortingIndex is different'
+		let newServices = (e.detail.items as ServiceType[]).map((item, index) => ({
+			...item,
+			sortingIndex: index
+		}));
+
 		for (let i = 0; i < newServices.length; i++) {
 			if (newServices[i].sortingIndex !== services[i].sortingIndex) {
-				// update the sortingIndex in the database
-				updateService.mutate({
-					organizationId: activeBranch?.id || '',
+				$updateService.mutate({
+					organizationId: orgId,
 					serviceId: newServices[i].id,
 					name: newServices[i].name,
 					price: newServices[i].price,
 					duration: newServices[i].duration,
-					employees: newServices[i].employees.map((employee) => employee.id),
+					employees: newServices[i].employees.map((e) => e.id),
 					sortingIndex: i
 				});
 			}
@@ -556,42 +170,177 @@
 		services = newServices;
 	}
 
-	function handlePackageDndConsider(e: CustomEvent<DndEvent>) {
-		packages = (e.detail.items || []) as typeof packages;
-	}
 	function handlePackageDndFinalize(e: CustomEvent<DndEvent>) {
-		// update the sortingIndex of the packages
-		let newPackages = e.detail.items.map((item, index) => {
-			return {
-				...item,
-				sortingIndex: index
-			};
-		}) as typeof packages;
-		// Update the packages in the database
+		let newPackages = (e.detail.items as PackageType[]).map((item, index) => ({
+			...item,
+			sortingIndex: index
+		}));
+
 		for (let i = 0; i < newPackages.length; i++) {
 			if (newPackages[i].sortingIndex !== packages[i].sortingIndex) {
-				// update the sortingIndex in the database
-				updateService.mutate({
-					organizationId: activeBranch?.id || '',
-					serviceId: newPackages[i].id || '',
+				$updatePackage.mutate({
+					organizationId: orgId,
+					packageId: newPackages[i].id || '',
 					name: newPackages[i].name,
 					price: newPackages[i].price,
-					duration: 0, // Packages don't have a duration
-					employees: [], // Packages don't have employees
+					services: newPackages[i].services.map((s) => s.id),
 					sortingIndex: i
 				});
 			}
 		}
 		packages = newPackages;
 	}
-	let dropTargetStyle = {
-		border: 'none'
-	};
+
+	// --- Tables ---
+	const columns: ColumnDef<ServiceType>[] = [
+		{
+			accessorKey: 'drag',
+			header: 'Orde',
+			cell: () =>
+				renderComponent(ProductsGrabber, { size: '18px', class: 'text-muted-foreground' }),
+			enableResizing: false
+		},
+		{ accessorKey: 'name', header: 'Dienst' },
+		{
+			accessorKey: 'price',
+			header: 'Prijs',
+			cell: ({ row }) =>
+				new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(
+					row.original.price
+				)
+		},
+		{
+			accessorKey: 'duration',
+			header: 'Duur',
+			cell: ({ row }) => `${row.original.duration} min`
+		},
+		{ accessorKey: 'id', header: 'ID' },
+		{
+			id: 'actions',
+			cell: ({ row }) =>
+				renderComponent(ProductsAction, {
+					id: row.original.id,
+					name: row.original.name,
+					price: row.original.price,
+					duration: row.original.duration,
+					values: formState,
+					type: 'service'
+				})
+		}
+	];
+
+	const packageColumns: ColumnDef<PackageType>[] = [
+		{
+			accessorKey: 'drag',
+			header: 'Orde',
+			cell: () =>
+				renderComponent(ProductsGrabber, { size: '18px', class: 'text-muted-foreground' }),
+			enableResizing: false
+		},
+		{ accessorKey: 'name', header: 'Pakket' },
+		{
+			accessorKey: 'price',
+			header: 'Prijs',
+			cell: ({ row }) =>
+				new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(
+					row.original.price
+				)
+		},
+		{
+			accessorKey: 'services',
+			header: 'Diensten',
+			cell: ({ row }) => row.original.services.map((s) => s.name).join(', ')
+		},
+		{ accessorKey: 'id', header: 'ID' },
+		{
+			id: 'actions',
+			cell: ({ row }) =>
+				renderComponent(ProductsAction, {
+					id: row.original.id,
+					name: row.original.name,
+					price: row.original.price,
+					values: formState,
+					type: 'package'
+				})
+		}
+	];
+
+	let table = $derived(
+		createSvelteTable({ data: services, columns, getCoreRowModel: getCoreRowModel() })
+	);
+	let packageTable = $derived(
+		createSvelteTable({
+			data: packages,
+			columns: packageColumns,
+			getCoreRowModel: getCoreRowModel()
+		})
+	);
+
+	function resetForm() {
+		formState.name = '';
+		formState.price = '0,00';
+		formState.duration = '30 minuten';
+		formState.assignEmployees = [];
+		formState.editingId = undefined;
+	}
+
+	async function handleSave() {
+		if (!orgId) {
+			toast.error('Er is geen actieve vestiging');
+			return;
+		}
+
+		formState.isSaving = true;
+		try {
+			if (activeTab === 'services') {
+				const payload = {
+					organizationId: orgId,
+					name: formState.name,
+					price: parsePrice(formState.price),
+					duration: parseInt(formState.duration),
+					employees: formState.assignEmployees,
+					sortingIndex:
+						services.length > 0 ? Math.min(...services.map((s) => s.sortingIndex)) - 1 : 0
+				};
+
+				if (!formState.editingId) {
+					await $createService.mutateAsync(payload);
+				} else {
+					await $updateService.mutateAsync({ ...payload, serviceId: formState.editingId });
+				}
+			} else {
+				const payload = {
+					organizationId: orgId,
+					name: formState.name,
+					price: parsePrice(formState.price),
+					services: formState.assignEmployees,
+					sortingIndex:
+						packages.length > 0 ? Math.min(...packages.map((p) => p.sortingIndex)) - 1 : 0
+				};
+
+				if (!formState.editingId) {
+					await $createPackage.mutateAsync(payload);
+				} else {
+					await $updatePackage.mutateAsync({ ...payload, packageId: formState.editingId });
+				}
+			}
+
+			toast.success(
+				`${activeTab === 'services' ? 'Dienst' : 'Pakket'} succesvol ${formState.editingId ? 'bijgewerkt' : 'toegevoegd'}`
+			);
+			formState.isSheetOpen = false;
+			resetForm();
+		} catch (e) {
+			toast.error('Er is een fout opgetreden.');
+		} finally {
+			formState.isSaving = false;
+		}
+	}
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-4 py-4">
 	<div class="flex items-center gap-2">
-		<Tabs.Root bind:value>
+		<Tabs.Root bind:value={activeTab}>
 			<Tabs.List>
 				<Tabs.Trigger value="services">Diensten</Tabs.Trigger>
 				<Tabs.Trigger value="packages">Pakketten</Tabs.Trigger>
@@ -603,28 +352,22 @@
 			variant="outline"
 			class="text-sm"
 			onclick={() => {
-				values.sheet = {
-					...values.sheet,
-					active: true,
-					editing: undefined
-				};
-				values.name.value = '';
-				values.price.value = '0,00';
-				values.duration.value = '30 minuten';
-				values.assignEmployees.value = [];
+				resetForm();
+				formState.isSheetOpen = true;
 			}}
 		>
 			<Plus />
-			{value === 'services' ? 'Dienst toevoegen' : 'Pakket toevoegen'}
+			{activeTab === 'services' ? 'Dienst toevoegen' : 'Pakket toevoegen'}
 		</Button>
 	</div>
 </div>
+
 <Sheet.Root
-	bind:open={values.sheet.active}
+	bind:open={formState.isSheetOpen}
 	class="data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right"
 >
-	{#if value === 'services'}
-		{#if services.length > 0 && !servicesQuery.isLoading}
+	{#if activeTab === 'services'}
+		{#if services.length > 0 && !$servicesQuery.isLoading}
 			<div class="w-full">
 				<Table.Root class="w-full">
 					<Table.Header>
@@ -632,20 +375,16 @@
 							<Table.Row>
 								<Table.Head class="w-12.5">Orde</Table.Head>
 								<Table.Head class="w-50">Dienst</Table.Head>
-								<Table.Head class="">Prijs</Table.Head>
+								<Table.Head>Prijs</Table.Head>
 								<Table.Head class="w-30">Duur</Table.Head>
-								<Table.Head class="">ID</Table.Head>
+								<Table.Head>ID</Table.Head>
 								<Table.Head class="w-12.5">Acties</Table.Head>
 							</Table.Row>
 						{/each}
 					</Table.Header>
 					<tbody
-						use:dragHandleZone={{
-							items: services,
-							flipDurationMs,
-							dropTargetStyle
-						}}
-						onconsider={handleDndConsider}
+						use:dragHandleZone={{ items: services, flipDurationMs, dropTargetStyle }}
+						onconsider={(e) => (services = e.detail.items as ServiceType[])}
 						onfinalize={handleDndFinalize}
 						class="[&_tr:last-child]:border-0"
 					>
@@ -653,85 +392,55 @@
 							<tr
 								animate:flip={{ duration: flipDurationMs }}
 								onclick={() => {
-									values.sheet = {
-										...values.sheet,
-										active: true,
-										editing: row.id
-									};
-									values.name.value = row.name;
-									values.price.value = values.price.formatter((row.price * 100).toString());
-									values.duration.value = values.duration.formatter(row.duration.toString());
-									values.assignEmployees.value = row.employees.map((employee) => employee.id);
+									formState.editingId = row.id;
+									formState.name = row.name;
+									formState.price = formatPrice((row.price * 100).toString());
+									formState.duration = formatDuration(row.duration.toString());
+									formState.assignEmployees = row.employees.map((e) => e.id);
+									formState.isSheetOpen = true;
 								}}
 							>
 								<Table.Cell>
 									<div
-										aria-label="drag-handle for "
+										aria-label="drag-handle"
 										use:dragHandle
-										class="handle bg-secondary flex size-7 items-center justify-center rounded-md [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+										class="handle bg-secondary flex size-7 items-center justify-center rounded-md"
 									>
-										<ProductsGrabber size="18px" class="text-muted-foreground " />
+										<ProductsGrabber size="18px" class="text-muted-foreground" />
 									</div>
 								</Table.Cell>
+								<Table.Cell>{row.name}</Table.Cell>
 								<Table.Cell>
-									{row.name}
+									{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(
+										row.price
+									)}
 								</Table.Cell>
-								<Table.Cell>
-									{new Intl.NumberFormat('nl-NL', {
-										style: 'currency',
-										currency: 'EUR',
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									}).format(row.price)}
-								</Table.Cell>
-								<Table.Cell>
-									{values.duration.formatter(row.duration.toString())}
-								</Table.Cell>
-								<Table.Cell>
-									{row.id}
-								</Table.Cell>
+								<Table.Cell>{formatDuration(row.duration.toString())}</Table.Cell>
+								<Table.Cell>{row.id}</Table.Cell>
 								<Table.Cell>
 									<ProductsAction
 										id={row.id}
 										name={row.name}
 										price={row.price}
 										duration={row.duration}
-										branchesState={data.branchesState}
-										{values}
+										values={formState}
 										type="service"
-										onDelete={(type) => {
-											if (type === 'package') {
-												deletePackage.mutate({
-													organizationId: activeBranch?.id || '',
-													packageId: row.id
-												});
-											} else if (type === 'service') {
-												deleteService.mutate({
-													organizationId: activeBranch?.id || '',
-													serviceId: row.id
-												});
-											}
-										}}
+										onDelete={() =>
+											$deleteService.mutate({ organizationId: orgId, serviceId: row.id })}
 									/>
 								</Table.Cell>
 							</tr>
-						{:else}
-							<Table.Row>
-								<Table.Cell colspan={columns.length} class="h-24 text-center">
-									No services.
-								</Table.Cell>
-							</Table.Row>
 						{/each}
 					</tbody>
 				</Table.Root>
 			</div>
 		{:else}
 			<Card.Content class="w-full">
-				{#if servicesQuery.isLoading}
+				{#if $servicesQuery.isLoading}
 					<div class="flex h-full w-full items-center justify-center">
 						<LoaderCircle class="text-muted-foreground h-12 w-12 animate-spin" />
 					</div>
-				{:else if services.length == 0}
+				{:else if services.length === 0}
 					<div class="flex h-full w-full items-center justify-center">
 						<div class="flex flex-col items-center gap-1 text-center">
 							<h3 class="text-2xl font-bold tracking-tight">Je hebt geen diensten</h3>
@@ -739,16 +448,15 @@
 								Voeg diensten toe om ze te verkopen aan je klanten.
 							</p>
 							<Sheet.Trigger class={buttonVariants()}>
-								<Plus />
-								Dienst toevoegen
+								<Plus /> Dienst toevoegen
 							</Sheet.Trigger>
 						</div>
 					</div>
 				{/if}
 			</Card.Content>
 		{/if}
-	{:else if value === 'packages'}
-		{#if packages.length > 0}
+	{:else if activeTab === 'packages'}
+		{#if packages.length > 0 && !$packagesQuery.isLoading}
 			<div class="w-full">
 				<Table.Root class="w-full">
 					<Table.Header>
@@ -756,20 +464,16 @@
 							<Table.Row>
 								<Table.Head class="w-12.5">Orde</Table.Head>
 								<Table.Head class="w-50">Pakket</Table.Head>
-								<Table.Head class="">Prijs</Table.Head>
-								<Table.Head class="">Diensten</Table.Head>
-								<Table.Head class="">ID</Table.Head>
+								<Table.Head>Prijs</Table.Head>
+								<Table.Head>Diensten</Table.Head>
+								<Table.Head>ID</Table.Head>
 								<Table.Head class="w-12.5">Acties</Table.Head>
 							</Table.Row>
 						{/each}
 					</Table.Header>
 					<tbody
-						use:dragHandleZone={{
-							items: packages,
-							flipDurationMs,
-							dropTargetStyle
-						}}
-						onconsider={handlePackageDndConsider}
+						use:dragHandleZone={{ items: packages, flipDurationMs, dropTargetStyle }}
+						onconsider={(e) => (packages = e.detail.items as PackageType[])}
 						onfinalize={handlePackageDndFinalize}
 						class="[&_tr:last-child]:border-0"
 					>
@@ -777,127 +481,87 @@
 							<tr
 								animate:flip={{ duration: flipDurationMs }}
 								onclick={() => {
-									values.sheet = {
-										...values.sheet,
-										active: true,
-										editing: row.id
-									};
-									values.name.value = row.name;
-									values.price.value = values.price.formatter((row.price * 100).toString());
-									values.assignEmployees.value = row.services.map((service) => service.id);
+									formState.editingId = row.id;
+									formState.name = row.name;
+									formState.price = formatPrice((row.price * 100).toString());
+									formState.assignEmployees = row.services.map((s) => s.id);
+									formState.isSheetOpen = true;
 								}}
 							>
 								<Table.Cell>
 									<div
-										aria-label="drag-handle for "
+										aria-label="drag-handle"
 										use:dragHandle
-										class="handle bg-secondary flex size-7 items-center justify-center rounded-md [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+										class="handle bg-secondary flex size-7 items-center justify-center rounded-md"
 									>
-										<ProductsGrabber size="18px" class="text-muted-foreground " />
+										<ProductsGrabber size="18px" class="text-muted-foreground" />
 									</div>
 								</Table.Cell>
-								<Table.Cell>
-									{row.name}
-								</Table.Cell>
-								<Table.Cell>
-									{new Intl.NumberFormat('nl-NL', {
-										style: 'currency',
-										currency: 'EUR',
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									}).format(row.price)}
-								</Table.Cell>
-								<Table.Cell>
-									<div class="flex flex-wrap gap-1">
-										{#each row.services as service}
-											<Badge variant="outline" class="text-xs">
-												{service.name}
-											</Badge>
-										{/each}
-									</div>
-								</Table.Cell>
-								<Table.Cell>
-									{row.id}
-								</Table.Cell>
+								<Table.Cell>{row.name}</Table.Cell>
+								<Table.Cell
+									>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(
+										row.price
+									)}</Table.Cell
+								>
+								<Table.Cell
+									><div class="flex flex-wrap gap-1">
+										{#each row.services as s}<Badge variant="outline" class="text-xs"
+												>{s.name}</Badge
+											>{/each}
+									</div></Table.Cell
+								>
+								<Table.Cell>{row.id}</Table.Cell>
 								<Table.Cell>
 									<ProductsAction
 										id={row.id}
 										name={row.name}
 										price={row.price}
-										branchesState={data.branchesState}
-										{values}
+										values={formState}
 										type="package"
-										onDelete={(type) => {
-											if (type === 'package') {
-												deletePackage.mutate({
-													organizationId: activeBranch?.id || '',
-													packageId: row.id
-												});
-											} else if (type === 'service') {
-												deleteService.mutate({
-													organizationId: activeBranch?.id || '',
-													serviceId: row.id
-												});
-											}
-										}}
+										onDelete={() =>
+											$deletePackage.mutate({ organizationId: orgId, packageId: row.id })}
 									/>
 								</Table.Cell>
 							</tr>
-						{:else}
-							<Table.Row>
-								<Table.Cell colspan={packageColumns.length} class="h-24 text-center">
-									Geen pakketten.
-								</Table.Cell>
-							</Table.Row>
 						{/each}
 					</tbody>
 				</Table.Root>
 			</div>
 		{:else}
 			<Card.Content class="w-full">
-				<div class="flex h-full w-full items-center justify-center">
-					<div class="flex flex-col items-center gap-1 text-center">
-						<h3 class="text-2xl font-bold tracking-tight">Je hebt geen pakketten</h3>
-						<p class="text-muted-foreground mb-5 text-sm">
-							Voeg pakketten toe om ze te verkopen aan je klanten.
-						</p>
-						<Sheet.Trigger class={buttonVariants()}>
-							<Plus />
-							Pakket toevoegen
-						</Sheet.Trigger>
+				{#if $packagesQuery.isLoading}
+					<div class="flex h-full w-full items-center justify-center">
+						<LoaderCircle class="text-muted-foreground h-12 w-12 animate-spin" />
 					</div>
-				</div>
+				{:else if packages.length === 0}
+					<div class="flex h-full w-full items-center justify-center">
+						<div class="flex flex-col items-center gap-1 text-center">
+							<h3 class="text-2xl font-bold tracking-tight">Je hebt geen pakketten</h3>
+							<p class="text-muted-foreground mb-5 text-sm">
+								Voeg pakketten toe om ze te verkopen aan je klanten.
+							</p>
+							<Sheet.Trigger class={buttonVariants()}><Plus /> Pakket toevoegen</Sheet.Trigger>
+						</div>
+					</div>
+				{/if}
 			</Card.Content>
 		{/if}
 	{/if}
+
 	<Sheet.Content side="right" class="w-full max-w-full sm:w-125">
 		<div>
 			<Sheet.Header>
-				<Sheet.Title>
-					{values.sheet.editing
-						? value === 'services'
-							? 'Dienst bijwerken'
-							: 'Pakket bijwerken'
-						: value === 'services'
-							? 'Dienst toevoegen'
-							: 'Pakket toevoegen'}
-				</Sheet.Title>
-				<Sheet.Description>
-					{value === 'services'
-						? 'Vul de gegevens in om een nieuwe dienst toe te voegen.'
-						: 'Vul de gegevens in om een nieuw pakket toe te voegen.'}
-				</Sheet.Description>
+				<Sheet.Title
+					>{formState.editingId
+						? `${activeTab === 'services' ? 'Dienst' : 'Pakket'} bijwerken`
+						: `${activeTab === 'services' ? 'Dienst' : 'Pakket'} toevoegen`}</Sheet.Title
+				>
 			</Sheet.Header>
 			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md px-3">
-				<!-- <TinySlider bind:this={slider}>
-						{#snippet children({ sliderWidth })} -->
-				{#each sliderContent.items as item, i}
+				{#each sliderContent.items as item}
 					<button
 						class="min-w-max-content relative mt-4 mr-4 cursor-pointer rounded-md"
-						onclick={() => {
-							// slider?.setIndex(i);
-							sliderContent.active = item.label;
-						}}
+						onclick={() => (sliderContent.active = item.label)}
 					>
 						<h3
 							class="text-md text-muted-foreground"
@@ -908,181 +572,102 @@
 						</h3>
 					</button>
 				{/each}
-				<!-- {/snippet}
-					</TinySlider> -->
 				<Separator class="mb-4" />
+
 				<div class="grid gap-4 py-4">
 					{#if sliderContent.active === 'Details'}
-						<div class="flex w-full flex-col items-center justify-center gap-4">
-							<Avatar.Root class=" h-25 w-25 rounded-md ">
-								<div
-									class="bg-background/50 rounded-3.75 absolute flex h-full w-full cursor-pointer items-center justify-center opacity-0 transition-opacity hover:opacity-100"
-								>
-									<span class="text-primary-foreground">
-										<Image size="40" />
-									</span>
-								</div>
-								<Avatar.Image src="" alt="@shadcn" />
-								<Avatar.Fallback>
-									<img src="/images/placeholder-small.svg" alt="" />
-								</Avatar.Fallback>
-							</Avatar.Root>
-							<h1 class="text-lg font-semibold">
-								{values.name.value}
-							</h1>
-						</div>
-
 						<SettingsInput
 							title="Naam"
 							type="input"
 							class="w-full"
 							required
-							bind:value={values.name.value}
+							bind:value={formState.name}
 						/>
 
-						{#if value === 'packages'}
+						{#if activeTab === 'packages' || activeTab === 'services'}
 							<div>
-								<h3 class="text-md font-semibold">Inbegrepen diensten</h3>
+								<h3 class="text-md font-semibold">
+									{activeTab === 'packages' ? 'Inbegrepen diensten' : 'Aangewezen medewerkers'}
+								</h3>
 								<Select.Root
 									type="multiple"
-									bind:value={values.assignEmployees.value}
-									bind:open={values.assignEmployees.open}
+									bind:value={formState.assignEmployees}
+									bind:open={formState.assignEmployeesOpen}
 								>
 									<Select.Trigger class="h-auto min-h-10 w-full px-3 py-1.5">
 										<div class="flex flex-wrap gap-2">
-											{#if values.assignEmployees.value && values.assignEmployees.value.length > 0}
-												{#each values.assignEmployees.value as option}
+											{#if formState.assignEmployees.length > 0}
+												{#each formState.assignEmployees as option}
 													<Badge
 														variant="outline"
 														class="flex items-center gap-1 px-2 py-0.5 text-xs font-normal"
-														onmousedown={(e) => e.stopPropagation()}
 														onclick={async (e) => {
 															e.stopPropagation();
 															await tick();
-															values.assignEmployees.value = values.assignEmployees.value.filter(
+															formState.assignEmployees = formState.assignEmployees.filter(
 																(item) => item !== option
 															);
 														}}
 													>
 														<Plus class="rotate-45" size="13" />
 														<span class="max-w-32 truncate">
-															{services.find((service) => service.id === option)?.name || option}
+															{activeTab === 'packages'
+																? services.find((s) => s.id === option)?.name
+																: activeBranch?.members.find((m) => m.id === option)?.user.name ||
+																	option}
 														</span>
 													</Badge>
 												{/each}
 											{:else}
-												<span class="text-muted-foreground">Selecteer diensten...</span>
+												<span class="text-muted-foreground">Selecteer...</span>
 											{/if}
 										</div>
 									</Select.Trigger>
 									<Select.Content>
-										{#each services as service}
-											<Select.Item value={service.id}>{service.name}</Select.Item>
-										{/each}
+										{#if activeTab === 'packages'}
+											{#each services as service}
+												<Select.Item value={service.id}>{service.name}</Select.Item>
+											{/each}
+										{:else}
+											{#each activeBranch?.members || [] as member}
+												<Select.Item value={member.id}>{member.user.name}</Select.Item>
+											{/each}
+										{/if}
 									</Select.Content>
 								</Select.Root>
 							</div>
 						{/if}
-
-						{#if value === 'services'}
+					{:else}
+						{#if activeTab === 'services'}
 							<div>
-								<h3 class="text-md font-semibold">Aangewezen medewerkers</h3>
-								<Select.Root
-									type="multiple"
-									bind:value={values.assignEmployees.value}
-									bind:open={values.assignEmployees.open}
-								>
-									<Select.Trigger class="h-auto min-h-10 w-full px-3 py-1.5">
-										<div class="flex flex-wrap gap-2">
-											{#if values.assignEmployees.value && values.assignEmployees.value.length > 0}
-												{#each values.assignEmployees.value as option}
-													<Badge
-														variant="outline"
-														class="flex items-center gap-1 px-2 py-0.5 text-xs font-normal"
-														onmousedown={(e) => e.stopPropagation()}
-														onclick={async (e) => {
-															e.stopPropagation();
-															await tick();
-															values.assignEmployees.value = values.assignEmployees.value.filter(
-																(item) => item !== option
-															);
-														}}
-													>
-														<Plus class="rotate-45" size="13" />
-														<span class="max-w-32 truncate">
-															{data.branchesState
-																.getActiveBranch()
-																?.members.find((member) => member.id === option)?.user.name ||
-																option}
-														</span>
-													</Badge>
-												{/each}
-											{:else}
-												<span class="text-muted-foreground">Selecteer medewerkers...</span>
-											{/if}
-										</div>
-									</Select.Trigger>
-									<Select.Content>
-										{#each data.branchesState
-											.getActiveBranch()
-											?.members.map( (member) => ({ label: member.user.name, value: member.id }) ) || [] as item}
-											<Select.Item value={item.value}>{item.label}</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
-							</div>
-						{/if}
-						<SettingsInput
-							title="Zichtbaar"
-							description="Of het product zichtbaar is voor klanten."
-							type="switch"
-							class="w-full"
-							required
-							value={() => activeBranch?.members.map((member) => member.user.name) ?? []}
-						/>
-					{:else if sliderContent.active === 'Duur & Prijs' || sliderContent.active === 'Prijs'}
-						{#if value === 'services'}
-							<div>
-								<Label for="duration" required class="text-md font-semibold">Duur</Label>
+								<Label for="duration" class="text-md font-semibold">Duur</Label>
 								<Input
 									class="m-0 w-full"
 									id="duration"
-									bind:value={values.duration.value}
+									bind:value={formState.duration}
 									oninput={(e) => {
-										//@ts-ignore
-										const key = e.inputType;
-										values.duration.value = values.duration.formatter(values.duration.value, key);
+										formState.duration = formatDuration(
+											formState.duration,
+											(e as any).inputType?.includes('delete')
+										);
 									}}
 								/>
 							</div>
 						{/if}
 						<div>
-							<div class="space-y-2">
-								<Label for="price" required class="text-md font-semibold">Prijs</Label>
-								<div class="relative">
-									<Input
-										id="input-13"
-										class="peer ps-6 pe-12"
-										placeholder="0.00"
-										type="text"
-										bind:value={values.price.value}
-										oninput={(e) => {
-											//@ts-ignore
-											const key = e.inputType;
-											values.price.value = values.price.formatter(values.price.value);
-										}}
-									/>
-									<span
-										class="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-sm peer-disabled:opacity-50"
-									>
-										€
-									</span>
-									<span
-										class="text-muted-foreground pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-sm peer-disabled:opacity-50"
-									>
-										EUR
-									</span>
-								</div>
+							<Label for="price" class="text-md font-semibold">Prijs</Label>
+							<div class="relative">
+								<Input
+									id="price"
+									class="peer ps-6 pe-12"
+									placeholder="0.00"
+									bind:value={formState.price}
+									oninput={() => (formState.price = formatPrice(formState.price))}
+								/>
+								<span
+									class="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-sm"
+									>€</span
+								>
 							</div>
 						</div>
 					{/if}
@@ -1090,87 +675,10 @@
 			</ScrollArea>
 		</div>
 		<Sheet.Footer>
-			<Button
-				class={buttonVariants({})}
-				disabled={values.save.loading}
-				onclick={async () => {
-					values.save.loading = true;
-					try {
-						if (value === 'services') {
-							if (!activeBranch) {
-								toast.error('Er is geen actieve vestiging');
-								return;
-							}
-							if (!values.sheet.editing)
-								createService.mutate({
-									organizationId: activeBranch.id,
-									name: values.name.value,
-									price: parseFloat(values.price.value.replace(/[^0-9]/g, '')) / 100,
-									duration: parseInt(values.duration.value),
-									employees: values.assignEmployees.value,
-									sortingIndex:
-										services.length > 0 ? Math.min(...services.map((s) => s.sortingIndex)) - 1 : 0
-								});
-							else {
-								updateService.mutate({
-									organizationId: activeBranch.id,
-									serviceId: values.sheet.editing || '',
-									name: values.name.value,
-									price: parseFloat(values.price.value.replace(/[^0-9]/g, '')) / 100,
-									duration: parseInt(values.duration.value),
-									employees: values.assignEmployees.value,
-									sortingIndex: services.find((service) => service.id === values.sheet.editing)
-										?.sortingIndex
-								});
-							}
-						} else {
-							if (!activeBranch) {
-								toast.error('Er is geen actieve vestiging');
-								return;
-							}
-							if (!values.sheet.editing) {
-								// Create new package
-								await createPackage.mutateAsync({
-									organizationId: activeBranch.id,
-									name: values.name.value,
-									price: parseFloat(values.price.value.replace(/[^0-9]/g, '')) / 100,
-									services: values.assignEmployees.value,
-									sortingIndex:
-										packages.length > 0 ? Math.min(...packages.map((p) => p.sortingIndex)) - 1 : 0
-								});
-							} else {
-								// Update existing package
-								await updatePackage.mutateAsync({
-									organizationId: activeBranch.id,
-									packageId: values.sheet.editing || '',
-									name: values.name.value,
-									price: parseFloat(values.price.value.replace(/[^0-9]/g, '')) / 100,
-									services: values.assignEmployees.value,
-									sortingIndex: packages.find((pkg) => pkg.id === values.sheet.editing)
-										?.sortingIndex
-								});
-							}
-						}
-
-						values.sheet.active = false;
-						// Store editing state before clearing
-						const wasEditing = values.sheet.editing;
-						// Clear form data after successful save
-						values.name.value = '';
-						values.price.value = '0,00';
-						values.duration.value = '30 minuten';
-						values.assignEmployees.value = [];
-						values.sheet.editing = undefined;
-						toast.success(
-							`${value === 'services' ? 'Dienst' : 'Pakket'} is succesvol ${wasEditing ? 'bijgewerkt' : 'toegevoegd'}`
-						);
-					} catch {}
-					values.save.loading = false;
-				}}
-			>
-				{values.sheet.editing
+			<Button disabled={formState.isSaving} onclick={handleSave}>
+				{formState.editingId
 					? 'Bijwerken'
-					: value === 'services'
+					: activeTab === 'services'
 						? 'Dienst toevoegen'
 						: 'Pakket toevoegen'}
 			</Button>
@@ -1191,11 +699,7 @@
 		height: 1px;
 		background-color: hsl(var(--secondary));
 	}
-	:global(#dnd-action-dragged-el) {
-		border: none;
-		outline: none;
-		width: 100%;
-	}
+	:global(#dnd-action-dragged-el),
 	:global(#dnd-action-dragged-el *) {
 		border: none;
 		outline: none;

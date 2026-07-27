@@ -3,7 +3,7 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import { Label } from '$lib/components/ui/label/index';
 	import { Switch } from '$lib/components/ui/switch/index';
-	import { Server, Hash, Mail, User, Lock, Eye, EyeOff, Info } from 'lucide-svelte';
+	import { Server, Hash, Mail, User, Lock, Eye, EyeOff, Info } from '@lucide/svelte';
 	import { getWizardState } from '../wizardState.svelte';
 
 	const wizard = getWizardState();

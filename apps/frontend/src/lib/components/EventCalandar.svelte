@@ -5,7 +5,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { cn } from '$lib/utils.js';
-	import { LoaderCircle } from 'lucide-svelte';
+	import { LoaderCircle } from '@lucide/svelte';
 	import CalendarCard from './CalendarCard.svelte';
 	import { onMount } from 'svelte';
 	import { draggable } from '@neodrag/svelte';
@@ -400,9 +400,9 @@
 </script>
 
 <!-- UI Structure using Card and ScrollArea components -->
-<Card.Root
+<div
 	class={cn(
-		'relative flex h-[calc(100vh-220px)] max-h-400 min-h-100 w-full flex-col overflow-hidden',
+		'relative flex h-[calc(100vh-220px)] min-h-100 w-full flex-col overflow-hidden',
 		className
 	)}
 	{...restProps}
@@ -413,7 +413,7 @@
 		</div>
 	{/if}
 	<div class="absolute inset-0">
-		<Card.Header>
+		<div>
 			<div
 				bind:this={headerScrollArea}
 				class="max-h- ml-auto grid w-[calc(100%-3.5rem)]"
@@ -439,7 +439,7 @@
 					</div>
 				{/each}
 			</div>
-		</Card.Header>
+		</div>
 		{#key selectedDate}
 			<div
 				class="h-full pb-24"
@@ -463,7 +463,7 @@
 					}}
 				>
 					{#if !loading && moment}
-						<div class="p-6">
+						<div>
 							<div class="sameGrid relative ml-14 grid h-[100%] grid-cols-1 grid-rows-1">
 								<div class="mt-5">
 									{#each formattedHours as hour}
@@ -613,7 +613,7 @@
 			</div>
 		{/key}
 	</div>
-</Card.Root>
+</div>
 
 <style>
 	.sameGrid {

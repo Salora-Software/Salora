@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { ArrowLeft, Edit, Info, LoaderCircle, User } from 'lucide-svelte';
+	import { ArrowLeft, Edit, Info, LoaderCircle, User } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { DateTime } from 'luxon';
 	import * as Card from '$lib/components/ui/card/';

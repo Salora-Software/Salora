@@ -73,8 +73,8 @@
 		onUpsertItem?: (item: CalendarItem | undefined) => Promise<void>;
 	} & WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 	import { cn } from '$lib/utils.js';
-	import { BriefcaseBusiness, Calendar, CircleCheck, Clock, PlusIcon } from 'lucide-svelte';
-	import AlignLeft from 'lucide-svelte/icons/align-left';
+	import { BriefcaseBusiness, Calendar, CircleCheck, Clock, PlusIcon } from '@lucide/svelte';
+	import { AlignLeft } from '@lucide/svelte';
 	import * as ContextMenu from './ui/context-menu';
 	import * as Popover from './ui/popover';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';

@@ -4,8 +4,8 @@
 	import { cn } from '$lib/utils.js';
 	import type { CountryCode, DetailedValue, E164Number } from 'svelte-tel-input/types';
 	import type { ChangeEventHandler } from 'svelte/elements';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import Phone from 'lucide-svelte/icons/phone';
+	import { ChevronDown } from '@lucide/svelte';
+	import { Phone } from '@lucide/svelte';
 	import { normalizedCountries, TelInput } from 'svelte-tel-input';
 	import 'svelte-tel-input/styles/flags.css';
 	const handleCountryChange: ChangeEventHandler<HTMLSelectElement> = (e) => {

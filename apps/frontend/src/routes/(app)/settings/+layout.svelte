@@ -3,7 +3,7 @@
 	import { Separator } from '$lib/components/ui/separator/index';
 	import { t } from '$lib/translation.js';
 	import { cn } from '$lib/utils.js';
-	import { LoaderCircle } from 'lucide-svelte';
+	import { LoaderCircle } from '@lucide/svelte';
 	let { children, data } = $props();
 </script>
 

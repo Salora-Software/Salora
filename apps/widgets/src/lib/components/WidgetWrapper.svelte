@@ -6,7 +6,7 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher, setMode, setTheme, theme } from 'mode-watcher';
 	import Themer from '$lib/components/Themer.svelte';
-	import { LoaderCircle } from 'lucide-svelte';
+	import { LoaderCircle } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { createOrpcClient } from '$lib/orpc';
 

@@ -15,7 +15,8 @@
 	import NotificationComponent from '$lib/components/NotificationComponent.svelte';
 	import { cn } from '$lib/utils';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { SquareArrowOutUpRight } from 'lucide-svelte';
+	import { SquareArrowOutUpRight } from '@lucide/svelte';
+	import { setSessionContext } from '$lib/context/session-context.js';
 	let open = $state(true);
 
 	onNavigate(() => {
@@ -26,6 +27,7 @@
 		const hiddenPaths = ['/onboarding', '/onboarding/'];
 		return hiddenPaths.some((path) => page.url.pathname.startsWith(path));
 	});
+	setSessionContext(() => data.session ?? null);
 </script>
 
 {#if isHiddenSidebar}

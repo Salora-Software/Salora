@@ -20,7 +20,7 @@
 		PiggyBank,
 		Minus,
 		Undo2
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';

@@ -4,12 +4,12 @@
 	import { DropdownMenu } from '$lib/components/ui/dropdown-menu/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Loader, Plus, Minus } from 'lucide-svelte';
+	import { Loader, Plus, Minus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { ChevronsUpDown, Check } from 'lucide-svelte';
+	import { ChevronsUpDown, Check } from '@lucide/svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { cn } from '$lib/utils';
 	import { tick } from 'svelte';
@@ -20,14 +20,7 @@
 		title?: string;
 		description?: string | (() => string);
 		type?:
-			| 'input'
-			| 'button'
-			| 'select'
-			| 'checkbox'
-			| 'number'
-			| 'combobox'
-			| 'multiSelect'
-			| 'switch';
+			'input' | 'button' | 'select' | 'checkbox' | 'number' | 'combobox' | 'multiSelect' | 'switch';
 		options?: {
 			label: string;
 			value: string;

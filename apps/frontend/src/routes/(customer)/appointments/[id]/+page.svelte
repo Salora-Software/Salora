@@ -7,7 +7,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import { ChevronLeft } from '@lucide/svelte';
 	import { language, t, translations } from '$lib/translation';
 	import { DateTime } from 'luxon';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';

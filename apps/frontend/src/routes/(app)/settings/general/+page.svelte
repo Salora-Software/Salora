@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import { Loader } from 'lucide-svelte';
+	import { Loader } from '@lucide/svelte';
 	import { t } from '$lib/translation.js';
 	import { toast } from 'svelte-sonner';
 	import timezones from '$lib/timezones.json';

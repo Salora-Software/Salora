@@ -19,7 +19,7 @@
 		Eye,
 		RotateCcw,
 		Settings
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { scale, fly } from 'svelte/transition';
 
 	let { data } = $props();

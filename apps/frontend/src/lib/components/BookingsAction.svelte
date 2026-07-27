@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Ellipsis from 'lucide-svelte/icons/ellipsis';
-	import { Calendar, IdCardIcon, Trash2 } from 'lucide-svelte';
+	import { Ellipsis } from '@lucide/svelte';
+	import { Calendar, IdCardIcon, Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { toast } from 'svelte-sonner';

@@ -1,12 +1,16 @@
 // apps/frontend/src/routes/(onboarding)/onboarding/(wizard)/wizardState.svelte.ts
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, type Component } from 'svelte';
+import type { IconProps } from '@lucide/svelte';
 import { toast } from 'svelte-sonner';
 
 type StepAction = () => Promise<boolean | void> | boolean | void;
+type buttonType = { action: StepAction; icon?: Component<IconProps> };
+type buttonActions = { [key: string]: buttonType };
 
 class WizardState {
 	canGoNext = $state(true);
 	isSubmitting = $state(false);
+	buttonActions = $state<buttonActions>({});
 
 	// Dynamische header gegevens van de actieve pagina
 	stepTitle = $state('');
@@ -34,6 +38,10 @@ class WizardState {
 		this.onNextAction = action;
 	}
 
+	setButtonAction(buttonId: string, action: StepAction, icon?: Component<IconProps>) {
+		this.buttonActions[buttonId] = { action, icon };
+	}
+
 	// Voer de actie uit
 	async executeOnNext(): Promise<boolean> {
 		if (!this.onNextAction) return true;
@@ -55,6 +63,7 @@ class WizardState {
 	// Reset actie bij het wisselen van pagina
 	reset() {
 		this.onNextAction = null;
+		this.buttonActions = {};
 		this.canGoNext = true;
 		this.isSubmitting = false;
 	}

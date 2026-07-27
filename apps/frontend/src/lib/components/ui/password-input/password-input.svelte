@@ -4,8 +4,8 @@
 	import { cn } from '$lib/utils.js';
 	import type { E164Number } from 'svelte-tel-input/types';
 
-	import Eye from 'lucide-svelte/icons/eye';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import { Eye } from '@lucide/svelte';
+	import { EyeOff } from '@lucide/svelte';
 	import { Input } from '../input/index';
 
 	let {

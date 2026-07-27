@@ -3,9 +3,9 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { AlertCircle } from 'lucide-svelte';
+	import { AlertCircle } from '@lucide/svelte';
 	import { trpcQuery, type RouterOutput } from '$lib/trpc';
-	import { Loader2 } from 'lucide-svelte';
+	import { Loader2 } from '@lucide/svelte';
 	import type { QueryClient } from '@tanstack/svelte-query';
 	import type { Customer } from '$lib/types';
 	import TelInput from './ui/tel-input/tel-input.svelte';

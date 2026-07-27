@@ -3,16 +3,14 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { t } from '$lib/translation';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import { Ellipsis, Image, Plus, Trash2, CalendarIcon } from 'lucide-svelte';
-	import type { BranchesState, BranchesType, BranchType, SessionUserType } from '$lib/runes.svelte';
+	import { Ellipsis, Plus, Trash2, CalendarIcon } from '@lucide/svelte';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Table from './ui/table';
 	import * as Popover from './ui/popover';
-	import { Calendar } from './ui/calendar';
 	import { RangeCalendar } from './ui/range-calendar';
 	import { DateTime } from 'luxon';
 	import type { DateRange } from 'bits-ui';
-	import { type DateValue, getLocalTimeZone } from '@internationalized/date';
+	import { getLocalTimeZone } from '@internationalized/date';
 	import { Button, buttonVariants } from './ui/button';
 	import { ScrollArea } from './ui/scroll-area';
 	import { Label } from './ui/label';
@@ -21,8 +19,10 @@
 	import { SettingsInput } from './ui/settings-input';
 	import { toast } from 'svelte-sonner';
 	import { trpc, type RouterOutput } from '$lib/trpc';
+	import { orpcT } from '$lib/orpc';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import TimeSlotScheduler from './ui/time-slot-scheduler/time-slot-scheduler.svelte';
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
 	import * as Select from './ui/select';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import Checkbox from './ui/checkbox/checkbox.svelte';
@@ -30,49 +30,52 @@
 	import { Separator } from './ui/separator/';
 	import ComingSoon from './ComingSoon.svelte';
 	import { cn } from '$lib/utils';
-	let {
-		employees,
-		data,
-		variant = 'normal',
-		newEmployee = $bindable(() => {})
-	}: {
-		employees: any[];
-		data: {
-			session: SessionUserType;
-			branches: BranchesType;
-			branchesState: BranchesState;
-		};
-		variant?: 'small' | 'normal';
+	import { getSessionContext } from '$lib/context/session-context';
 
+	let {
+		variant = 'normal',
+		newEmployee = $bindable()
+	}: {
+		variant?: 'small' | 'normal';
 		newEmployee?: () => void;
 	} = $props();
+
+	const queryClient = useQueryClient();
+	const session = getSessionContext();
+
+	// --- Queries (oRPC) ---
+	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
+
+	let orgId = $derived(session.activeOrganizationId || branchesQuery.data?.[0]?.id || '');
+	let activeBranch = $derived(branchesQuery.data?.find((b) => b.id === orgId));
+
+	// Haal employees/members op van de actieve vestiging
+	let employees = $derived(activeBranch?.members || []);
+
 	let pendingDeletion: string[] = $state([]);
+
 	const colorMapping = {
 		owner: '#D8CCFF',
 		admin: '#BFE3FF',
 		member: '#D4F2DD'
 	};
+
 	const statusColorMapping = {
 		ACTIVE: '#D4F2DD',
 		PENDING: '#FFE4B5',
 		ACCEPTED: '#D4F2DD',
 		DECLINED: '#FFB6C1'
 	};
+
 	let values = $state({
 		image: '',
-		name: {
-			value: ''
-		},
+		name: { value: '' },
 		role: {
 			value: 'member',
 			options: ['owner', 'admin', 'member']
 		},
-		save: {
-			loading: false
-		},
-		email: {
-			value: ''
-		},
+		save: { loading: false },
+		email: { value: '' },
 		assignServices: {
 			value: [] as string[],
 			open: false
@@ -82,14 +85,9 @@
 			loading: false,
 			editing: ''
 		},
-		sendInvitation: {
-			value: false
-		},
+		sendInvitation: { value: false },
 		timeOff: {
-			range: {
-				start: undefined,
-				end: undefined
-			} as DateRange,
+			range: { start: undefined, end: undefined } as DateRange,
 			startTime: '09:00',
 			endTime: '17:00',
 			reason: '',
@@ -98,26 +96,12 @@
 			items: [] as RouterOutput['v2']['authenticated']['employee']['getTimeOffs']
 		}
 	});
-	let sliderContent: {
-		active?: string;
-		items: {
-			label: string;
-		}[];
-	} = $state({
+
+	let sliderContent = $state({
 		active: 'Details',
-		items: [
-			{
-				label: 'Details'
-			},
-			{
-				label: 'Werktijden'
-			},
-			{
-				label: 'Verlof'
-			}
-		]
+		items: [{ label: 'Details' }, { label: 'Werktijden' }, { label: 'Verlof' }]
 	});
-	let activeBranch: BranchType | null = null;
+
 	newEmployee = () => {
 		values.sheet.active = true;
 		values.sheet.editing = '';
@@ -126,14 +110,23 @@
 		values.role.value = 'member';
 		values.sendInvitation.value = false;
 	};
-	let businessHours: {
-		id: string;
-		day: number;
-		openHour: string;
-		openMinute: string;
-		closeHour: string;
-		closeMinute: string;
-	}[] = $state([]);
+
+	// Transformeer openingstijden van de actieve branch
+	let businessHours = $derived(
+		(activeBranch?.openingTimes || []).map((slot) => {
+			const [openHour, openMinute] = slot.startTimeLocal.split(':');
+			const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
+			return {
+				id: slot.id,
+				day: slot.dayOfWeek,
+				openHour,
+				openMinute,
+				closeHour,
+				closeMinute
+			};
+		})
+	);
+
 	let employeeAvailability: {
 		id?: string;
 		day: number;
@@ -150,31 +143,18 @@
 			closeMinute: ''
 		}
 	]);
-	onMount(async () => {
-		activeBranch = data.branchesState.getActiveBranch();
-		if (activeBranch)
-			businessHours = activeBranch.openingTimes.map((slot) => {
-				const [openHour, openMinute] = slot.startTimeLocal.split(':');
-				const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-				return {
-					id: slot.id,
-					day: slot.dayOfWeek,
-					openHour,
-					openMinute,
-					closeHour,
-					closeMinute
-				};
-			});
-	});
 
-	function editEmployee(employee: BranchesType[number]['members'][number]) {
+	function editEmployee(employee: (typeof employees)[number]) {
 		values.sheet.active = true;
 		values.sheet.editing = employee.id;
 		values.name.value = employee.user.name;
 		values.email.value = employee.user.email;
 		values.role.value = employee.role;
-		values.assignServices.value = employee.services || [];
-		values.image = env.PUBLIC_CDN_URL + employee.user.image;
+		values.assignServices.value = (employee.services || []).map((s: any) =>
+			typeof s === 'string' ? s : s.id
+		);
+		values.image = employee.user.image ? env.PUBLIC_CDN_URL + employee.user.image : '';
+
 		employeeAvailability = (employee.availability || []).map(
 			(time: { id: string; startTimeLocal: string; endTimeLocal: string; dayOfWeek: number }) => {
 				const [openHour, openMinute] = time.startTimeLocal.split(':');
@@ -189,7 +169,7 @@
 				};
 			}
 		);
-		//if employee.availability is empty, add a default slot
+
 		if (employeeAvailability.length === 0) {
 			employeeAvailability = [
 				{
@@ -204,10 +184,10 @@
 	}
 
 	async function fetchTimeOff() {
-		if (!values.sheet.editing || !activeBranch) return;
+		if (!values.sheet.editing || !orgId) return;
 		try {
 			values.timeOff.items = await trpc.v2.authenticated.employee.getTimeOffs.query({
-				organizationId: activeBranch.id,
+				organizationId: orgId,
 				memberId: values.sheet.editing
 			});
 		} catch (error) {
@@ -216,7 +196,7 @@
 	}
 
 	async function addTimeOff() {
-		if (!values.sheet.editing || !activeBranch || !values.timeOff.range.start) {
+		if (!values.sheet.editing || !orgId || !values.timeOff.range.start) {
 			toast.error('Selecteer een datum');
 			return;
 		}
@@ -234,7 +214,7 @@
 			const end = DateTime.fromJSDate(endDate).set({ hour: eH, minute: eM }).toJSDate();
 
 			await trpc.v2.authenticated.employee.addTimeOff.mutate({
-				organizationId: activeBranch.id,
+				organizationId: orgId,
 				memberId: values.sheet.editing,
 				startTime: start,
 				endTime: end,
@@ -253,10 +233,10 @@
 	}
 
 	async function removeTimeOff(id: string) {
-		if (!activeBranch) return;
+		if (!orgId) return;
 		try {
 			await trpc.v2.authenticated.employee.removeTimeOff.mutate({
-				organizationId: activeBranch.id,
+				organizationId: orgId,
 				timeOffId: id
 			});
 			toast.success('Verlof verwijderd');
@@ -278,48 +258,37 @@
 		}
 	});
 
+	const invalidateOrganisations = () =>
+		queryClient.invalidateQueries({
+			queryKey: orpcT.v1.organisation.getOrganisations.key()
+		});
+
 	async function saveEmployee() {
 		values.save.loading = true;
 		try {
-			const activeBranch = data.branchesState.getActiveBranch();
-			if (!activeBranch) {
+			if (!orgId) {
 				toast.error('Er is geen actieve vestiging');
 				return;
 			}
 			const availability = employeeAvailability.filter((slot) => slot.openHour && slot.closeHour);
+
 			if (!values.sheet.editing) {
-				const user = await trpc.v1.authenticated.employees.createEmployee.mutate({
-					organizationId: activeBranch.id,
+				await trpc.v1.authenticated.employees.createEmployee.mutate({
+					organizationId: orgId,
 					name: values.name.value,
 					email: values.email.value,
 					role: values.role.value,
 					sendInvitation: values.sendInvitation.value
 				});
-				activeBranch.members.push({
-					id: user.id,
-					role: values.role.value,
-					invitationStatus: user.invitationStatus || 'ACTIVE',
-					services: [],
-					user: {
-						id: user.id,
-						name: user.name,
-						email: user.email,
-						image: null,
-						phone: null,
-						createdAt: new Date(),
-						updatedAt: new Date(),
-						emailVerified: false
-					},
-					availability: []
-				});
+
 				toast.success(
 					values.sendInvitation.value
 						? 'Medewerker uitgenodigd!'
 						: 'Medewerker is succesvol toegevoegd'
 				);
 			} else {
-				const updatedEmployee = await trpc.v1.authenticated.employees.updateEmployee.mutate({
-					organizationId: activeBranch.id,
+				await trpc.v1.authenticated.employees.updateEmployee.mutate({
+					organizationId: orgId,
 					employeeId: values.sheet.editing,
 					name: values.name.value,
 					email: values.email.value,
@@ -333,21 +302,17 @@
 					removeItems: pendingDeletion,
 					assignedServices: values.assignServices.value || []
 				});
-				const employee = activeBranch.members.find((member) => member.id === values.sheet.editing);
-				if (employee) {
-					employee.user.name = values.name.value;
-					employee.user.email = values.email.value;
-					employee.role = values.role.value;
-				}
-				// set the active branch employee to updatedEmployee so that the UI updates
-				activeBranch.members = activeBranch.members.map((member) =>
-					member.id === values.sheet.editing ? updatedEmployee : member
-				);
+
 				toast.success('Medewerker is succesvol bijgewerkt');
 			}
+
+			invalidateOrganisations();
 			values.sheet.active = false;
-		} catch {}
-		values.save.loading = false;
+		} catch {
+			toast.error('Er is een fout opgetreden bij het opslaan.');
+		} finally {
+			values.save.loading = false;
+		}
 	}
 </script>
 
@@ -363,10 +328,10 @@
 		{/if}
 	</h3>
 {/snippet}
+
 <div
 	class={cn(
-		`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-1
-md:grid-cols-1  `,
+		`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-1`,
 		variant === 'small' ? '' : 'lg:grid-cols-2 xl:grid-cols-3'
 	)}
 >
@@ -375,12 +340,12 @@ md:grid-cols-1  `,
 		const roleA = roleOrder[a.role as keyof typeof roleOrder] ?? 99;
 		const roleB = roleOrder[b.role as keyof typeof roleOrder] ?? 99;
 		if (roleA !== roleB) return roleA - roleB;
-		// Sort by invitation status (active first, then pending, then declined)
+
 		const statusOrder = { ACTIVE: 0, ACCEPTED: 0, PENDING: 1, DECLINED: 2 };
 		const statusA = statusOrder[a.invitationStatus as keyof typeof statusOrder] ?? 99;
 		const statusB = statusOrder[b.invitationStatus as keyof typeof statusOrder] ?? 99;
 		if (statusA !== statusB) return statusA - statusB;
-		// Compare by user creation date (oldest first)
+
 		const dateA = new Date(a.user.createdAt).getTime();
 		const dateB = new Date(b.user.createdAt).getTime();
 		return dateA - dateB;
@@ -404,7 +369,6 @@ md:grid-cols-1  `,
 								)}
 							>
 								<Avatar.Image src={env.PUBLIC_CDN_URL + employee.user.image} alt="@shadcn" />
-
 								<Avatar.Fallback>
 									<img src="/images/user.svg" alt="" />
 								</Avatar.Fallback>
@@ -440,11 +404,11 @@ md:grid-cols-1  `,
 										onclick={async () => {
 											try {
 												await trpc.v1.authenticated.employees.updateInvitationStatus.mutate({
-													organizationId: activeBranch?.id || '',
+													organizationId: orgId,
 													employeeId: employee.id,
 													status: 'ACCEPTED'
 												});
-												employee.invitationStatus = 'ACCEPTED';
+												invalidateOrganisations();
 												toast.success('Uitnodiging geaccepteerd');
 											} catch (error) {
 												toast.error('Fout bij accepteren uitnodiging');
@@ -457,11 +421,11 @@ md:grid-cols-1  `,
 										onclick={async () => {
 											try {
 												await trpc.v1.authenticated.employees.updateInvitationStatus.mutate({
-													organizationId: activeBranch?.id || '',
+													organizationId: orgId,
 													employeeId: employee.id,
 													status: 'DECLINED'
 												});
-												employee.invitationStatus = 'DECLINED';
+												invalidateOrganisations();
 												toast.success('Uitnodiging geweigerd');
 											} catch (error) {
 												toast.error('Fout bij weigeren uitnodiging');
@@ -475,10 +439,10 @@ md:grid-cols-1  `,
 										onclick={async () => {
 											try {
 												await trpc.v1.authenticated.employees.resendInvitation.mutate({
-													organizationId: activeBranch?.id || '',
+													organizationId: orgId,
 													employeeId: employee.id
 												});
-												employee.invitationStatus = 'PENDING';
+												invalidateOrganisations();
 												toast.success('Uitnodiging opnieuw verzonden');
 											} catch (error) {
 												toast.error('Fout bij versturen uitnodiging');
@@ -490,15 +454,13 @@ md:grid-cols-1  `,
 								{/if}
 								<DropdownMenu.Item
 									onclick={async () => {
-										if (!activeBranch) return;
+										if (!orgId) return;
 										await trpc.v1.authenticated.employees.removeEmployee.mutate({
-											organizationId: activeBranch?.id || '',
+											organizationId: orgId,
 											employeeId: employee.id
 										});
 										toast.success('Medewerker is succesvol verwijderd');
-										activeBranch.members = activeBranch?.members.filter(
-											(member) => member.id !== employee.id
-										);
+										invalidateOrganisations();
 									}}
 								>
 									Verwijder
@@ -550,6 +512,7 @@ md:grid-cols-1  `,
 		</button>
 	{/each}
 </div>
+
 <Sheet.Root bind:open={values.sheet.active}>
 	<Sheet.Content side="right" class="max-w-162.5!">
 		<div>
@@ -557,20 +520,15 @@ md:grid-cols-1  `,
 				<Sheet.Title>
 					{values.sheet.editing ? 'Medewerker bijwerken' : 'Medewerker toevoegen'}
 				</Sheet.Title>
-				<Sheet.Description
-					>Vul de gegevens in om een nieuw medewerker toe te voegen</Sheet.Description
-				>
+				<Sheet.Description>
+					Vul de gegevens in om een nieuw medewerker toe te voegen
+				</Sheet.Description>
 			</Sheet.Header>
 			<ScrollArea class="h-[calc(100vh-56px-7rem)] max-w-full rounded-md px-3">
-				<!-- <TinySlider bind:this={slider}>
-						{#snippet children({ sliderWidth })} -->
-				{#each sliderContent.items as item, i}
+				{#each sliderContent.items as item}
 					<button
 						class="min-w-max-content relative mt-4 mr-4 cursor-pointer rounded-md"
-						onclick={() => {
-							// slider?.setIndex(i);
-							sliderContent.active = item.label;
-						}}
+						onclick={() => (sliderContent.active = item.label)}
 					>
 						<h3
 							class="text-md text-muted-foreground"
@@ -581,8 +539,7 @@ md:grid-cols-1  `,
 						</h3>
 					</button>
 				{/each}
-				<!-- {/snippet}
-					</TinySlider> -->
+
 				<Separator class="mb-4" />
 				<div class="grid gap-4 py-4">
 					{#if sliderContent.active === 'Details'}
@@ -630,9 +587,9 @@ md:grid-cols-1  `,
 								</Select.Trigger>
 								<Select.Content>
 									{#each values.role.options as option}
-										<Select.Item value={option}
-											>{t.roles[option as keyof typeof t.roles]}</Select.Item
-										>
+										<Select.Item value={option}>
+											{t.roles[option as keyof typeof t.roles]}
+										</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -664,9 +621,7 @@ md:grid-cols-1  `,
 												>
 													<Plus class="rotate-45" size="13" />
 													<span class="max-w-32 truncate">
-														{data.branchesState
-															.getActiveBranch()
-															?.services.find((s) => s.id === option)?.name}
+														{activeBranch?.services.find((s) => s.id === option)?.name || option}
 													</span>
 												</Badge>
 											{/each}
@@ -676,10 +631,8 @@ md:grid-cols-1  `,
 									</div>
 								</Select.Trigger>
 								<Select.Content>
-									{#each data.branchesState
-										.getActiveBranch()
-										?.services.map( (service) => ({ label: service.name, value: service.id }) ) || [] as item}
-										<Select.Item value={item.value}>{item.label}</Select.Item>
+									{#each activeBranch?.services || [] as service}
+										<Select.Item value={service.id}>{service.name}</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>

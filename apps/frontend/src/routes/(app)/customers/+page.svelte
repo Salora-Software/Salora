@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import { ChevronDown } from '@lucide/svelte';
 	import {
 		type ColumnDef,
 		type ColumnFiltersState,
@@ -22,7 +22,7 @@
 		createSvelteTable,
 		renderSnippet
 	} from '$lib/components/ui/data-table/index.js';
-	import { SlidersHorizontal } from 'lucide-svelte';
+	import { SlidersHorizontal } from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { trpc, trpcQuery } from '$lib/trpc';
 	import { DateTime } from 'luxon';
@@ -47,7 +47,9 @@
 	let searchValue: string = $state(page.url.searchParams.get('search') || '');
 	let searchDebounced = new Debounced(() => searchValue, 300);
 	let prevData: any = $state(null);
-	let organizationId = $derived(activeBranch?.id || data.session.session.activeOrganizationId || '');
+	let organizationId = $derived(
+		activeBranch?.id || data.session.session.activeOrganizationId || ''
+	);
 
 	let skip = $derived(currentPage * pageSize);
 	let normalizedSearch = $derived(searchDebounced.current.trim() || undefined);

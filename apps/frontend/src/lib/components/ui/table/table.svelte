@@ -12,7 +12,7 @@
 </script>
 
 <div class="grid w-full grid-cols-1">
-	<div class="relative w-full overflow-auto">
+	<div class="relative w-full">
 		<table
 			bind:this={ref}
 			class={cn('w-full caption-bottom border-spacing-0 text-sm', className)}

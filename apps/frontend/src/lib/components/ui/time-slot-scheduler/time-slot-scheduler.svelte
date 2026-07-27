@@ -2,7 +2,7 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button } from '$lib/components/ui/button/index';
-	import { Plus, Trash2 } from 'lucide-svelte';
+	import { Plus, Trash2 } from '@lucide/svelte';
 	import { t } from '$lib/translation';
 
 	export type TimeSlot = {
@@ -27,7 +27,7 @@
 	let sortedSchedules = $derived(
 		[...schedules].sort((a, b) => {
 			if (a.day !== b.day) return a.day - b.day;
-			return a.openTime.localeCompare(b.openTime);
+			return a.openTime?.localeCompare(b?.openTime);
 		})
 	);
 

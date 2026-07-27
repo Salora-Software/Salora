@@ -1,14 +1,14 @@
 <script lang="ts">
-	import CircleUser from 'lucide-svelte/icons/circle-user';
-	import Menu from 'lucide-svelte/icons/menu';
-	import Package2 from 'lucide-svelte/icons/package-2';
-	import Search from 'lucide-svelte/icons/search';
+	import { CircleUser } from '@lucide/svelte';
+	import { Menu } from '@lucide/svelte';
+	import { Package2 } from '@lucide/svelte';
+	import { Search } from '@lucide/svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { t } from '$lib/translation.js';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import { LoaderCircle, Plus } from 'lucide-svelte';
+	import { LoaderCircle, Plus } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import Employees from '$lib/components/Employees.svelte';
@@ -62,7 +62,7 @@
 </div>
 <Separator />
 {#if activeBranch}
-	<Employees bind:newEmployee employees={activeBranch.members} {data} />
+	<Employees bind:newEmployee />
 {:else}
 	<LoaderCircle />
 {/if}

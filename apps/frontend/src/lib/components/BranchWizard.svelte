@@ -6,7 +6,7 @@
 	import { Separator } from '$lib/components/ui/separator/index';
 	import Confetti from 'svelte-confetti';
 	import { Button } from '$lib/components/ui/button';
-	import { Image, ImageIcon, LoaderCircle, Plus, UserRound } from 'lucide-svelte';
+	import { Image, ImageIcon, LoaderCircle, Plus, UserRound } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import Products from './Products.svelte';
 	import timezones from '$lib/timezones.json';

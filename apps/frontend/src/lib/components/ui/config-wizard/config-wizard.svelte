@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import { cn } from '$lib/utils';
-	import { Check, Cross, Loader, Plus } from 'lucide-svelte';
+	import { Check, Cross, Loader, Plus } from '@lucide/svelte';
 	import { fade, scale, fly } from 'svelte/transition';
 	import { quintOut, cubicOut } from 'svelte/easing';
 

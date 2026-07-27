@@ -1,8 +1,8 @@
 <script lang="ts">
-	import CircleUser from 'lucide-svelte/icons/circle-user';
-	import Menu from 'lucide-svelte/icons/menu';
-	import Package2 from 'lucide-svelte/icons/package-2';
-	import Search from 'lucide-svelte/icons/search';
+	import { CircleUser } from '@lucide/svelte';
+	import { Menu } from '@lucide/svelte';
+	import { Package2 } from '@lucide/svelte';
+	import { Search } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
@@ -11,7 +11,7 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { Image as ImageIcon, Loader, LoaderCircle } from 'lucide-svelte';
+	import { Image as ImageIcon, Loader, LoaderCircle } from '@lucide/svelte';
 	import { t } from '$lib/translation';
 	import { toast } from 'svelte-sonner';
 	import Layout from '../+layout.svelte';

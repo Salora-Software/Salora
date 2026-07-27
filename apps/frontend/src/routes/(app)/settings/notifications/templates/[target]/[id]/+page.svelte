@@ -13,7 +13,7 @@
 	import { EmailPreview } from '$lib/components/ui/email-preview';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Loader } from 'lucide-svelte';
+	import { Loader } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { trpc, trpcQuery } from '$lib/trpc';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';

@@ -15,7 +15,7 @@
 		Package,
 		Receipt,
 		UserRoundCheck
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { page } from '$app/state';
 	import { trpcQuery } from '$lib/trpc';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';

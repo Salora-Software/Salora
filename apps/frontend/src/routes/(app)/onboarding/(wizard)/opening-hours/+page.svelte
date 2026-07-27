@@ -13,7 +13,10 @@
 
 	// Haal de vestiging op die momenteel in de onboarding zit
 	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
-	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
+	const orgId = $derived(
+		data.session?.session.activeOrganizationId || branchesQuery.data?.[0]?.id || ''
+	);
+	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.id === orgId));
 
 	type BackendOpeningTime = NonNullable<typeof onboardingBranch>['openingTimes'][number];
 
@@ -81,9 +84,12 @@
 					}))
 				});
 				// invalidate de query
-				await data.queryClient.invalidateQueries({
+				data.queryClient.invalidateQueries({
 					queryKey: orpcT.v1.organisation.getOrganisations.queryKey()
 				});
+				await data.queryClient.prefetchQuery(
+					orpcT.v1.service.getServices.queryOptions({ input: { organizationId: orgId } })
+				);
 
 				return true; // Navigeer door naar de volgende stap
 			} catch (error) {

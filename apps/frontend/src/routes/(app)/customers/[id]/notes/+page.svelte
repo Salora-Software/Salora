@@ -3,7 +3,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { fly, scale, slide } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
-	import { Clock, Plus, Check, Calendar, Trash2, FileText, Search } from 'lucide-svelte';
+	import { Clock, Plus, Check, Calendar, Trash2, FileText, Search } from '@lucide/svelte';
 	import { page } from '$app/state';
 	import { trpc, trpcQuery } from '$lib/trpc';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';

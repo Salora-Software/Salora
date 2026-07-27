@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, type ComponentProps } from 'svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { Grip, GripVertical } from 'lucide-svelte';
+	import { Grip, GripVertical } from '@lucide/svelte';
 	import { draggable, type DragEventData } from '@neodrag/svelte';
 	import { cn } from '$lib/utils';
 	let initialPos = $state({ x: 0, y: 0 });

@@ -33,37 +33,33 @@ export const createServiceHandler = protectedBase
         });
       }
 
-      // 2. Insert service & koppel employees via schema.employeeService
-      const createdService = await db.transaction(async (tx) => {
-        const [newService] = await tx
-          .insert(schema.service)
-          .values({
-            organizationId: input.organizationId,
-            name: input.name,
-            duration: input.duration,
-            price: input.price,
-            sortingIndex: input.sortingIndex,
-          })
-          .returning();
+      // 2. Insert service
+      const [newService] = await db
+        .insert(schema.service)
+        .values({
+          organizationId: input.organizationId,
+          name: input.name,
+          duration: input.duration,
+          price: input.price,
+          sortingIndex: input.sortingIndex,
+        })
+        .returning();
 
-        if (input.employeeIds.length > 0) {
-          await tx.insert(schema.employeeService).values(
-            input.employeeIds.map((memberId) => ({
-              serviceId: newService.id,
-              memberId,
-            })),
-          );
-        }
+      // 3. Koppel employees (indien aanwezig)
+      if (input.employeeIds.length > 0) {
+        await db.insert(schema.employeeService).values(
+          input.employeeIds.map((memberId) => ({
+            serviceId: newService.id,
+            memberId,
+          })),
+        );
+      }
 
-        return newService;
-      });
-
-      // 3. Ophalen inclusief relaties
+      // 4. Ophalen inclusief relaties
       const fullService = await db.query.service.findFirst({
-        where: eq(schema.service.id, createdService.id),
+        where: eq(schema.service.id, newService.id),
         with: {
           employeeServices: {
-            // Let op: dit is de relation key uit je relations definition file
             with: {
               member: {
                 with: {

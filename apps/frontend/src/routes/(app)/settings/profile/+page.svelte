@@ -5,7 +5,7 @@
 	import { Separator } from '$lib/components/ui/separator/index';
 	import { toast } from 'svelte-sonner';
 	import { trpc } from '$lib/trpc';
-	import { Image, LoaderCircle } from 'lucide-svelte';
+	import { Image, LoaderCircle } from '@lucide/svelte';
 	import SettingsCard from '$lib/components/SettingsCard.svelte';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input/index.js';

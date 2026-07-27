@@ -2,7 +2,7 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import { Label } from '$lib/components/ui/label/index';
 	import * as Select from '$lib/components/ui/select/index';
-	import { Building2 } from 'lucide-svelte';
+	import { Building2 } from '@lucide/svelte';
 	import { getWizardState } from '../wizardState.svelte';
 	import { orpc, orpcT } from '$lib/orpc';
 	import { createQuery } from '@tanstack/svelte-query';
@@ -149,24 +149,8 @@
 		<Input id="address" type="text" bind:value={address} placeholder="Hoofdstraat 1" class="h-10" />
 	</div>
 
-	<div class="grid grid-cols-3 gap-4">
-		<div class="col-span-2 space-y-2">
-			<Label for="city" class="font-medium text-neutral-700">Plaats</Label>
-			<Input id="city" type="text" bind:value={city} placeholder="Groningen" class="h-10" />
-		</div>
-
-		<div class="space-y-2">
-			<Label class="font-medium text-neutral-700">Valuta</Label>
-			<Select.Root type="single" bind:value={selectedCurrency}>
-				<Select.Trigger class="h-10! max-h-full w-full">
-					{selectedCurrency === 'EUR' ? 'EUR (€)' : selectedCurrency}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="EUR">EUR (€)</Select.Item>
-					<Select.Item value="USD">USD ($)</Select.Item>
-					<Select.Item value="GBP">GBP (£)</Select.Item>
-				</Select.Content>
-			</Select.Root>
-		</div>
+	<div class="space-y-2">
+		<Label for="city" class="font-medium text-neutral-700">Plaats</Label>
+		<Input id="city" type="text" bind:value={city} placeholder="Groningen" class="h-10" />
 	</div>
 </div>

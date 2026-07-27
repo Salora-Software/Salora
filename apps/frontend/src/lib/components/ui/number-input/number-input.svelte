@@ -2,8 +2,8 @@
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import type { WithElementRef } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
-	import Minus from 'lucide-svelte/icons/minus';
-	import Plus from 'lucide-svelte/icons/plus';
+	import { Minus } from '@lucide/svelte';
+	import { Plus } from '@lucide/svelte';
 
 	const minValue = 0;
 	function increment() {

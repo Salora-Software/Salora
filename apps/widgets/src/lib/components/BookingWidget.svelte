@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/';
-	import { Clock, CreditCard, LoaderCircle, ShoppingBag, UserRound } from 'lucide-svelte';
+	import { Clock, CreditCard, LoaderCircle, ShoppingBag, UserRound } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import { Calendar } from '$lib/components/ui/calendar/index.js';

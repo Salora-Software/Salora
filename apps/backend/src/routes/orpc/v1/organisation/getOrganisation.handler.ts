@@ -53,16 +53,7 @@ export const getOrganizationHandler = base
           description: service.description,
           duration: service.duration,
         })),
-        members: (organization.members || []).map((member) => ({
-          id: member.id,
-          userId: member.userId,
-          user: {
-            id: member.user.id,
-            name: member.user.name,
-            email: member.user.email,
-            image: member.user.image,
-          },
-        })),
+        members: organization.members || [],
       };
     },
   );

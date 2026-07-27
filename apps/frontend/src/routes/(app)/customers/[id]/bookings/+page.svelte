@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import { ChevronDown } from '@lucide/svelte';
 	import {
 		type ColumnDef,
 		type ColumnFiltersState,
@@ -23,7 +23,7 @@
 		renderSnippet,
 		renderComponent
 	} from '$lib/components/ui/data-table/index.js';
-	import { SlidersHorizontal, Calendar, User, Package2 } from 'lucide-svelte';
+	import { SlidersHorizontal, Calendar, User, Package2 } from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { trpc, trpcQuery } from '$lib/trpc';

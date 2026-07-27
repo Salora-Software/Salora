@@ -5,7 +5,7 @@
 	import * as Card from './ui/card';
 	import { Separator } from './ui/separator';
 	import { Button } from './ui/button';
-	import { LoaderCircle } from 'lucide-svelte';
+	import { LoaderCircle } from '@lucide/svelte';
 
 	let {
 		ref = $bindable(null),

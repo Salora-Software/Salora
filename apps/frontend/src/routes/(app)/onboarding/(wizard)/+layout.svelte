@@ -5,12 +5,18 @@
 	import { Button } from '$lib/components/ui/button/index';
 	import { setWizardState } from './wizardState.svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { Loader2 } from 'lucide-svelte';
+	import { Loader2 } from '@lucide/svelte';
+	import { orpc, orpcT } from '$lib/orpc';
+	import { createQuery } from '@tanstack/svelte-query';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	// Maak de wizard state beschikbaar voor alle kind-pagina's
 	const wizard = setWizardState();
+	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
+	const orgId = $derived(
+		data.session?.session.activeOrganizationId || branchesQuery.data?.[0]?.id || ''
+	);
 
 	type Step = { id: string; path: string; title?: string; description?: string };
 	type Group = { id: string; label: string; steps: Step[] };
@@ -98,7 +104,10 @@
 		// 2. Als de actie succesvol was (of er was geen actie), navigeer door
 		if (success) {
 			if (isLastStep) {
-				goto('/dashboard');
+				await orpc.v1.organisation.finishOrganisation({
+					organizationId: orgId
+				});
+				goto('/');
 			} else {
 				wizard.reset();
 				goto(flatSteps[currentStepIndex + 1].path);
@@ -159,15 +168,35 @@
 					<div class="col-start-1 row-start-1 w-full" out:fade={{ duration: 100 }}>
 						<Card.Root class="w-full rounded-2xl border border-neutral-100 bg-white shadow-sm">
 							<Card.Content class="p-6 md:p-8">
-								<div class="mb-8 space-y-1">
-									<h1 class="text-2xl font-bold tracking-tight text-neutral-900">
-										{currentTitle}
-									</h1>
-									{#if currentDescription}
-										<p class="text-sm text-neutral-500">
-											{currentDescription}
-										</p>
-									{/if}
+								<div class="mb-8 flex items-center justify-between space-y-1">
+									<div>
+										<h1 class="text-2xl font-bold tracking-tight text-neutral-900">
+											{currentTitle}
+										</h1>
+										{#if currentDescription}
+											<p class="text-sm text-neutral-500">
+												{currentDescription}
+											</p>
+										{/if}
+									</div>
+									<div class="flex items-center gap-2">
+										{#each Object.entries(wizard?.buttonActions) as [name, { action, icon: Icon }]}
+											<Button
+												variant="outline"
+												size="lg"
+												class="mt-2"
+												onclick={async () => {
+													const success = await action();
+													if (success) {
+														goNext();
+													}
+												}}
+											>
+												<Icon />
+												{name}
+											</Button>
+										{/each}
+									</div>
 								</div>
 
 								{@render children()}

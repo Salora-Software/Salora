@@ -28,6 +28,8 @@ export const getOrganizationOutputSchema = z.object({
     z.object({
       id: z.string(),
       userId: z.string(),
+      invitationStatus: z.string(),
+      role: z.string(),
       user: z.object({
         id: z.string(),
         name: z.string(),

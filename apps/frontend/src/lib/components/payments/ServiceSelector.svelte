@@ -8,7 +8,7 @@
 		Package,
 		ChevronLeft,
 		ChevronRight
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { scale } from 'svelte/transition';
 	import TinySlider from 'svelte-tiny-slider';

@@ -75,6 +75,8 @@
 		'December'
 	].map((month, i) => ({ value: String(i + 1), label: month }));
 
+	let scrollAreaEl = $state<HTMLElement | null>(null);
+
 	let bookingState = $state<BookingValues>({
 		appointment: {
 			value: '',
@@ -376,6 +378,7 @@
 						{:else if selectedStep?.name == 'Datum & Tijd'}
 							<ScrollArea
 								id="calendar-scroll-area"
+								bind:ref={scrollAreaEl}
 								class="h-[349px] [&>[data-scroll-area-scrollbar]]:!fixed [&>[data-scroll-area-scrollbar]]:!right-[2px] [&>[data-scroll-area-scrollbar]]:py-[2.5px]"
 							>
 								<Calendar
@@ -393,6 +396,7 @@
 									onValueChange={async (value) => {
 										if (!value) return;
 										bookingState.date.loading = true;
+
 										const luxonDate = DateTime.fromJSDate(
 											value.toDate(branch?.timeZone || 'utc')
 										).setZone(branch?.timeZone || 'utc', { keepLocalTime: true });
@@ -405,16 +409,20 @@
 										);
 										bookingState.date.loading = false;
 
+										// Wacht tot Svelte de DOM geüpdatet heeft
 										await tick();
-										const scrollArea = document.getElementById('calendar-scroll-area');
-										if (scrollArea) {
-											const viewport = scrollArea.querySelector('[data-scroll-area-viewport]');
-											if (viewport) {
-												viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-											} else {
-												scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+
+										// requestAnimationFrame zorgt dat de browser de layout/hoogte daadwerkelijk gerenderd heeft
+										requestAnimationFrame(() => {
+											if (scrollAreaEl) {
+												const viewport =
+													scrollAreaEl.querySelector('[data-scroll-area-viewport]') || scrollAreaEl;
+												viewport.scrollTo({
+													top: viewport.scrollHeight,
+													behavior: 'smooth'
+												});
 											}
-										}
+										});
 									}}
 									onPlaceholderChange={async (value) => {
 										const { year, month } = value;

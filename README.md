@@ -24,7 +24,7 @@
 
 > **Note:** Salora Core is currently in active development (Alpha). Features, database schemas, and APIs are subject to change. It is not yet recommended for production use out of the box and requires technical setup.
 
-Salora is a modern, open-source booking management system designed for service-based businesses. Built from the ground up to be embedded into existing platforms, it provides a robust foundation for scheduling, resource management, and customer relations. 
+Salora is a modern, open-source booking management system designed for service-based businesses. Built from the ground up to be embedded into existing platforms, it provides a robust foundation for scheduling, resource management, and customer relations.
 
 Originating as a passionate project to solve scheduling complexities in the Netherlands, the platform is actively transitioning to a fully internationalized (i18n) architecture for global deployment.
 
@@ -38,9 +38,8 @@ Originating as a passionate project to solve scheduling complexities in the Neth
 
 ## Tech Stack
 
-
-
 Salora is built on a modern, performant monorepo stack:
+
 - **Frontend & Core:** SvelteKit (TypeScript)
 - **Backend API:** tRPC for end-to-end type safety
 - **Database:** PostgreSQL with Prisma ORM

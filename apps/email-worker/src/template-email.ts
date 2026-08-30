@@ -1,9 +1,14 @@
 import { createDb, schema } from "@salora/database";
 import { renderEmail } from "@salora/emails";
-import type { EmailTargetAudience, TemplateEmailQueueMessage } from "@salora/mailer";
+import type {
+	EmailAttachment,
+	EmailTargetAudience,
+	TemplateEmailQueueMessage,
+} from "@salora/mailer";
 import { and, eq } from "drizzle-orm";
 import type { Env } from "./types";
 import { createAuth, generateDirectMagicLink } from "@salora/auth";
+import { createEvent, type EventAttributes } from "ics";
 
 interface ResolvedTemplateEmail {
 	senderName: string;
@@ -11,6 +16,7 @@ interface ResolvedTemplateEmail {
 	to: string;
 	subject: string;
 	body: string;
+	attachments?: EmailAttachment[];
 }
 
 const DEFAULT_SENDER = "noreply@salora.app";
@@ -168,6 +174,93 @@ const formatTime = (date: Date, timeZone: string): string =>
 		timeZone,
 	}).format(date);
 
+const ICS_ELIGIBLE_TYPES = new Set([
+	"EMAIL_CREATED",
+	"EMAIL_APPROVED",
+	"EMAIL_CANCELED",
+]);
+
+const buildCalendarAttachment = (args: {
+	templateType: string;
+	organizationId: string;
+	organizationName: string;
+	organizationLocation: string;
+	organizationEmail: string;
+	bookingId: string;
+	serviceName: string;
+	startTime: Date;
+	endTime: Date;
+	recipientEmail: string;
+	recipientName: string;
+	organizerName: string;
+	organizerEmail: string;
+	bookingNotes?: string | null;
+}): EmailAttachment => {
+	const method = args.templateType === "EMAIL_CANCELED" ? "CANCEL" : "REQUEST";
+	const status =
+		args.templateType === "EMAIL_CANCELED" ? "CANCELLED" : "CONFIRMED";
+
+	const start = args.startTime;
+	const end = args.endTime;
+
+	const event: EventAttributes = {
+		start: [
+			start.getUTCFullYear(),
+			start.getUTCMonth() + 1,
+			start.getUTCDate(),
+			start.getUTCHours(),
+			start.getUTCMinutes(),
+		],
+		end: [
+			end.getUTCFullYear(),
+			end.getUTCMonth() + 1,
+			end.getUTCDate(),
+			end.getUTCHours(),
+			end.getUTCMinutes(),
+		],
+		title: args.serviceName || "Afspraak",
+		description: [
+			`Afspraak bij ${args.organizationName}`,
+			args.bookingNotes?.trim() || "",
+		]
+			.filter(Boolean)
+			.join("\n\n"),
+		location: args.organizationLocation || "Online",
+		status: status,
+		method: method,
+		uid: `${args.bookingId}-${args.organizationId}@salora.app`,
+		sequence: args.templateType === "EMAIL_CANCELED" ? 1 : 0,
+		organizer: {
+			name: (args.organizerName || args.organizationName).trim(),
+			email: (args.organizerEmail || args.organizationEmail).trim(),
+		},
+		attendees: [
+			{
+				name: (args.recipientName || "Ontvanger").trim(),
+				email: args.recipientEmail.trim(),
+				rsvp: true,
+				partstat: "NEEDS-ACTION",
+				role: "REQ-PARTICIPANT",
+			},
+		],
+		productId: "-//Salora//Appointments//NL",
+	};
+
+	const { error, value } = createEvent(event);
+
+	if (error || !value) {
+		console.error("Failed to create ICS event", error);
+		throw error || new Error("Failed to generate ICS content");
+	}
+
+	// Note: ics library generates the VCALENDAR wrapper by default when method is provided
+	return {
+		filename: "invite.ics",
+		content: value,
+		mimeType: `text/calendar; charset=UTF-8; method=${method}`,
+	};
+};
+
 export const resolveTemplateEmail = async (
 	payload: TemplateEmailQueueMessage,
 	env: Env,
@@ -223,12 +316,11 @@ export const resolveTemplateEmail = async (
 	const employeeName = booking?.employee?.user?.name || "Medewerker";
 	const customerEmail = booking?.customer?.email || "";
 	const employeeEmail = booking?.employee?.user?.email || "";
-	const recipientEmail =
-		isTestTemplate
-			? "test@salora.app"
-			: targetAudience === "EMPLOYEE"
-				? employeeEmail
-				: customerEmail;
+	const recipientEmail = isTestTemplate
+		? "test@salora.app"
+		: targetAudience === "EMPLOYEE"
+			? employeeEmail
+			: customerEmail;
 
 	if (!isTestTemplate && !recipientEmail) {
 		throw new Error(
@@ -295,7 +387,9 @@ export const resolveTemplateEmail = async (
 		},
 	};
 
-	const parsedBody = parseTemplateBody(template?.body as string | null | undefined);
+	const parsedBody = parseTemplateBody(
+		template?.body as string | null | undefined,
+	);
 	const interpolatedBody = interpolateRecord(parsedBody, variables) as Record<
 		string,
 		unknown
@@ -311,7 +405,11 @@ export const resolveTemplateEmail = async (
 		template?.subject || getDefaultSubject(payload.templateType);
 	const subject = replaceTemplateVariables(subjectTemplate, variables);
 
-	const buttonLink = await generateDirectMagicLink(auth, { email: recipientEmail, name: customerName, callback: '/appointments/' + payload.organizationId });
+	const buttonLink = await generateDirectMagicLink(auth, {
+		email: recipientEmail,
+		name: customerName,
+		callback: "/appointments/" + payload.organizationId,
+	});
 	const mailProps = {
 		companyName: toStringValue(interpolatedBody.companyName, organization.name),
 		companyAddress: toStringValue(
@@ -331,10 +429,7 @@ export const resolveTemplateEmail = async (
 			getDefaultContent(payload.templateType),
 		),
 		buttonText: toStringValue(interpolatedBody.buttonText, "Bekijk afspraak"),
-		buttonLink: toStringValue(
-			interpolatedBody.buttonLink,
-			buttonLink,
-		),
+		buttonLink: toStringValue(interpolatedBody.buttonLink, buttonLink),
 		details: {
 			date: toStringValue(
 				detailsInput.date,
@@ -356,12 +451,56 @@ export const resolveTemplateEmail = async (
 		mailProps as any,
 	);
 
+	const calendarStart = firstCalendarItem?.startTime;
+	const calendarEnd =
+		firstCalendarItem?.endTime ??
+		(calendarStart
+			? new Date(
+				calendarStart.getTime() +
+				Math.max(booking?.duration ?? 60, 5) * 60 * 1000,
+			)
+			: undefined);
+
+	let attachments: EmailAttachment[] | undefined;
+	if (
+		!isTestTemplate &&
+		payload.bookingId &&
+		ICS_ELIGIBLE_TYPES.has(payload.templateType) &&
+		calendarStart &&
+		calendarEnd
+	) {
+		attachments = [
+			buildCalendarAttachment({
+				templateType: payload.templateType,
+				organizationId: payload.organizationId,
+				organizationName: organization.name || "Salora",
+				organizationLocation: organization.location || "",
+				organizationEmail:
+					organization.email || env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
+				bookingId: payload.bookingId,
+				serviceName: booking?.service?.name || "Afspraak",
+				startTime: calendarStart,
+				endTime: calendarEnd,
+				recipientEmail,
+				recipientName:
+					targetAudience === "EMPLOYEE" ? employeeName : customerName,
+				organizerName: employeeName || organization.name || "Salora",
+				organizerEmail:
+					employeeEmail ||
+					organization.email ||
+					env.MAIL_EMAIL_SENDER ||
+					DEFAULT_SENDER,
+				bookingNotes: booking?.notes,
+			}),
+		];
+	}
+
 	return {
 		senderName: organization.name || "Salora",
 		from: env.MAIL_EMAIL_SENDER || DEFAULT_SENDER,
 		to: recipientEmail,
 		subject,
 		body,
+		attachments,
 	};
 };
-// Small edit

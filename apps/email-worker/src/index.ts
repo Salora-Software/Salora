@@ -6,7 +6,6 @@ import {
 import { getCredentials } from "./credentials";
 import type { Env, QueueBatch } from "./types";
 import { resolveTemplateEmail } from "./template-email";
-import { createAuth } from "@salora/auth";
 
 const DEFAULT_SENDER = "noreply@salora.app";
 
@@ -52,6 +51,7 @@ const processQueueMessage = async (
 			to: renderedEmail.to,
 			subject: renderedEmail.subject,
 			body: renderedEmail.body,
+			attachments: renderedEmail.attachments,
 			credentials,
 		});
 

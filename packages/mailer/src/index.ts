@@ -18,7 +18,14 @@ export interface EmailSendData {
   to: string;
   subject: string;
   body: string;
+  attachments?: EmailAttachment[];
   credentials: MailCredential[];
+}
+
+export interface EmailAttachment {
+  filename: string;
+  content: string;
+  mimeType?: string;
 }
 
 export interface SendResult {
@@ -60,7 +67,8 @@ const isCredentialUsable = (credential: MailCredential) =>
 export async function sendEmailWithFailover(
   data: EmailSendData,
 ): Promise<SendResult> {
-  const { senderName, from, to, subject, body, credentials } = data;
+  const { senderName, from, to, subject, body, attachments, credentials } =
+    data;
   const sortedCredentials = [...credentials]
     .filter(isCredentialUsable)
     .sort((a, b) => a.priority - b.priority);
@@ -88,6 +96,7 @@ export async function sendEmailWithFailover(
         to: { email: to },
         subject,
         html: body,
+        attachments,
       });
       console.log("send email success");
       return {

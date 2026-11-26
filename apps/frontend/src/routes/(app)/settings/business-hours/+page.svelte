@@ -17,6 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { orpc } from '$lib/orpc.js';
+	import { toBusinessHours } from '$lib/utils';
 	let { data } = $props();
 	const defaultBusinessLayout = [
 		{
@@ -75,34 +76,15 @@
 			businessHours = [...defaultBusinessLayout];
 			return;
 		}
-		businessHours = activeBranch.openingTimes.map((slot) => {
-			const [openHour, openMinute] = slot.startTimeLocal.split(':');
-			const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-			return {
-				id: slot.id,
-				day: slot.dayOfWeek,
-				openHour,
-				openMinute,
-				closeHour,
-				closeMinute
-			};
-		});
+		businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
+		if (businessHours.length == 0) {
+			businessHours = [...defaultBusinessLayout];
+		}
 	}
 	onMount(async () => {
 		activeBranch = data.branchesState.getActiveBranch();
 		if (activeBranch)
-			businessHours = activeBranch.openingTimes.map((slot) => {
-				const [openHour, openMinute] = slot.startTimeLocal.split(':');
-				const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-				return {
-					id: slot.id,
-					day: slot.dayOfWeek,
-					openHour,
-					openMinute,
-					closeHour,
-					closeMinute
-				};
-			});
+			businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
 		updateOpeningTimes();
 	});
 
@@ -111,18 +93,7 @@
 	data.branchesState.onBranchChange(() => {
 		activeBranch = data.branchesState.getActiveBranch();
 		if (activeBranch)
-			businessHours = activeBranch.openingTimes.map((slot) => {
-				const [openHour, openMinute] = slot.startTimeLocal.split(':');
-				const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-				return {
-					id: slot.id,
-					day: slot.dayOfWeek,
-					openHour,
-					openMinute,
-					closeHour,
-					closeMinute
-				};
-			});
+			businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
 		updateOpeningTimes();
 	});
 </script>

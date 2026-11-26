@@ -1,15 +1,19 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import { Loader } from '@lucide/svelte';
+	import { Loader, Check, Lock } from '@lucide/svelte';
 	import { t } from '$lib/translation.js';
 	import { toast } from 'svelte-sonner';
 	import timezones from '$lib/timezones.json';
 	import * as Select from '$lib/components/ui/select';
+	import * as Tooltip from '$lib/components/ui/tooltip/index';
 	import { NumberInput } from '$lib/components/ui/number-input/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
+	import { cn } from '$lib/utils.js';
 	import { trpc, trpcQuery } from '$lib/trpc.js';
 	let { data } = $props();
+
+	type RequiredBookingField = 'firstName' | 'lastName' | 'email' | 'phone' | 'notes';
 
 	let activeBranch = $state(data.branchesState.getActiveBranch());
 	let generalSettings = $derived(
@@ -23,7 +27,8 @@
 		minimumBookingTime: '0',
 		bookingPeriod: 0,
 		timeZone: 'UTC',
-		autoShiftTimeSlot: false
+		autoShiftTimeSlot: false,
+		requiredBookingFields: ['firstName', 'lastName', 'email'] as RequiredBookingField[]
 	};
 
 	const toForm = (settings: typeof generalSettings.data) => {
@@ -34,7 +39,8 @@
 				settings.minimumBookingTime?.toString() ?? DEFAULT_FORM.minimumBookingTime,
 			bookingPeriod: settings.bookingPeriod ?? DEFAULT_FORM.bookingPeriod,
 			timeZone: settings.timeZone ?? DEFAULT_FORM.timeZone,
-			autoShiftTimeSlot: settings.autoShiftTimeSlot ?? DEFAULT_FORM.autoShiftTimeSlot
+			autoShiftTimeSlot: settings.autoShiftTimeSlot ?? DEFAULT_FORM.autoShiftTimeSlot,
+			requiredBookingFields: settings.requiredBookingFields ?? DEFAULT_FORM.requiredBookingFields
 		};
 	};
 
@@ -44,7 +50,8 @@
 		minimumBookingTime: Number.parseFloat(currentForm.minimumBookingTime) || 0,
 		bookingPeriod: currentForm.bookingPeriod ?? DEFAULT_FORM.bookingPeriod,
 		appointmentStatus: currentForm.appointmentStatus || DEFAULT_FORM.appointmentStatus,
-		autoShiftTimeSlot: currentForm.autoShiftTimeSlot
+		autoShiftTimeSlot: currentForm.autoShiftTimeSlot,
+		requiredBookingFields: currentForm.requiredBookingFields
 	});
 
 	let form = $state(toForm(generalSettings.data));
@@ -55,7 +62,8 @@
 			base.minimumBookingTime !== form.minimumBookingTime ||
 			base.bookingPeriod !== form.bookingPeriod ||
 			base.timeZone !== form.timeZone ||
-			base.autoShiftTimeSlot !== form.autoShiftTimeSlot
+			base.autoShiftTimeSlot !== form.autoShiftTimeSlot ||
+			JSON.stringify(base.requiredBookingFields) !== JSON.stringify(form.requiredBookingFields)
 		);
 	});
 	let settingsMutation = trpcQuery.v1.authenticated.settings.updateGeneralSettings.createMutation({
@@ -93,6 +101,29 @@
 		{ label: '1 maand', value: '720' },
 		{ label: '2 maanden', value: '1440' }
 	];
+
+	const requiredFieldOptions = [
+		{ value: 'firstName', label: 'Voornaam' },
+		{ value: 'lastName', label: 'Achternaam' },
+		{ value: 'email', label: 'E-mailadres' },
+		{ value: 'phone', label: 'Telefoonnummer' },
+		{ value: 'notes', label: 'Opmerking' }
+	] as const;
+
+	function toggleRequiredField(field: RequiredBookingField) {
+		if (field === 'email') return;
+		form.requiredBookingFields = form.requiredBookingFields.includes(field)
+			? form.requiredBookingFields.filter((item) => item !== field)
+			: [...form.requiredBookingFields, field];
+	}
+
+	const chipClass = (active: boolean) =>
+		cn(
+			'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+			active
+				? 'border-primary bg-primary text-primary-foreground'
+				: 'border-input bg-background text-muted-foreground hover:bg-muted'
+		);
 
 	data.branchesState.onBranchChange(async () => {
 		activeBranch = data.branchesState.getActiveBranch();
@@ -183,6 +214,52 @@
 		{/each}
 	</Select.Content>
 </Select.Root>
+<h3 class="text-md font-semibold">Verplichte klantgegevens</h3>
+<p class="mb-3 text-sm text-gray-500">
+	Selecteer welke gegevens klanten moeten invullen in het boekingswidget. E-mailadres is altijd
+	verplicht.
+</p>
+<Tooltip.Provider delayDuration={150}>
+	<div class="mb-8 flex flex-wrap gap-2">
+		{#each requiredFieldOptions as option}
+			{#if option.value === 'email'}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								type="button"
+								aria-disabled="true"
+								class={cn(chipClass(true), 'cursor-not-allowed opacity-70')}
+								onclick={(event) => event.preventDefault()}
+							>
+								<Check size="13" />
+								{option.label}
+								<Lock size="13" />
+							</button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content side="bottom">
+						E-mailadres is altijd verplicht en kan niet worden uitgezet.
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{:else}
+				{@const active = form.requiredBookingFields.includes(option.value)}
+				<button
+					type="button"
+					class={chipClass(active)}
+					disabled={generalSettings.isLoading}
+					onclick={() => toggleRequiredField(option.value)}
+				>
+					{#if active}
+						<Check size="13" />
+					{/if}
+					{option.label}
+				</button>
+			{/if}
+		{/each}
+	</div>
+</Tooltip.Provider>
 <Button
 	class="h-9 w-25"
 	disabled={settingsMutation.isPending || !activeBranch?.id || !generalSettings.data || !isDirty()}

@@ -15,6 +15,7 @@ export const getOrganizationOutputSchema = z.object({
   bookingPeriod: z.number(),
   logo: z.string().nullable(),
   website: z.string().nullable(),
+  requiredBookingFields: z.array(z.string()),
   services: z.array(
     z.object({
       id: z.string(),

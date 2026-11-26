@@ -116,14 +116,21 @@ export async function createBooking(
 	}
 }
 
-export function validateBookingStep(stepName: string, values: BookingValues): boolean {
+export function validateBookingStep(
+	stepName: string,
+	values: BookingValues,
+	requiredFields: string[] = ['firstName', 'lastName', 'email']
+): boolean {
 	switch (stepName) {
 		case 'Afspraak':
 			return !!values.appointment.value;
 		case 'Datum & Tijd':
 			return !!(values.date.calendarValue && values.date.timeValue);
 		case 'Jouw informatie':
-			return !!(values.contact.firstName && values.contact.lastName && values.contact.email);
+			return requiredFields.every((field) => {
+				const value = values.contact[field as keyof BookingValues['contact']];
+				return typeof value === 'string' && value.trim().length > 0;
+			});
 		default:
 			return true;
 	}

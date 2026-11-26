@@ -138,6 +138,7 @@ export const organization = sqliteTable(
     bookingPeriod: integer().default(365).notNull(),
     autoShiftTimeSlot: integer({ mode: "boolean" }).default(false).notNull(),
     onboardingStep: integer().default(0),
+    requiredBookingFields: text(),
   },
   (table) => [],
 );

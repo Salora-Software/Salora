@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '../../../../context';
-import { schema } from '@salora/database';
+import {
+	schema,
+	bookingContactFields,
+	parseRequiredBookingFields
+} from '@salora/database';
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 
@@ -13,7 +17,8 @@ export const router = createRouter({
 				minimumBookingTime: z.number(),
 				bookingPeriod: z.number(),
 				autoShiftTimeSlot: z.boolean(),
-				timeZone: z.string()
+				timeZone: z.string(),
+				requiredBookingFields: z.array(z.enum(bookingContactFields))
 			})
 		)
 		.query(async ({ input: { organizationId }, ctx: { db } }) => {
@@ -24,7 +29,8 @@ export const router = createRouter({
 					minimumBookingTime: true,
 					bookingPeriod: true,
 					autoShiftTimeSlot: true,
-					timeZone: true
+					timeZone: true,
+					requiredBookingFields: true
 				}
 			});
 			if (!organization) {
@@ -35,7 +41,8 @@ export const router = createRouter({
 				minimumBookingTime: Number(organization.minimumBookingTime) || 0.5,
 				bookingPeriod: organization.bookingPeriod || 365,
 				autoShiftTimeSlot: !!organization.autoShiftTimeSlot,
-				timeZone: organization.timeZone || 'Europe/Amsterdam'
+				timeZone: organization.timeZone || 'Europe/Amsterdam',
+				requiredBookingFields: parseRequiredBookingFields(organization.requiredBookingFields)
 			};
 		}),
 
@@ -47,7 +54,8 @@ export const router = createRouter({
 				minimumBookingTime: z.number(),
 				bookingPeriod: z.number(),
 				autoShiftTimeSlot: z.boolean(),
-				timeZone: z.string()
+				timeZone: z.string(),
+				requiredBookingFields: z.array(z.enum(bookingContactFields))
 			})
 		)
 		.output(z.boolean())
@@ -58,8 +66,13 @@ export const router = createRouter({
 				minimumBookingTime,
 				bookingPeriod,
 				autoShiftTimeSlot,
-				timeZone
+				timeZone,
+				requiredBookingFields
 			} = input;
+
+			const normalizedRequiredFields = parseRequiredBookingFields(
+				JSON.stringify(requiredBookingFields)
+			);
 
 			const result = await db
 				.update(schema.organization)
@@ -69,7 +82,8 @@ export const router = createRouter({
 					minimumBookingTime,
 					bookingPeriod,
 					autoShiftTimeSlot: autoShiftTimeSlot,
-					timeZone
+					timeZone,
+					requiredBookingFields: JSON.stringify(normalizedRequiredFields)
 				})
 				.where(eq(schema.organization.id, organizationId))
 				.returning({ id: schema.organization.id });

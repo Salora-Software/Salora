@@ -150,7 +150,7 @@
 			active: false,
 			selected: false,
 			onNext: async () => {
-				if (!validateBookingStep('Jouw informatie', bookingState)) {
+				if (!validateBookingStep('Jouw informatie', bookingState, branch.requiredBookingFields)) {
 					return false;
 				}
 				saveContactToLocalStorage(bookingState.contact);
@@ -467,7 +467,7 @@
 								{/if}
 							</ScrollArea>
 						{:else if selectedStep?.name == 'Jouw informatie'}
-							<ContactStep bind:bookingState />
+							<ContactStep bind:bookingState requiredFields={branch.requiredBookingFields} />
 						{:else if selectedStep?.name == 'Betaling'}
 							<PaymentStep {bookingState} {branch} />
 						{/if}

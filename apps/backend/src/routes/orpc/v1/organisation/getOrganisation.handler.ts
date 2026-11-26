@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { schema } from "@salora/database";
+import { schema, parseRequiredBookingFields } from "@salora/database";
 import { eq } from "drizzle-orm";
 
 import { base } from "../../bases/public";
@@ -46,6 +46,9 @@ export const getOrganizationHandler = base
         bookingPeriod: organization.bookingPeriod ?? 30,
         logo: organization.logo,
         website: organization.website,
+        requiredBookingFields: parseRequiredBookingFields(
+          organization.requiredBookingFields,
+        ),
         services: (organization.services || []).map((service) => ({
           id: service.id,
           name: service.name,

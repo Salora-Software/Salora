@@ -5,13 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bunx --bun vite dev --host",
-		"dev:worker": "DEPLOY_TARGET=worker bunx --bun vite dev --host",
-		"start": "PORT=5173 node ./build",
-		"start:docker": "PORT=5173 node ./build",
+		"dev:worker": "bunx --bun vite dev --host",
 		"build": "bunx vite build",
-		"build:worker": "DEPLOY_TARGET=worker bunx vite build",
-		"build:docker": "DEPLOY_TARGET=docker bunx vite build",
-		"deploy": "wrangler deploy",
+		"build:worker": "bunx vite build",
 		"buildWidget": "vite build --config vite.widget.config.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -24,14 +20,12 @@
 		"delete-dummy-data": "node dumyData/addDummy.js --delete",
 		"remove-duplicates": "node dumyData/addDummy.js --remove-duplicates",
 		"show-duplicates": "node dumyData/addDummy.js --show-duplicates",
-		"generate-emails": "node dumyData/addDummy.js --generate-emails",
-		"docker:push": "docker push ghcr.io/hexidevs/lumabooking:salora && docker push ghcr.io/hexidevs/lumabooking:latest"
+		"generate-emails": "node dumyData/addDummy.js --generate-emails"
 	},
 	"devDependencies": {
 		"@salora/eslint-config": "workspace:*",
 		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/adapter-cloudflare-workers": "^2.9.0",
-		"@sveltejs/adapter-node": "^5.5.7",
 		"@sveltejs/kit": "^2.70.1",
 		"@sveltejs/vite-plugin-svelte": "^5.1.1",
 		"@tailwindcss/typography": "^0.5.20",

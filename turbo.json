@@ -99,9 +99,6 @@
 			]
 		},
 		"lint": {},
-		"services:up": {
-			"cache": false
-		},
 		"start": {
 			"cache": false,
 			"persistent": true

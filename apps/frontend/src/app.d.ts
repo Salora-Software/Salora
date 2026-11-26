@@ -19,6 +19,9 @@ declare global {
 		// interface PageState {}
 		interface Platform {
 			env?: Env;
+			ctx: ExecutionContext;
+			context: ExecutionContext;
+			caches: CacheStorage;
 		}
 	}
 }

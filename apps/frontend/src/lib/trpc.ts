@@ -2,7 +2,7 @@
 import { createTRPCProxyClient, httpLink, type TRPCLink } from '@trpc/client';
 // @ts-ignore
 import type { FetchEsque } from '@trpc/client/dist/internals/types';
-import type { AppRouter } from '$lib/server/trpc/router';
+import type { AppRouter } from '@salora/shared-types';
 import SuperJSON from '$lib/superjson';
 import { env } from '$env/dynamic/public';
 import { toast } from 'svelte-sonner';
@@ -11,7 +11,7 @@ import { getErrorMessage, t } from './translation';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTrpcQueryProxy } from './createTrpcQueryProxy';
 
-const backendUrl = env.PUBLIC_BACKEND_BASE || 'http://localhost:8788/trpc';
+const backendUrl = env.PUBLIC_BACKEND_BASE || '/api/trpc';
 
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {

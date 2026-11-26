@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { generateUploadUrl } from '@/lib/s3';
 import type { GenerateLogoUploadUrlInput } from './upload-logo.schema';
 import type { PrivateContext } from '@/middleware/trpc';
 
@@ -26,7 +25,7 @@ export const generateLogoUploadUrlHandler = async ({
 
 	// Generate presigned upload URL
 	// const uploadUrl = await generateUploadUrl(imageKey, 'image/*');
-	uploadUrl = 'todo';
+	const uploadUrl = 'todo';
 
 	return { uploadUrl, imageId };
 };

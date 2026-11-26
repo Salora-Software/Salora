@@ -1,4 +1,4 @@
-import type { AppRouter as Router } from "../../../apps/frontend/src/lib/server/trpc/router";
+import type { AppRouter as Router } from "../../../apps/backend/src/routes/trpc/_router";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { router as ORPCRouterItem } from "../../../apps/backend/src/routes/orpc/_router";
 import type { InferRouterInputs, InferRouterOutputs, RouterClient } from "@orpc/server";

@@ -4,11 +4,13 @@ import type { Env } from "@/lib/env";
 import type { AppBindings } from "@/lib/factory";
 import { createAuth } from "@salora/auth";
 
-export function createAuthMiddleware(env: Env) {
+export function createAuthMiddleware(env: Env, basePath = "") {
   return createMiddleware<AppBindings>(async (c, next) => {
     const url = new URL(c.req.url);
     const origin = url.origin;
-    const auth = createAuth(c.get("drizzle"), origin, env.TRUSTED_IPS);
+    const auth = createAuth(c.get("drizzle"), origin, env.TRUSTED_IPS, {
+      basePath: `${basePath}/auth`,
+    });
     c.set("auth", auth);
     await next();
   });

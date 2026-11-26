@@ -2,12 +2,10 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 import { BranchesState, SessionUserState, BranchWizardState, type BranchesType } from '$lib/runes.svelte';
 import { createOrpcClient, orpcT } from '$lib/orpc';
-import { browser } from '$app/environment';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
-import { env } from '$env/dynamic/public';
 
 export const load: LayoutLoad = async ({ parent, fetch }) => {
-	const orpcServer = createTanstackQueryUtils(createOrpcClient(env.PUBLIC_BACKEND_URL, fetch));
+	const orpcServer = createTanstackQueryUtils(createOrpcClient(undefined, fetch));
 	let data = await parent();
 	const session = data.session;
 	if (!session) redirect(307, '/login');

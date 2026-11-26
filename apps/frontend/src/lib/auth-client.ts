@@ -4,9 +4,18 @@ import { createAuthClient } from 'better-auth/svelte';
 
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
+
+const backendOrigin = env.PUBLIC_BACKEND_URL
+	? new URL(env.PUBLIC_BACKEND_URL).origin
+	: env.PUBLIC_FRONTEND_URL
+		? new URL(env.PUBLIC_FRONTEND_URL).origin
+		: typeof window !== 'undefined'
+			? window.location.origin
+			: undefined;
+
 export const { signIn, signUp, signOut, useSession, organization, magicLink, getSession } =
 	createAuthClient({
-		baseURL: new URL(env.PUBLIC_BACKEND_URL).origin + '/auth',
+		baseURL: backendOrigin ? backendOrigin + '/api/auth' : undefined,
 		fetchOptions: {
 			onError: (error) => {
 				const errorKey = typeof error.error.code === 'string' ? error.error.code : 'default';

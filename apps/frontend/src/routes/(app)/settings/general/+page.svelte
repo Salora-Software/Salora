@@ -22,6 +22,10 @@
 		})
 	);
 
+	type GeneralSettingsData = typeof generalSettings.data & {
+		requiredBookingFields?: RequiredBookingField[];
+	};
+
 	const DEFAULT_FORM = {
 		appointmentStatus: 'PENDING',
 		minimumBookingTime: '0',
@@ -31,7 +35,7 @@
 		requiredBookingFields: ['firstName', 'lastName', 'email'] as RequiredBookingField[]
 	};
 
-	const toForm = (settings: typeof generalSettings.data) => {
+	const toForm = (settings: GeneralSettingsData | undefined) => {
 		if (!settings) return DEFAULT_FORM;
 		return {
 			appointmentStatus: settings.appointmentStatus ?? DEFAULT_FORM.appointmentStatus,

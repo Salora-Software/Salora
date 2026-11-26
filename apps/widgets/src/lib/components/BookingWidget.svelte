@@ -49,7 +49,7 @@
 	});
 
 	interface Props {
-		branch: RouterOutput['v1']['getBranch'];
+		branch: RouterOutput['v1']['getBranch'] & { requiredBookingFields?: string[] };
 		collapsed?: boolean;
 		cardWidth?: number;
 		onCollapsedChange?: (collapsed: boolean) => void;

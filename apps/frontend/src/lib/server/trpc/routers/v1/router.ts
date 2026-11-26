@@ -3,7 +3,7 @@ import { router as createRouter, publicProcedure } from '../../context';
 import { router as authenticatedRouter } from './authenticated/router';
 import { eq } from 'drizzle-orm';
 import { router as protectedRouter } from './protected/router';
-import { schema, parseRequiredBookingFields } from '@salora/database';
+import { schema } from '@salora/database';
 import { TRPCError } from '@trpc/server';
 import { CalendarDate } from '@internationalized/date';
 
@@ -39,7 +39,6 @@ export const router = createRouter({
 				bookingPeriod: z.number(),
 				logo: z.string().nullable(),
 				website: z.string().nullable(),
-				requiredBookingFields: z.array(z.string()),
 				services: z.array(
 					z.object({
 						id: z.string(),
@@ -88,7 +87,6 @@ export const router = createRouter({
 			// Bouw het object direct op en pas de sorteringen toe
 			const branch = {
 				...orgResult[0],
-				requiredBookingFields: parseRequiredBookingFields(orgResult[0].requiredBookingFields),
 
 				services: servicesResult.sort((a, b) => {
 					if (a.sortingIndex === null && b.sortingIndex === null) return 0;

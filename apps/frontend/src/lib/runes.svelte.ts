@@ -1,5 +1,6 @@
 import { organization } from './auth-client';
 import { trpc, type RouterOutput } from './trpc';
+import { orpc } from './orpc';
 
 export type SessionUserType = {
 	user: {
@@ -104,7 +105,7 @@ export class BranchesState {
 		}
 
 		const activeBranch = this.getActiveBranch();
-		const openingTimes = await trpc.v1.authenticated.schedule.getOpeningTimes.query({
+		const openingTimes = await orpc.v1.schedule.getOpeningTimes({
 			organizationId: activeBranch?.id || '',
 			timezone: activeBranch?.timeZone || ''
 		});

@@ -14,6 +14,7 @@
 	import Employees from './Employees.svelte';
 	import { compressImage, convertToSlug } from '$lib/utils';
 	import { trpc } from '$lib/trpc';
+	import { orpc } from '$lib/orpc';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { quintOut, cubicOut } from 'svelte/easing';
 	import type {
@@ -449,7 +450,7 @@
 				loading.branchLogo = true;
 				try {
 					if (!activeBranch) throw new Error('No active branch');
-					const updatedTimes = await trpc.v1.authenticated.schedule.updateOpeningTimes.mutate({
+					const updatedTimes = await orpc.v1.schedule.updateOpeningTimes({
 						organizationId: activeBranch.id,
 						removeItems: pendingDeletion,
 						openingTimes: businessHours.map((slot) => ({

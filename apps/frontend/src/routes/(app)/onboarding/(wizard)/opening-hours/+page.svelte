@@ -2,11 +2,10 @@
 	import TimeSlotScheduler, {
 		type TimeSlot
 	} from '$lib/components/ui/time-slot-scheduler/time-slot-scheduler.svelte';
-	import { trpc } from '$lib/trpc';
-	import { toast } from 'svelte-sonner';
 	import { getWizardState } from '../wizardState.svelte.js';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { orpcT } from '$lib/orpc.js';
+	import { orpc, orpcT } from '$lib/orpc.js';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 	const wizard = getWizardState();
@@ -73,7 +72,7 @@
 			}
 
 			try {
-				await trpc.v1.authenticated.schedule.updateOpeningTimes.mutate({
+				await orpc.v1.schedule.updateOpeningTimes({
 					organizationId: onboardingBranch.id,
 					removeItems: pendingDeletion,
 					openingTimes: businessHours.map((slot) => ({

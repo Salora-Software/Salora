@@ -14,12 +14,12 @@
 	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
 
 	// Formulier State
-	let companyName = $state('Hex Media');
-	let selectedCountry = $state('NL');
-	let zipcode = $state('9765 EC');
-	let houseNumber = $state('8');
-	let address = $state('Paterswolde');
-	let city = $state('Onlandseweg');
+	let companyName = $state('');
+	let selectedCountry = $state('');
+	let zipcode = $state('');
+	let houseNumber = $state('');
+	let address = $state('');
+	let city = $state('');
 	let selectedCurrency = $state('EUR');
 
 	// Landen opties

@@ -16,7 +16,7 @@
 	import { Loader } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
-	import { trpc } from '$lib/trpc.js';
+	import { orpc } from '$lib/orpc.js';
 	let { data } = $props();
 	const defaultBusinessLayout = [
 		{
@@ -148,7 +148,7 @@
 		loading = true;
 		try {
 			if (!activeBranch) throw new Error('No active branch');
-			const updatedTimes = await trpc.v1.authenticated.schedule.updateOpeningTimes.mutate({
+			const updatedTimes = await orpc.v1.schedule.updateOpeningTimes({
 				organizationId: activeBranch.id,
 				removeItems: pendingDeletion,
 				openingTimes: businessHours.map((slot, index) => ({

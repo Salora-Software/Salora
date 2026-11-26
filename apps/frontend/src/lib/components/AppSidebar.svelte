@@ -60,6 +60,8 @@
 		};
 	} = $props();
 
+	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
+
 	// Menu items.
 	const items = {
 		default: {
@@ -148,7 +150,7 @@
 				data.branchWizardState.open(data.branches.length > 2, org.onboardingStep, org.id);
 			}
 			if (!org && branches.length > 0) {
-				const branch = data.branchesState.setActiveBranch(0);
+				const branch = branchesState.setActiveBranch(0);
 				await organization.setActive({
 					organizationId: branches[0].id
 				});
@@ -157,7 +159,7 @@
 					data.branchWizardState.open(data.branches.length > 2, branch.onboardingStep, branch.id);
 				}
 			}
-			data.branchesState.setBranches(branches, org?.id || branches[0]?.id);
+			branchesState.setBranches(branches as BranchesType, org?.id || branches[0]?.id);
 
 			if (branches.length === 0) {
 				data.branchWizardState.open(true);
@@ -258,7 +260,7 @@
 							{#each data.branches as branch, index (branch.name)}
 								<DropdownMenu.Item
 									onSelect={async () => {
-										data.branchesState.setActiveBranch(index);
+										branchesState.setActiveBranch(index);
 										if (branch.onboardingStep) {
 											data.branchWizardState.open(false, branch.onboardingStep, branch.id);
 										}

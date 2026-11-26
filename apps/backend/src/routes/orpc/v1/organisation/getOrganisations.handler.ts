@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import { schema } from "@salora/database";
-import { eq, exists } from "drizzle-orm";
+import { and, eq, exists } from "drizzle-orm";
 
 import {
   getOrganizationsInputSchema,
@@ -20,14 +20,16 @@ export const getOrganizationsHandler = protectedBase
       },
     }) => {
       const organization = await db.query.organization.findMany({
-        where: (org, { exists }) =>
+        where: (org) =>
           exists(
             db
               .select()
               .from(schema.member)
               .where(
-                eq(schema.member.organizationId, org.id) &&
+                and(
+                  eq(schema.member.organizationId, org.id),
                   eq(schema.member.userId, session.user.id),
+                ),
               ),
           ),
         with: {

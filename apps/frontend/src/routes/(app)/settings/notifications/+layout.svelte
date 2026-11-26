@@ -12,7 +12,7 @@
 
 	let { data, children } = $props();
 
-	const organizationId = $derived(data.branchesState.getActiveBranch()?.id);
+	const organizationId = $derived(data.branchesState?.getActiveBranch()?.id);
 
 	const notificationTypes = [
 		{ id: 'EMAIL_APPROVED', name: 'Afspraak bevestigd' },

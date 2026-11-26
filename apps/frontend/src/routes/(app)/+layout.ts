@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
-import { BranchesState, SessionUserState, BranchWizardState } from '$lib/runes.svelte';
+import { BranchesState, SessionUserState, BranchWizardState, type BranchesType } from '$lib/runes.svelte';
 import { createOrpcClient, orpcT } from '$lib/orpc';
 import { browser } from '$app/environment';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
@@ -12,15 +12,24 @@ export const load: LayoutLoad = async ({ parent, fetch }) => {
 	const session = data.session;
 	if (!session) redirect(307, '/login');
 	let sessionState = new SessionUserState(session);
-	let branchesState = new BranchesState();
 	let branchWizardState = new BranchWizardState();
 
 	const branches = await data.queryClient.ensureQueryData(
 		orpcServer.v1.organisation.getOrganisations.queryOptions({})
 	);
+
+	const organizationBranches = branches as unknown as BranchesType;
+	let branchesState = new BranchesState(organizationBranches);
+	const activeOrganizationId = session.session?.activeOrganizationId;
+	if (activeOrganizationId) {
+		branchesState.setBranches(organizationBranches, activeOrganizationId);
+	} else if (organizationBranches.length > 0) {
+		branchesState.setActiveBranch(0);
+	}
+
 	return {
 		session: sessionState.value,
-		branches: branches,
+		branches: organizationBranches,
 		sessionState,
 		branchesState,
 		branchWizardState

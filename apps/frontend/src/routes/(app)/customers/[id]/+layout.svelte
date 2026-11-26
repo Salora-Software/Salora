@@ -14,9 +14,14 @@
 	import { trpcQuery } from '$lib/trpc';
 	import EditCustomerModal from '$lib/components/EditCustomerModal.svelte';
 	import type { Customer } from '$lib/types.js';
+	import { BranchesState } from '$lib/runes.svelte';
 
 	const { data, children } = $props();
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
+	if (!data.branchesState && (data.branches?.length ?? 0) > 0) {
+		branchesState.setActiveBranch(0);
+	}
+	let activeBranch = $state(branchesState.getActiveBranch());
 	const organizationId = $derived(activeBranch?.id || '');
 	const customerId = $derived(page.params.id);
 
@@ -95,7 +100,7 @@
 					averageBookingValue: '€0.00'
 				}
 	);
-	data.branchesState.onBranchChange((branch) => {
+	branchesState.onBranchChange((branch) => {
 		activeBranch = branch;
 	});
 

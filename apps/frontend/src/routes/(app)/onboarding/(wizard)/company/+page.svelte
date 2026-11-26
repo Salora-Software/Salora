@@ -8,6 +8,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { z } from 'zod';
 	import { toast } from 'svelte-sonner';
+	import { organization } from '$lib/auth-client';
 
 	const wizard = getWizardState();
 	const { data } = $props();
@@ -111,8 +112,10 @@
 					organizationId: onboardingBranch.id,
 					...payload
 				});
+				await organization.setActive({ organizationId: onboardingBranch.id });
 			} else {
-				await orpc.v1.organisation.createOrganisation(payload);
+				const createdOrganization = await orpc.v1.organisation.createOrganisation(payload);
+				await organization.setActive({ organizationId: createdOrganization.id });
 			}
 
 			await data.queryClient.invalidateQueries({

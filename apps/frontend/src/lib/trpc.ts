@@ -11,7 +11,7 @@ import { getErrorMessage, t } from './translation';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTrpcQueryProxy } from './createTrpcQueryProxy';
 
-const backendUrl = env.PUBLIC_BACKEND_BASE || '';
+const backendUrl = env.PUBLIC_BACKEND_BASE || 'http://localhost:8788/trpc';
 
 export const customLink: TRPCLink<AppRouter> = () => {
 	return ({ next, op }) => {

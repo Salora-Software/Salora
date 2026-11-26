@@ -20,7 +20,7 @@
 	let open = $state(true);
 
 	onNavigate(() => {
-		data.branchesState.resetOnChangeCallbacks();
+		data.branchesState?.resetOnChangeCallbacks();
 	});
 
 	const isHiddenSidebar = $derived.by(() => {

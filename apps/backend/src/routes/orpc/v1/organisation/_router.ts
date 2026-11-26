@@ -3,10 +3,12 @@ import { createOrganizationHandler } from "./createOrganisation.handler";
 import { getOrganizationHandler } from "./getOrganisation.handler";
 import { getOrganizationsHandler } from "./getOrganisations.handler";
 import { finishOrganizationHandler } from "./finishOrganisation.handler";
+import { updateOrganizationHandler } from "./updateOrganisation.handler";
 
 export const organisationRouter = base.router({
   getOrganisation: getOrganizationHandler,
   getOrganisations: getOrganizationsHandler,
   createOrganisation: createOrganizationHandler,
+  updateOrganisation: updateOrganizationHandler,
   finishOrganisation: finishOrganizationHandler,
 });

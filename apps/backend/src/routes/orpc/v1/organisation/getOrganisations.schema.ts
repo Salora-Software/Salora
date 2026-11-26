@@ -14,6 +14,7 @@ export const getOrganizationsOutputSchema = z.array(
     bookingPeriod: z.number(),
     logo: z.string().nullable(),
     website: z.string().nullable(),
+    metadata: z.string().nullable(),
     onboardingStep: z.number().nullable(),
     services: z.array(
       z.object({

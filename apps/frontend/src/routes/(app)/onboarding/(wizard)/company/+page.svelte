@@ -7,11 +7,53 @@
 	import { orpc, orpcT } from '$lib/orpc';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { z } from 'zod';
+	import { toast } from 'svelte-sonner';
 
 	const wizard = getWizardState();
 	const { data } = $props();
 	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
 	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
+
+	type CompanyAddress = {
+		country: string;
+		postalCode: string;
+		houseNumber: string;
+		address: string;
+		city: string;
+	};
+
+	function parseAddress(branch: NonNullable<typeof onboardingBranch>): CompanyAddress {
+		if (branch.metadata) {
+			try {
+				const metadata = JSON.parse(branch.metadata);
+				if (metadata && typeof metadata === 'object') {
+					return {
+						country: metadata.country ?? '',
+						postalCode: metadata.postalCode ?? '',
+						houseNumber: metadata.streetNumber ?? '',
+						address: metadata.street ?? '',
+						city: metadata.city ?? ''
+					};
+				}
+			} catch {
+				// Invalid metadata, fall back to parsing the location string
+			}
+		}
+
+		const [streetAndNumber = '', postalCity = '', country = ''] = (branch.location ?? '').split(
+			', '
+		);
+		const postalMatch = postalCity.match(/^(\S+)\s+(.*)$/);
+		const streetMatch = streetAndNumber.match(/^(.*)\s+(\S+)$/);
+
+		return {
+			country,
+			postalCode: postalMatch?.[1] ?? '',
+			city: postalMatch?.[2] ?? '',
+			address: streetMatch?.[1] ?? streetAndNumber,
+			houseNumber: streetMatch?.[2] ?? ''
+		};
+	}
 
 	// Formulier State
 	let companyName = $state('');
@@ -21,6 +63,7 @@
 	let address = $state('');
 	let city = $state('');
 	let selectedCurrency = $state('EUR');
+	let hasPrefilled = $state(false);
 
 	// Landen opties
 	const countries = [
@@ -41,17 +84,58 @@
 	});
 
 	wizard.setOnNext(async () => {
-		if (!onboardingBranch) {
-			await orpc.v1.organisation.createOrganisation({
-				name: companyName,
-				country: selectedCountry,
-				postalCode: zipcode,
-				city: city,
-				street: address,
-				streetNumber: houseNumber
+		const parsed = companyFormSchema.safeParse({
+			companyName,
+			selectedCountry,
+			zipcode,
+			houseNumber,
+			address,
+			city,
+			selectedCurrency
+		});
+
+		if (!parsed.success) return false;
+
+		try {
+			const payload = {
+				name: parsed.data.companyName,
+				country: parsed.data.selectedCountry,
+				postalCode: parsed.data.zipcode,
+				city: parsed.data.city,
+				street: parsed.data.address,
+				streetNumber: parsed.data.houseNumber
+			};
+
+			if (onboardingBranch) {
+				await orpc.v1.organisation.updateOrganisation({
+					organizationId: onboardingBranch.id,
+					...payload
+				});
+			} else {
+				await orpc.v1.organisation.createOrganisation(payload);
+			}
+
+			await data.queryClient.invalidateQueries({
+				queryKey: orpcT.v1.organisation.getOrganisations.queryKey()
 			});
+			return true;
+		} catch {
+			toast.error('Er is iets misgegaan bij het opslaan van de bedrijfsgegevens');
+			return false;
 		}
-		await new Promise((resolve) => setTimeout(resolve, 100));
+	});
+
+	$effect(() => {
+		if (!onboardingBranch || hasPrefilled) return;
+
+		const parsedAddress = parseAddress(onboardingBranch);
+		companyName = onboardingBranch.name;
+		selectedCountry = parsedAddress.country || 'NL';
+		zipcode = parsedAddress.postalCode;
+		houseNumber = parsedAddress.houseNumber;
+		address = parsedAddress.address;
+		city = parsedAddress.city;
+		hasPrefilled = true;
 	});
 
 	// Valideer met Zod of 'Volgende' in de layout actief mag worden

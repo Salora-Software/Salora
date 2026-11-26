@@ -10,7 +10,7 @@ import { convertToSlug } from "@/lib/utils";
 import { protectedBase } from "../../bases/protected";
 
 // Helper om timezone te bepalen op basis van land
-function getTimezoneFromCountry(country: string): string {
+export function getTimezoneFromCountry(country: string): string {
   const normalized = country.trim().toUpperCase();
 
   const timezoneMap: Record<string, string> = {
@@ -122,7 +122,21 @@ export const createOrganizationHandler = protectedBase
         });
       }
 
-      // 5. Haal de aangemaakte organisatie op met alle relaties die het output schema verwacht
+      // 5. Sla de gestructureerde adresgegevens op voor later hergebruik
+      await db
+        .update(schema.organization)
+        .set({
+          metadata: JSON.stringify({
+            country,
+            postalCode,
+            streetNumber,
+            city,
+            street,
+          }),
+        })
+        .where(eq(schema.organization.id, response.id));
+
+      // 6. Haal de aangemaakte organisatie op met alle relaties die het output schema verwacht
       const organization = await db.query.organization.findFirst({
         where: (org, { eq }) => eq(org.id, response.id),
         with: {

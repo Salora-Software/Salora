@@ -541,11 +541,11 @@
 		</Sidebar.Menu>
 		<p
 			class="text-muted-foreground mb-1 truncate text-center text-xs whitespace-nowrap"
-			title={`Version - V${appVersion}`}
+			title={`Versie - V${appVersion}`}
 		>
 			{sidebar.state === 'collapsed' && !sidebar.isMobile
 				? `V${appVersion}`
-				: `Version - V${appVersion}`}
+				: `Versie - V${appVersion}`}
 		</p>
 	</Sidebar.Footer>
 </Sidebar.Root>

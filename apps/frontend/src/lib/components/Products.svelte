@@ -182,7 +182,6 @@
 			header: 'Duur',
 			cell: ({ row }) => `${row.original.duration} min`
 		},
-		{ accessorKey: 'id', header: 'ID' },
 		{
 			id: 'actions',
 			cell: ({ row }) =>
@@ -283,7 +282,6 @@
 						<Table.Head class="w-50">Dienst</Table.Head>
 						<Table.Head>Prijs</Table.Head>
 						<Table.Head class="w-30">Duur</Table.Head>
-						<Table.Head>ID</Table.Head>
 						<Table.Head class="w-12.5">Acties</Table.Head>
 					</Table.Row>
 				{/each}
@@ -312,7 +310,6 @@
 							)}
 						</Table.Cell>
 						<Table.Cell>{formatDuration(row.duration.toString())}</Table.Cell>
-						<Table.Cell>{row.id}</Table.Cell>
 						<Table.Cell>
 							<ProductsAction
 								id={row.id}

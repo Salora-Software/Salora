@@ -3,7 +3,7 @@
 	import { formatPhoneInput } from '$lib/phone.js';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import type { WithElementRef } from 'bits-ui';
-	import { Phone } from 'phone';
+	import { Phone } from 'lucide-svelte';
 
 	let {
 		ref = $bindable(null),

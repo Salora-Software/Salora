@@ -1,35 +1,30 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
-	import HandCoins from '@solar-icons/svelte/bold-duotone/hand-money';
 	import House from '@solar-icons/svelte/bold-duotone/house';
 	import Calendar from '@solar-icons/svelte/bold-duotone/calendar';
 	import Settings from '@solar-icons/svelte/bold-duotone/settings';
-	import ChevronsUpDown from '@solar-icons/svelte/bold-duotone/chevrons-up-down';
-	import LogOut from '@solar-icons/svelte/bold-duotone/logout';
+	import DuotoneSettings from '@solar-icons/svelte/bold-duotone/settings';
+	import ChevronsUpDown from '@solar-icons/svelte/linear/chevrons-up-down';
+	import LogOut from '@solar-icons/svelte/linear/logout';
 	import Landmark from '@solar-icons/svelte/bold-duotone/bank';
+	import LandmarkLinear from '@solar-icons/svelte/linear/bank';
 	import Scissors from '@solar-icons/svelte/bold-duotone/scissors';
 	import ShoppingCart from '@solar-icons/svelte/bold-duotone/cart-large-2';
 	import UsersRound from '@solar-icons/svelte/bold-duotone/users-group-rounded';
-	import Plus from '@solar-icons/svelte/bold-duotone/add';
-	import Sparkles from '@solar-icons/svelte/bold-duotone/stars';
-	import Check from '@solar-icons/svelte/bold-duotone/check';
-	import Loader from '@solar-icons/svelte/linear/loader';
+	import PlusLinear from '@solar-icons/svelte/linear/add';
+	import Check from '@solar-icons/svelte/linear/check';
 	import BellDot from '@solar-icons/svelte/bold-duotone/bell';
-	import PiggyBank from '@solar-icons/svelte/bold-duotone/money-bag';
-	import Minus from '@solar-icons/svelte/bold-duotone/minus';
 	import Undo2 from '@solar-icons/svelte/bold-duotone/undo-left';
+	import SettingsLinear from '@solar-icons/svelte/linear/settings';
+	import MinusLinear from '@solar-icons/svelte/linear/minus';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { goto, preloadData } from '$app/navigation';
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { organization, signOut } from '$lib/auth-client';
-	import { Label } from './ui/label/index';
-	import { Input } from './ui/input/index';
-	import { Button } from './ui/button/index';
-	import { trpc, type RouterOutput } from '$lib/trpc';
-	import { toast } from 'svelte-sonner';
+	import { trpc } from '$lib/trpc';
 	import { Skeleton } from './ui/skeleton/index';
 	import {
 		type BranchesType,
@@ -89,7 +84,7 @@
 				{
 					id: 'settings',
 					url: '/settings/general',
-					icon: Settings
+					icon: DuotoneSettings
 				}
 			]
 		},
@@ -166,7 +161,7 @@
 	});
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root collapsible="icon" style="--solar-color: var(--icon-primary)">
 	<Sidebar.Header class="border-border flex h-16 items-center justify-center border-b">
 		<Sidebar.Menu>
 			{#if page.url.pathname.split('/')[1] === 'settings'}
@@ -279,7 +274,7 @@
 													class="h-full w-full rounded-md"
 												/>
 											{:else}
-												<Landmark size="20" />
+												<LandmarkLinear size="20" />
 											{/if}
 										</div>
 										{branch.name}
@@ -298,7 +293,7 @@
 							}}
 						>
 							<div class=" flex size-6 items-center justify-center rounded-md border">
-								<Plus class="size-4" />
+								<PlusLinear class="size-4" />
 							</div>
 							<div class="text-muted-foreground font-medium">Maak een vestiging</div>
 						</DropdownMenu.Item>
@@ -312,7 +307,7 @@
 							class="gap-2 p-2"
 						>
 							<div class=" flex size-6 items-center justify-center">
-								<Settings class="size-4" />
+								<SettingsLinear class="size-4" />
 							</div>
 							<div class="text-muted-foreground font-medium">Vestiging instellingen</div>
 						</DropdownMenu.Item>
@@ -396,7 +391,7 @@
 																		class={cn(props?.class || '', 'flex justify-between')}
 																	>
 																		<span>{t.pages[key as keyof typeof t.pages] || key}</span>
-																		<Minus size="16" />
+																		<MinusLinear size="16" />
 																	</Sidebar.MenuButton>
 																</Tooltip.Trigger>
 																<Tooltip.Content side="right">
@@ -521,7 +516,7 @@
 								goto('/settings/profile');
 							}}
 						>
-							<Settings />
+							<SettingsLinear />
 							Account instellingen
 						</DropdownMenu.Item>
 					</DropdownMenu.Group>

@@ -3,7 +3,8 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Loader, LoaderCircle } from '@lucide/svelte';
+	import Loader from '@solar-icons/svelte/linear/loader';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
 	import { toast } from 'svelte-sonner';
 	import { trpc, trpcQuery } from '$lib/trpc';
 

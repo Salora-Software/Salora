@@ -73,8 +73,13 @@
 		onUpsertItem?: (item: CalendarItem | undefined) => Promise<void>;
 	} & WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 	import { cn } from '$lib/utils.js';
-	import { BriefcaseBusiness, Calendar, CircleCheck, Clock, PlusIcon } from '@lucide/svelte';
-	import { AlignLeft } from '@lucide/svelte';
+	import BriefcaseBusiness from '@solar-icons/svelte/linear/case-minimalistic';
+	import Calendar from '@solar-icons/svelte/linear/calendar';
+	import CircleCheck from '@solar-icons/svelte/linear/check-circle';
+	import Clock from '@solar-icons/svelte/linear/clock-circle';
+	import PlusIcon from '@solar-icons/svelte/linear/add';
+	import UserIcon from '@solar-icons/svelte/linear/user';
+	import AlignLeft from '@solar-icons/svelte/linear/text-align-left';
 	import * as ContextMenu from './ui/context-menu';
 	import * as Popover from './ui/popover';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -532,21 +537,7 @@
 									)}
 								>
 									<!-- User icon -->
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="16"
-										height="16"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										class="lucide lucide-user mx-auto mt-2.5"
-									>
-										<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-										<circle cx="12" cy="7" r="4" />
-									</svg>
+									<UserIcon size={16} class="mx-auto mt-2.5" />
 									<div class="w-full">
 										{#if isOpen.member}
 											<div

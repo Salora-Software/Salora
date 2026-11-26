@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronDown } from '@lucide/svelte';
+	import ChevronDown from '@solar-icons/svelte/linear/alt-arrow-down';
 	import {
 		type ColumnDef,
 		type ColumnFiltersState,
@@ -23,7 +23,10 @@
 		renderSnippet,
 		renderComponent
 	} from '$lib/components/ui/data-table/index.js';
-	import { SlidersHorizontal, Calendar, User, Package2 } from '@lucide/svelte';
+	import SlidersHorizontal from '@solar-icons/svelte/linear/tuning-2';
+	import Calendar from '@solar-icons/svelte/linear/calendar';
+	import User from '@solar-icons/svelte/linear/user';
+	import Package2 from '@solar-icons/svelte/linear/box-minimalistic';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { trpc, trpcQuery } from '$lib/trpc';

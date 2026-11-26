@@ -2,7 +2,7 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import { Label } from '$lib/components/ui/label/index';
 	import * as Select from '$lib/components/ui/select/index';
-	import { Building2 } from '@lucide/svelte';
+	import Building2 from '@solar-icons/svelte/linear/buildings-2';
 	import { getWizardState } from '../wizardState.svelte';
 	import { orpc, orpcT } from '$lib/orpc';
 	import { createQuery } from '@tanstack/svelte-query';

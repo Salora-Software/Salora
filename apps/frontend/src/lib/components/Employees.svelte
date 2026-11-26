@@ -3,7 +3,10 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { t } from '$lib/translation';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import { Ellipsis, Plus, Trash2, CalendarIcon } from '@lucide/svelte';
+	import Ellipsis from '@solar-icons/svelte/linear/menu-dots';
+	import Plus from '@solar-icons/svelte/linear/add';
+	import Trash2 from '@solar-icons/svelte/linear/trash-bin-minimalistic';
+	import CalendarIcon from '@solar-icons/svelte/linear/calendar';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Table from './ui/table';
 	import * as Popover from './ui/popover';

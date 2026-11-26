@@ -15,13 +15,11 @@
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	// Import DateValue and DateRange from bits-ui instead to ensure type compatibility
 	import { trpc, trpcQuery } from '$lib/trpc.js';
-	import {
-		CalendarDays,
-		CalendarIcon,
-		DollarSign,
-		UserRoundPlus,
-		UsersRound
-	} from '@lucide/svelte';
+	import CalendarDays from '@solar-icons/svelte/linear/calendar';
+	import CalendarIcon from '@solar-icons/svelte/linear/calendar';
+	import DollarSign from '@solar-icons/svelte/linear/dollar';
+	import UserRoundPlus from '@solar-icons/svelte/linear/user-plus-rounded';
+	import UsersRound from '@solar-icons/svelte/linear/users-group-rounded';
 	import type { DateRange } from 'bits-ui';
 
 	// Set default date range to last 30 days

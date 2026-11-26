@@ -1,10 +1,10 @@
 <script lang="ts">
-	import BellIcon from '@lucide/svelte/icons/bell';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import XIcon from '@lucide/svelte/icons/x';
+	import BellIcon from '@solar-icons/svelte/linear/bell';
+	import AlertTriangleIcon from '@solar-icons/svelte/linear/danger-triangle';
+	import AlertCircleIcon from '@solar-icons/svelte/linear/danger-circle';
+	import CalendarIcon from '@solar-icons/svelte/linear/calendar';
+	import CheckIcon from '@solar-icons/svelte/linear/check';
+	import XIcon from '@solar-icons/svelte/linear/close-circle';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';

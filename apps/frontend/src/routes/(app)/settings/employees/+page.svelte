@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { CircleUser } from '@lucide/svelte';
-	import { Menu } from '@lucide/svelte';
-	import { Package2 } from '@lucide/svelte';
-	import { Search } from '@lucide/svelte';
+	import CircleUser from '@solar-icons/svelte/linear/user-circle';
+	import Menu from '@solar-icons/svelte/linear/hamburger-menu';
+	import Package2 from '@solar-icons/svelte/linear/box-minimalistic';
+	import Search from '@solar-icons/svelte/linear/magnifier';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { t } from '$lib/translation.js';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import { LoaderCircle, Plus } from '@lucide/svelte';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
+	import Plus from '@solar-icons/svelte/linear/add';
 	import * as Tooltip from '$lib/components/ui/tooltip/index';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import Employees from '$lib/components/Employees.svelte';

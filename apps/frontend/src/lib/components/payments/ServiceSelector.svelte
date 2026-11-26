@@ -1,14 +1,12 @@
 <script lang="ts">
-	import {
-		CheckIcon,
-		Scissors,
-		Zap,
-		Palette,
-		Sparkles,
-		Package,
-		ChevronLeft,
-		ChevronRight
-	} from '@lucide/svelte';
+	import CheckIcon from '@solar-icons/svelte/linear/check';
+	import Scissors from '@solar-icons/svelte/linear/scissors';
+	import Zap from '@solar-icons/svelte/linear/bolt';
+	import Palette from '@solar-icons/svelte/linear/palette';
+	import Sparkles from '@solar-icons/svelte/linear/stars';
+	import Package from '@solar-icons/svelte/linear/box';
+	import ChevronLeft from '@solar-icons/svelte/linear/alt-arrow-left';
+	import ChevronRight from '@solar-icons/svelte/linear/alt-arrow-right';
 	import { cn } from '$lib/utils';
 	import { scale } from 'svelte/transition';
 	import TinySlider from 'svelte-tiny-slider';

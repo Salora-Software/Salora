@@ -1,7 +1,9 @@
 <script lang="ts">
 	import * as Popover from '$lib/components/ui/popover/index';
 	import { Button } from '$lib/components/ui/button/index';
-	import { Check, ChevronsUpDown, CheckIcon } from '@lucide/svelte';
+	import Check from '@solar-icons/svelte/linear/check';
+	import ChevronsUpDown from '@solar-icons/svelte/linear/chevrons-up-down';
+	import CheckIcon from '@solar-icons/svelte/linear/check';
 	import * as Command from '$lib/components/ui/command/index';
 	import { cn } from '$lib/utils';
 	import { scale } from 'svelte/transition';

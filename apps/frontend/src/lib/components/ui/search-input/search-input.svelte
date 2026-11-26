@@ -5,8 +5,8 @@
 
 	// New imports for enhanced search input UI
 	import { Input } from '$lib/components/ui/input';
-	import ArrowRight from '@lucide/svelte/icons/arrow-right';
-	import Search from '@lucide/svelte/icons/search';
+	import ArrowRight from '@solar-icons/svelte/linear/arrow-right';
+	import Search from '@solar-icons/svelte/linear/magnifier';
 
 	const uid = $props.id();
 

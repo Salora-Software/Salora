@@ -1,26 +1,24 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
-	import {
-		HandCoins,
-		House,
-		Calendar,
-		Settings,
-		ChevronsUpDown,
-		LogOut,
-		Landmark,
-		Scissors,
-		ShoppingCart,
-		UsersRound,
-		Plus,
-		Sparkles,
-		Check,
-		Loader,
-		BellDot,
-		PiggyBank,
-		Minus,
-		Undo2
-	} from '@lucide/svelte';
+	import HandCoins from '@solar-icons/svelte/bold-duotone/hand-money';
+	import House from '@solar-icons/svelte/bold-duotone/house';
+	import Calendar from '@solar-icons/svelte/bold-duotone/calendar';
+	import Settings from '@solar-icons/svelte/bold-duotone/settings';
+	import ChevronsUpDown from '@solar-icons/svelte/bold-duotone/chevrons-up-down';
+	import LogOut from '@solar-icons/svelte/bold-duotone/logout';
+	import Landmark from '@solar-icons/svelte/bold-duotone/bank';
+	import Scissors from '@solar-icons/svelte/bold-duotone/scissors';
+	import ShoppingCart from '@solar-icons/svelte/bold-duotone/cart-large-2';
+	import UsersRound from '@solar-icons/svelte/bold-duotone/users-group-rounded';
+	import Plus from '@solar-icons/svelte/bold-duotone/add';
+	import Sparkles from '@solar-icons/svelte/bold-duotone/stars';
+	import Check from '@solar-icons/svelte/bold-duotone/check';
+	import Loader from '@solar-icons/svelte/linear/loader';
+	import BellDot from '@solar-icons/svelte/bold-duotone/bell';
+	import PiggyBank from '@solar-icons/svelte/bold-duotone/money-bag';
+	import Minus from '@solar-icons/svelte/bold-duotone/minus';
+	import Undo2 from '@solar-icons/svelte/bold-duotone/undo-left';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';

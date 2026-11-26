@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronDown } from '@lucide/svelte';
+	import ChevronDown from '@solar-icons/svelte/linear/alt-arrow-down';
 	import {
 		type ColumnDef,
 		type ColumnFiltersState,
@@ -22,7 +22,7 @@
 		createSvelteTable,
 		renderSnippet
 	} from '$lib/components/ui/data-table/index.js';
-	import { SlidersHorizontal } from '@lucide/svelte';
+	import SlidersHorizontal from '@solar-icons/svelte/linear/tuning-2';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { trpc, trpcQuery } from '$lib/trpc';
 	import { DateTime } from 'luxon';

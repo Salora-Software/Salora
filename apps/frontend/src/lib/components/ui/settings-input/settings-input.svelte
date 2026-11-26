@@ -4,12 +4,15 @@
 	import { DropdownMenu } from '$lib/components/ui/dropdown-menu/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Loader, Plus, Minus } from '@lucide/svelte';
+	import Loader from '@solar-icons/svelte/linear/loader';
+	import Plus from '@solar-icons/svelte/linear/add';
+	import Minus from '@solar-icons/svelte/linear/minus';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { ChevronsUpDown, Check } from '@lucide/svelte';
+	import ChevronsUpDown from '@solar-icons/svelte/linear/chevrons-up-down';
+	import Check from '@solar-icons/svelte/linear/check';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { cn } from '$lib/utils';
 	import { tick } from 'svelte';

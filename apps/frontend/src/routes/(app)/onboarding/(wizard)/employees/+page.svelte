@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Employees from '$lib/components/Employees.svelte';
-	import { PlusIcon } from '@lucide/svelte';
+	import PlusIcon from '@solar-icons/svelte/linear/add';
 	import { getWizardState } from '../wizardState.svelte';
 
 	const { data } = $props();

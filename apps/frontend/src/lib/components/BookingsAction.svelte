@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { Ellipsis } from '@lucide/svelte';
-	import { Calendar, IdCardIcon, Trash2 } from '@lucide/svelte';
+	import Ellipsis from '@solar-icons/svelte/linear/menu-dots';
+	import Calendar from '@solar-icons/svelte/linear/calendar';
+	import IdCardIcon from '@solar-icons/svelte/linear/card';
+	import Trash2 from '@solar-icons/svelte/linear/trash-bin-minimalistic';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { toast } from 'svelte-sonner';

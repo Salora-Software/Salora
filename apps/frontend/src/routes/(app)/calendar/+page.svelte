@@ -2,9 +2,11 @@
 	import EventCalandar from '$lib/components/EventCalandar.svelte';
 	import { AppointmentSheet } from '$lib/components/calendar';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { ChevronLeft, ChevronRight, Plus } from '@lucide/svelte';
+	import ChevronLeft from '@solar-icons/svelte/linear/alt-arrow-left';
+	import ChevronRight from '@solar-icons/svelte/linear/alt-arrow-right';
+	import Plus from '@solar-icons/svelte/linear/add';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon } from '@lucide/svelte';
+	import CalendarIcon from '@solar-icons/svelte/linear/calendar';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';

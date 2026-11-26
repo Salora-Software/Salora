@@ -5,7 +5,7 @@
 	import { Button } from '$lib/components/ui/button/index';
 	import { setWizardState } from './wizardState.svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { Loader2 } from '@lucide/svelte';
+	import Loader2 from '@solar-icons/svelte/linear/loader';
 	import { orpc, orpcT } from '$lib/orpc';
 	import { createQuery } from '@tanstack/svelte-query';
 

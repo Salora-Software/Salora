@@ -3,7 +3,13 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { fly, scale, slide } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
-	import { Clock, Plus, Check, Calendar, Trash2, FileText, Search } from '@lucide/svelte';
+	import Clock from '@solar-icons/svelte/linear/clock-circle';
+	import Plus from '@solar-icons/svelte/linear/add';
+	import Check from '@solar-icons/svelte/linear/check';
+	import Calendar from '@solar-icons/svelte/linear/calendar';
+	import Trash2 from '@solar-icons/svelte/linear/trash-bin-minimalistic';
+	import FileText from '@solar-icons/svelte/linear/document-text';
+	import Search from '@solar-icons/svelte/linear/magnifier';
 	import { page } from '$app/state';
 	import { trpc, trpcQuery } from '$lib/trpc';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';

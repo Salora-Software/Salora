@@ -36,6 +36,34 @@ export function convertToBase(date: Date, dayOfWeek: number): Date {
 	return date;
 }
 
+type OpeningTimeWithLocal = {
+	id: string;
+	dayOfWeek: number;
+	startTimeLocal?: string | null;
+	endTimeLocal?: string | null;
+	startTimeUtc?: Date | string | null;
+	endTimeUtc?: Date | string | null;
+};
+
+export function toBusinessHours(
+	openingTimes: OpeningTimeWithLocal[] = [],
+	timeZone?: string
+) {
+	const zone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+	return openingTimes.flatMap((slot) => {
+		const start =
+			slot.startTimeLocal ||
+			(slot.startTimeUtc ? convertToLocal(new Date(slot.startTimeUtc), zone) : undefined);
+		const end =
+			slot.endTimeLocal ||
+			(slot.endTimeUtc ? convertToLocal(new Date(slot.endTimeUtc), zone) : undefined);
+		if (!start || !end) return [];
+		const [openHour, openMinute] = start.split(':');
+		const [closeHour, closeMinute] = end.split(':');
+		return [{ id: slot.id, day: slot.dayOfWeek, openHour, openMinute, closeHour, closeMinute }];
+	});
+}
+
 export function cn(...inputs: ClassValue[]) {
 	if (twMerge) return twMerge(clsx(inputs));
 	else return clsx(inputs);

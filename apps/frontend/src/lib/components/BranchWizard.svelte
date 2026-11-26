@@ -12,7 +12,7 @@
 	import timezones from '$lib/timezones.json';
 	import { PasswordInput } from '$lib/components/ui/password-input';
 	import Employees from './Employees.svelte';
-	import { compressImage, convertToSlug } from '$lib/utils';
+	import { compressImage, convertToSlug, toBusinessHours } from '$lib/utils';
 	import { trpc } from '$lib/trpc';
 	import { orpc } from '$lib/orpc';
 	import { fade, slide, fly } from 'svelte/transition';
@@ -239,18 +239,13 @@
 			businessHours = [...defaultBusinessLayout];
 			return;
 		}
-		businessHours = activeBranch.openingTimes.map((slot) => {
-			const [openHour, openMinute] = slot.startTimeLocal.split(':');
-			const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-			return {
-				id: slot.id,
-				day: slot.dayOfWeek,
-				openHour,
-				openMinute,
-				closeHour,
-				closeMinute
-			};
-		});
+		const mappedBusinessHours = toBusinessHours(
+			activeBranch.openingTimes,
+			activeBranch.timeZone
+		);
+		businessHours = mappedBusinessHours.length
+			? mappedBusinessHours
+			: [...defaultBusinessLayout];
 	}
 
 	async function loadSmtpCommunications() {
@@ -596,18 +591,13 @@
 
 			// Initialize business hours from active branch
 			if (activeBranch.openingTimes && activeBranch.openingTimes.length > 0) {
-				businessHours = activeBranch.openingTimes.map((slot) => {
-					const [openHour, openMinute] = slot.startTimeLocal.split(':');
-					const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-					return {
-						id: slot.id,
-						day: slot.dayOfWeek,
-						openHour,
-						openMinute,
-						closeHour,
-						closeMinute
-					};
-				});
+				const mappedBusinessHours = toBusinessHours(
+					activeBranch.openingTimes,
+					activeBranch.timeZone
+				);
+				businessHours = mappedBusinessHours.length
+					? mappedBusinessHours
+					: [...defaultBusinessLayout];
 			} else {
 				businessHours = [...defaultBusinessLayout];
 			}

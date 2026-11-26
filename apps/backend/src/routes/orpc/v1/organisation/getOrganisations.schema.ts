@@ -32,6 +32,8 @@ export const getOrganizationsOutputSchema = z.array(
         dayOfWeek: z.number(),
         startTimeUtc: z.date(),
         endTimeUtc: z.date(),
+        startTimeLocal: z.string(),
+        endTimeLocal: z.string(),
         createdAt: z.date(),
         updatedAt: z.date(),
       }),

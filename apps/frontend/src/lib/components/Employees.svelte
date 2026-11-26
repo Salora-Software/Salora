@@ -15,6 +15,7 @@
 	import { ScrollArea } from './ui/scroll-area';
 	import { Label } from './ui/label';
 	import { Input } from './ui/input';
+	import { toBusinessHours } from '$lib/utils';
 	import { Textarea } from './ui/textarea';
 	import { SettingsInput } from './ui/settings-input';
 	import { toast } from 'svelte-sonner';
@@ -113,18 +114,7 @@
 
 	// Transformeer openingstijden van de actieve branch
 	let businessHours = $derived(
-		(activeBranch?.openingTimes || []).map((slot) => {
-			const [openHour, openMinute] = slot.startTimeLocal.split(':');
-			const [closeHour, closeMinute] = slot.endTimeLocal.split(':');
-			return {
-				id: slot.id,
-				day: slot.dayOfWeek,
-				openHour,
-				openMinute,
-				closeHour,
-				closeMinute
-			};
-		})
+		toBusinessHours(activeBranch?.openingTimes || [], activeBranch?.timeZone)
 	);
 
 	let employeeAvailability: {

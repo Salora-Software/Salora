@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { schema } from "@salora/database";
 import { and, eq, exists } from "drizzle-orm";
 
+import { convertToLocal } from "@/lib/utils";
 import {
   getOrganizationsInputSchema,
   getOrganizationsOutputSchema,
@@ -43,6 +44,13 @@ export const getOrganizationsHandler = protectedBase
         },
       });
 
-      return organization;
+      return organization.map((branch) => ({
+        ...branch,
+        openingTimes: branch.openingTimes.map((time) => ({
+          ...time,
+          startTimeLocal: convertToLocal(time.startTimeUtc, branch.timeZone),
+          endTimeLocal: convertToLocal(time.endTimeUtc, branch.timeZone),
+        })),
+      }));
     },
   );

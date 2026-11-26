@@ -1,4 +1,5 @@
 /// <reference path="../worker-configuration.d.ts" />
+declare const __APP_VERSION__: string;
 import type { Auth } from '@salora/auth';
 import type { DatabaseType } from '@salora/database';
 import type { EmailQueueMessage } from '@salora/mailer';

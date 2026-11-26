@@ -54,6 +54,7 @@
 	} = $props();
 
 	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
+	const appVersion = __APP_VERSION__;
 
 	// Menu items.
 	const items = {
@@ -161,7 +162,7 @@
 	});
 </script>
 
-<Sidebar.Root collapsible="icon" style="--solar-color: var(--icon-primary)">
+<Sidebar.Root collapsible="icon" class="[--solar-color:var(--icon-primary)]">
 	<Sidebar.Header class="border-border flex h-16 items-center justify-center border-b">
 		<Sidebar.Menu>
 			{#if page.url.pathname.split('/')[1] === 'settings'}
@@ -320,7 +321,7 @@
 		<Sidebar.Group class="h-full">
 			<Sidebar.GroupContent class="h-full">
 				<div class="grid h-full grid-rows-[1fr_auto]">
-					{#each Object.entries(items[page.url.pathname.split('/')[1] as keyof typeof items] || items.default) as [key, value]}
+					{#each Object.entries(items[page.url.pathname.split('/')[1] as keyof typeof items] || items.default) as [key, value], i}
 						{#if Array.isArray(value)}
 							<Sidebar.Menu>
 								<!-- {#each (items[page.url.pathname.split('/')[1] as keyof typeof items] || items.default)[key] as item} -->
@@ -489,7 +490,6 @@
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
 				</DropdownMenu.Trigger>
-
 				<DropdownMenu.Content
 					class="w-[--bits-dropdown-menu-anchor-width] min-w-[239.2px] rounded-lg"
 					side={sidebar.isMobile ? 'bottom' : 'right'}
@@ -539,5 +539,13 @@
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</Sidebar.Menu>
+		<p
+			class="text-muted-foreground mb-1 truncate text-center text-xs whitespace-nowrap"
+			title={`Version - V${appVersion}`}
+		>
+			{sidebar.state === 'collapsed' && !sidebar.isMobile
+				? `V${appVersion}`
+				: `Version - V${appVersion}`}
+		</p>
 	</Sidebar.Footer>
 </Sidebar.Root>

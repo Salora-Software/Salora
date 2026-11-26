@@ -3,7 +3,14 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import { Label } from '$lib/components/ui/label/index';
 	import { Switch } from '$lib/components/ui/switch/index';
-	import { Server, Hash, Mail, User, Lock, Eye, EyeOff, Info } from '@lucide/svelte';
+	import Server from '@solar-icons/svelte/linear/server';
+	import Hash from '@solar-icons/svelte/linear/hashtag';
+	import Mail from '@solar-icons/svelte/linear/letter';
+	import User from '@solar-icons/svelte/linear/user';
+	import Lock from '@solar-icons/svelte/linear/lock';
+	import Eye from '@solar-icons/svelte/linear/eye';
+	import EyeOff from '@solar-icons/svelte/linear/eye-closed';
+	import Info from '@solar-icons/svelte/linear/info-circle';
 	import { getWizardState } from '../wizardState.svelte';
 
 	const wizard = getWizardState();

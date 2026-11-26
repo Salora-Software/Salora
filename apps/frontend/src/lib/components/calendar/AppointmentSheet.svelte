@@ -11,7 +11,10 @@
 	import * as Command from '$lib/components/ui/command';
 	import { Separator } from '$lib/components/ui/separator';
 	import CalendarCardDatePicker from '$lib/components/CalendarCard-DatePicker.svelte';
-	import { Check, ChevronsUpDown, Loader2, Plus } from '@lucide/svelte';
+	import Check from '@solar-icons/svelte/linear/check';
+	import ChevronsUpDown from '@solar-icons/svelte/linear/chevrons-up-down';
+	import Loader2 from '@solar-icons/svelte/linear/loader';
+	import Plus from '@solar-icons/svelte/linear/add';
 	import { DateTime } from 'luxon';
 	import { type DateValue } from '@internationalized/date';
 	import { Debounced } from 'runed';

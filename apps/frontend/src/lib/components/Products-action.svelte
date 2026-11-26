@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Ellipsis } from '@lucide/svelte';
+	import Ellipsis from '@solar-icons/svelte/linear/menu-dots';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { toast } from 'svelte-sonner';

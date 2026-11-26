@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
-	import { Loader, Check, Lock } from '@lucide/svelte';
+	import Loader from '@solar-icons/svelte/linear/loader';
+	import Check from '@solar-icons/svelte/linear/check';
+	import Lock from '@solar-icons/svelte/linear/lock';
 	import { t } from '$lib/translation.js';
 	import { toast } from 'svelte-sonner';
 	import timezones from '$lib/timezones.json';

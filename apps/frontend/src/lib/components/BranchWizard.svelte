@@ -6,7 +6,11 @@
 	import { Separator } from '$lib/components/ui/separator/index';
 	import Confetti from 'svelte-confetti';
 	import { Button } from '$lib/components/ui/button';
-	import { Image, ImageIcon, LoaderCircle, Plus, UserRound } from '@lucide/svelte';
+	import Image from '@solar-icons/svelte/linear/gallery';
+	import ImageIcon from '@solar-icons/svelte/linear/gallery';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
+	import Plus from '@solar-icons/svelte/linear/add';
+	import UserRound from '@solar-icons/svelte/linear/user-rounded';
 	import { toast } from 'svelte-sonner';
 	import Products from './Products.svelte';
 	import timezones from '$lib/timezones.json';

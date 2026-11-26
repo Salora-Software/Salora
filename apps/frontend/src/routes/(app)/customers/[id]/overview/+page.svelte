@@ -2,20 +2,18 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { onMount } from 'svelte';
 	import type { ChartConfig } from '$lib/components/ui/chart/index.js';
-	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import TrendingUpIcon from '@solar-icons/svelte/linear/graph-up';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import {
-		CalendarDays,
-		CalendarIcon,
-		CircleDollarSign,
-		CreditCard,
-		Package,
-		Receipt,
-		UserRoundCheck
-	} from '@lucide/svelte';
+	import CalendarDays from '@solar-icons/svelte/linear/calendar';
+	import CalendarIcon from '@solar-icons/svelte/linear/calendar';
+	import CircleDollarSign from '@solar-icons/svelte/linear/dollar';
+	import CreditCard from '@solar-icons/svelte/linear/card';
+	import Package from '@solar-icons/svelte/linear/box';
+	import Receipt from '@solar-icons/svelte/linear/bill';
+	import UserRoundCheck from '@solar-icons/svelte/linear/user-check-rounded';
 	import { page } from '$app/state';
 	import { trpcQuery } from '$lib/trpc';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';

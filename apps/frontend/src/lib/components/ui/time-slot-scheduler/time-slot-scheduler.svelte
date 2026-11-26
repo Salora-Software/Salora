@@ -2,7 +2,8 @@
 	import { Input } from '$lib/components/ui/input/index';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button } from '$lib/components/ui/button/index';
-	import { Plus, Trash2 } from '@lucide/svelte';
+	import Plus from '@solar-icons/svelte/linear/add';
+	import Trash2 from '@solar-icons/svelte/linear/trash-bin-minimalistic';
 	import { t } from '$lib/translation';
 
 	export type TimeSlot = {

@@ -5,7 +5,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { cn } from '$lib/utils.js';
-	import { LoaderCircle } from '@lucide/svelte';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
 	import CalendarCard from './CalendarCard.svelte';
 	import { onMount } from 'svelte';
 	import { draggable } from '@neodrag/svelte';

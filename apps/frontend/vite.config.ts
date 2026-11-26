@@ -1,7 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
-import lucidePreprocess from 'vite-plugin-lucide-preprocess';
 
 export default defineConfig({
 	build: {
@@ -9,7 +8,7 @@ export default defineConfig({
 			external: [/^cloudflare:/, /^node:/]
 		}
 	},
-	plugins: [lucidePreprocess(), tailwindcss(), sveltekit()],
+	plugins: [tailwindcss(), sveltekit()],
 	server: {
 		allowedHosts: ['salora.hexidev.nl', 'dev.salora.app']
 	},

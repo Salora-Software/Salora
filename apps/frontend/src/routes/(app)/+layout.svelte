@@ -15,7 +15,7 @@
 	import NotificationComponent from '$lib/components/NotificationComponent.svelte';
 	import { cn } from '$lib/utils';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { SquareArrowOutUpRight } from '@lucide/svelte';
+	import SquareArrowOutUpRight from '@solar-icons/svelte/linear/square-top-up';
 	import { setSessionContext } from '$lib/context/session-context.js';
 	let open = $state(true);
 

@@ -5,7 +5,8 @@
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { LoaderCircle, Plus } from '@lucide/svelte';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
+	import Plus from '@solar-icons/svelte/linear/add';
 	import { Separator } from '$lib/components/ui/separator';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import { SettingsInput } from './ui/settings-input';

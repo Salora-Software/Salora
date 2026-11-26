@@ -6,20 +6,18 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import {
-		Bell,
-		Mail,
-		MessageSquare,
-		Calendar,
-		Clock,
-		Check,
-		AlertCircle,
-		Search,
-		Send,
-		Eye,
-		RotateCcw,
-		Settings
-	} from '@lucide/svelte';
+	import Bell from '@solar-icons/svelte/linear/bell';
+	import Mail from '@solar-icons/svelte/linear/letter';
+	import MessageSquare from '@solar-icons/svelte/linear/chat-square';
+	import Calendar from '@solar-icons/svelte/linear/calendar';
+	import Clock from '@solar-icons/svelte/linear/clock-circle';
+	import Check from '@solar-icons/svelte/linear/check';
+	import AlertCircle from '@solar-icons/svelte/linear/danger-circle';
+	import Search from '@solar-icons/svelte/linear/magnifier';
+	import Send from '@solar-icons/svelte/linear/forward';
+	import Eye from '@solar-icons/svelte/linear/eye';
+	import RotateCcw from '@solar-icons/svelte/linear/restart';
+	import Settings from '@solar-icons/svelte/linear/settings';
 	import { scale, fly } from 'svelte/transition';
 
 	let { data } = $props();

@@ -20,6 +20,9 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.623 0.214 259.815);
   --primary-foreground: oklch(0.97 0.014 254.604);
+  --icon-primary: var(--primary);
+  --icon-secondary: color-mix(in oklab, var(--primary) 70%, var(--background));
+  --solar-secondary-color: var(--icon-secondary);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
@@ -197,6 +200,8 @@
 	--color-input: var(--input);
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);
+	--color-icon-primary: var(--icon-primary);
+	--color-icon-secondary: var(--icon-secondary);
 	--color-secondary: var(--secondary);
 	--color-secondary-foreground: var(--secondary-foreground);
 	--color-accent: var(--accent);

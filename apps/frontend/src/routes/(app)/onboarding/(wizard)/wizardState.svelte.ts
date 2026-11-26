@@ -1,6 +1,6 @@
 // apps/frontend/src/routes/(onboarding)/onboarding/(wizard)/wizardState.svelte.ts
 import { getContext, setContext, type Component } from 'svelte';
-import type { IconProps } from '@lucide/svelte';
+import type { IconProps } from '@solar-icons/svelte';
 import { toast } from 'svelte-sonner';
 
 type StepAction = () => Promise<boolean | void> | boolean | void;

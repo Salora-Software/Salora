@@ -2,8 +2,8 @@
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import type { WithElementRef } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
-	import { Minus } from '@lucide/svelte';
-	import { Plus } from '@lucide/svelte';
+	import Minus from '@solar-icons/svelte/linear/minus';
+	import Plus from '@solar-icons/svelte/linear/add';
 
 	const minValue = 0;
 	function increment() {

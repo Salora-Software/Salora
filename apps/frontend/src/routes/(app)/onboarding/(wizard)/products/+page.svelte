@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Products from '$lib/components/Products.svelte';
-	import { PlusIcon } from '@lucide/svelte';
+	import PlusIcon from '@solar-icons/svelte/linear/add';
 	import { getWizardState } from '../wizardState.svelte.js';
 	const wizard = getWizardState();
 

@@ -95,6 +95,17 @@ export const createAuth = (
         ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
       },
     },
+    /**
+     * Better Auth 1.7 wraps every request in an experimental OpenTelemetry span.
+     * Its dynamic `import("@opentelemetry/api")` can resolve to an empty stub in
+     * the Cloudflare Workers bundle, which makes `trace` undefined and throws a
+     * TypeError on every auth request. We don't use OTel, so disable it.
+     */
+    experimental: {
+      instrumentation: {
+        enabled: false,
+      },
+    },
     trustedOrigins: trustedOrigins,
     rateLimit: {
       enabled: true,

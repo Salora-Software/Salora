@@ -36,7 +36,7 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { t } from '$lib/translation';
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { colors } from '$lib/colors';
 
 	let {
@@ -50,7 +50,6 @@
 			queryClient: QueryClient;
 		};
 	} = $props();
-	console.log(data);
 
 	const loading = $state({
 		branchLogo: false
@@ -572,8 +571,10 @@
 		}))
 	);
 
-	// Initialize opening times when component loads
-	updateOpeningTimes();
+	// Initialize opening times when component loads (client only; runs during SSR otherwise)
+	onMount(() => {
+		updateOpeningTimes();
+	});
 
 	data.branchesState.onBranchChange((branch) => {
 		if (branch) {

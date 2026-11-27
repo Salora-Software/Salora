@@ -89,7 +89,6 @@
 	});
 
 	let activeBranch = $state(data.branchesState.getActiveBranch());
-	updateOpeningTimes();
 	data.branchesState.onBranchChange(() => {
 		activeBranch = data.branchesState.getActiveBranch();
 		if (activeBranch)

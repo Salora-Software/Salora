@@ -57,8 +57,10 @@
         {
           "binding": "DB",
           "migrations_dir": "packages/database/drizzle",
-          "database_name": "salora-frontend",
-          "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
+          //   "database_name": "salora-frontend",
+          //   "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
+          "database_name": "salora-migrate-test",
+          "database_id": "8d216c04-0f72-4f32-a614-2302798af42c",
         },
       ],
       "queues": {
@@ -124,8 +126,8 @@
       "MAIL_FALLBACK_USERNAME": "usernam",
       "MAIL_FALLBACK_PASSWORD": "password",
       "MAIL_EMAIL_SENDER": "noreply@example.com",
-      // Allow the preview domains so better-auth accepts preview origins.
-      "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173,https://*.new.salora.app,https://*.salora.app,https://*.workers.dev",
+      // `*.workers.dev` so better-auth accepts the generated preview origin.
+      "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173,https://*.workers.dev",
     },
     "d1_databases": [
       {

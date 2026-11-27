@@ -38,3 +38,6 @@ sendmail.
 **/*/dev.db
 
 .wrangler/
+
+# ignore all backup sql files
+*backup.sql

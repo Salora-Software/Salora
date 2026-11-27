@@ -9,11 +9,12 @@ export const createAuth = (
   db: DatabaseType,
   origin: string,
   trustedOrigins: string[],
+  options: { basePath?: string } = {},
 ) => {
   // 3. Retourneer de Better Auth instance
   return betterAuth({
     baseURL: origin,
-    basePath: "/auth",
+    basePath: options.basePath ?? "/auth",
     emailAndPassword: {
       enabled: true,
       password: {

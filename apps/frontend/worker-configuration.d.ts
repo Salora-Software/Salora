@@ -6,7 +6,8 @@ declare namespace Cloudflare {
 		mainModule: typeof import('./.svelte-kit/cloudflare/_worker');
 	}
 	interface Env {
-		DB: D1Database;
+		DB?: D1Database;
+		DB_DEV?: D1Database;
 		EMAIL_QUEUE: Queue;
 		ASSETS: Fetcher;
 		DEPLOY_TARGET: 'worker';

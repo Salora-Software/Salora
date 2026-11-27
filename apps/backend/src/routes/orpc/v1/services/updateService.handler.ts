@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { schema } from "@salora/database";
 import { and, eq } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { protectedBase } from "../../bases/protected";
 import {
   updateServiceInputSchema,
@@ -49,32 +50,46 @@ export const updateServiceHandler = protectedBase
 
       const { id, organizationId, employeeIds, ...updateData } = input;
 
-      // 3. Update service en synchroniseer employee-koppelingen in een transactie
-      await db.transaction(async (tx) => {
-        if (Object.keys(updateData).length > 0) {
-          await tx
+      // 3. Update service en synchroniseer employee-koppelingen.
+      // D1 does not support interactive transactions (BEGIN/SAVEPOINT);
+      // `batch` runs the statements atomically in a single implicit transaction.
+      const statements: BatchItem<"sqlite">[] = [];
+
+      if (Object.keys(updateData).length > 0) {
+        statements.push(
+          db
             .update(schema.service)
             .set(updateData)
-            .where(eq(schema.service.id, id));
-        }
+            .where(eq(schema.service.id, id)),
+        );
+      }
 
-        if (employeeIds !== undefined) {
-          // Verwijder oude koppelingen
-          await tx
+      if (employeeIds !== undefined) {
+        // Verwijder oude koppelingen
+        statements.push(
+          db
             .delete(schema.employeeService)
-            .where(eq(schema.employeeService.serviceId, id));
+            .where(eq(schema.employeeService.serviceId, id)),
+        );
 
-          // Voeg nieuwe koppelingen toe
-          if (employeeIds.length > 0) {
-            await tx.insert(schema.employeeService).values(
+        // Voeg nieuwe koppelingen toe
+        if (employeeIds.length > 0) {
+          statements.push(
+            db.insert(schema.employeeService).values(
               employeeIds.map((memberId) => ({
                 serviceId: id,
                 memberId,
               })),
-            );
-          }
+            ),
+          );
         }
-      });
+      }
+
+      if (statements.length > 0) {
+        await db.batch(
+          statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
+        );
+      }
 
       // 4. Haal de bijgewerkte service op voor de output
       const updatedService = await db.query.service.findFirst({

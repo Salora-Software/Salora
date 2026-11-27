@@ -39,6 +39,8 @@ export const getOrganizationsHandler = protectedBase
           members: {
             with: {
               user: true,
+              availabilities: true,
+              employeeServices: true,
             },
           },
         },
@@ -50,6 +52,21 @@ export const getOrganizationsHandler = protectedBase
           ...time,
           startTimeLocal: convertToLocal(time.startTimeUtc, branch.timeZone),
           endTimeLocal: convertToLocal(time.endTimeUtc, branch.timeZone),
+        })),
+        members: branch.members.map((member) => ({
+          ...member,
+          availability: member.availabilities.map((time) => ({
+            ...time,
+            startTimeLocal: convertToLocal(
+              new Date(time.startTimeUtc),
+              branch.timeZone,
+            ),
+            endTimeLocal: convertToLocal(
+              new Date(time.endTimeUtc),
+              branch.timeZone,
+            ),
+          })),
+          services: member.employeeServices.map((service) => service.serviceId),
         })),
       }));
     },

@@ -2,11 +2,6 @@
 	"name": "backend",
 	"type": "module",
 	"scripts": {
-		"dev:worker": "wrangler dev --port 8788 --persist-to ../../.wrangler/state --config ../../wrangler.jsonc --local --env development",
-		"build": "wrangler build",
-		"start": "wrangler dev",
-		"deploy": "wrangler deploy --minify",
-		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix"
 	},

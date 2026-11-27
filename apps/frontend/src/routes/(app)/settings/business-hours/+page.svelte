@@ -12,60 +12,21 @@
 	import { t } from '$lib/translation.js';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import * as Select from '$lib/components/ui/select/index';
-	import TimeSlotScheduler from '$lib/components/ui/time-slot-scheduler/time-slot-scheduler.svelte';
+	import TimeSlotScheduler, {
+		type TimeSlot
+	} from '$lib/components/ui/time-slot-scheduler/time-slot-scheduler.svelte';
 	import Loader from '@solar-icons/svelte/linear/loader';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { orpc } from '$lib/orpc.js';
 	import { toBusinessHours } from '$lib/utils';
 	let { data } = $props();
-	const defaultBusinessLayout = [
-		{
-			day: 1,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 2,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 3,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 4,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 5,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		}
-	];
-	let businessHours:
-		| {
-				id?: string;
-				day: number;
-				openHour: string;
-				openMinute: string;
-				closeHour: string;
-				closeMinute: string;
-		  }[]
-		| [] = $state([...defaultBusinessLayout]);
+	const defaultBusinessLayout: TimeSlot[] = [1, 2, 3, 4, 5].map((day) => ({
+		day,
+		openTime: '',
+		closeTime: ''
+	}));
+	let businessHours = $state<TimeSlot[]>(defaultBusinessLayout.map((slot) => ({ ...slot })));
 	let loading = $state(false);
 	let pendingDeletion: string[] = $state([]);
 	async function updateOpeningTimes() {
@@ -73,12 +34,12 @@
 		if (!activeBranch) return;
 		await data.branchesState.updateOpeningTimes();
 		if (activeBranch.openingTimes.length == 0) {
-			businessHours = [...defaultBusinessLayout];
+			businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 			return;
 		}
 		businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
 		if (businessHours.length == 0) {
-			businessHours = [...defaultBusinessLayout];
+			businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 		}
 	}
 	onMount(async () => {
@@ -89,7 +50,6 @@
 	});
 
 	let activeBranch = $state(data.branchesState.getActiveBranch());
-	updateOpeningTimes();
 	data.branchesState.onBranchChange(() => {
 		activeBranch = data.branchesState.getActiveBranch();
 		if (activeBranch)
@@ -119,20 +79,23 @@
 		loading = true;
 		try {
 			if (!activeBranch) throw new Error('No active branch');
+			const filledSlots = businessHours.filter((slot) => slot.openTime && slot.closeTime);
 			const updatedTimes = await orpc.v1.schedule.updateOpeningTimes({
 				organizationId: activeBranch.id,
 				removeItems: pendingDeletion,
-				openingTimes: businessHours.map((slot, index) => ({
+				openingTimes: filledSlots.map((slot) => ({
 					id: slot.id,
-					dayOfWeek: slot.day,
-					startTimeLocal: `${slot.openHour}:${slot.openMinute}`,
-					endTimeLocal: `${slot.closeHour}:${slot.closeMinute}`
+					dayOfWeek: Number(slot.day),
+					startTimeLocal: slot.openTime.padStart(5, '0'),
+					endTimeLocal: slot.closeTime.padStart(5, '0')
 				}))
 			});
 			activeBranch.openingTimes = updatedTimes;
 			data.branchesState.updateActiveBranch(activeBranch);
+			pendingDeletion = [];
 			toast.success(`Succesvol bijgewerkt`);
 		} catch (error) {
+			toast.error('Opslaan van de openingstijden is mislukt');
 		} finally {
 			loading = false;
 		}

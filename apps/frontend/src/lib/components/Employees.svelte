@@ -18,14 +18,15 @@
 	import { ScrollArea } from './ui/scroll-area';
 	import { Label } from './ui/label';
 	import { Input } from './ui/input';
-	import { toBusinessHours } from '$lib/utils';
 	import { Textarea } from './ui/textarea';
 	import { SettingsInput } from './ui/settings-input';
 	import { toast } from 'svelte-sonner';
 	import { trpc, type RouterOutput } from '$lib/trpc';
 	import { orpcT } from '$lib/orpc';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import TimeSlotScheduler from './ui/time-slot-scheduler/time-slot-scheduler.svelte';
+	import TimeSlotScheduler, {
+		type TimeSlot
+	} from './ui/time-slot-scheduler/time-slot-scheduler.svelte';
 	import { tick } from 'svelte';
 	import * as Select from './ui/select';
 	import * as DropdownMenu from './ui/dropdown-menu';
@@ -115,31 +116,19 @@
 		values.sendInvitation.value = false;
 	};
 
-	// Transformeer openingstijden van de actieve branch
-	let businessHours = $derived(
-		toBusinessHours(activeBranch?.openingTimes || [], activeBranch?.timeZone)
-	);
-
-	let employeeAvailability: {
-		id?: string;
-		day: number;
-		openHour: string;
-		openMinute: string;
-		closeHour: string;
-		closeMinute: string;
-	}[] = $state([
+	// Werktijden van de medewerker
+	let employeeAvailability: TimeSlot[] = $state([
 		{
 			day: 1,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
+			openTime: '',
+			closeTime: ''
 		}
 	]);
 
 	function editEmployee(employee: (typeof employees)[number]) {
 		values.sheet.active = true;
 		values.sheet.editing = employee.id;
+		pendingDeletion = [];
 		values.name.value = employee.user.name;
 		values.email.value = employee.user.email;
 		values.role.value = employee.role;
@@ -149,28 +138,20 @@
 		values.image = employee.user.image ? env.PUBLIC_CDN_URL + employee.user.image : '';
 
 		employeeAvailability = (employee.availability || []).map(
-			(time: { id: string; startTimeLocal: string; endTimeLocal: string; dayOfWeek: number }) => {
-				const [openHour, openMinute] = time.startTimeLocal.split(':');
-				const [closeHour, closeMinute] = time.endTimeLocal.split(':');
-				return {
-					id: time.id,
-					day: time.dayOfWeek,
-					openHour,
-					openMinute,
-					closeHour,
-					closeMinute
-				};
-			}
+			(time: { id: string; startTimeLocal: string; endTimeLocal: string; dayOfWeek: number }) => ({
+				id: time.id,
+				day: time.dayOfWeek,
+				openTime: time.startTimeLocal,
+				closeTime: time.endTimeLocal
+			})
 		);
 
 		if (employeeAvailability.length === 0) {
 			employeeAvailability = [
 				{
 					day: 1,
-					openHour: '',
-					openMinute: '',
-					closeHour: '',
-					closeMinute: ''
+					openTime: '',
+					closeTime: ''
 				}
 			];
 		}
@@ -263,7 +244,7 @@
 				toast.error('Er is geen actieve vestiging');
 				return;
 			}
-			const availability = employeeAvailability.filter((slot) => slot.openHour && slot.closeHour);
+			const availability = employeeAvailability.filter((slot) => slot.openTime && slot.closeTime);
 
 			if (!values.sheet.editing) {
 				await trpc.v1.authenticated.employees.createEmployee.mutate({
@@ -288,9 +269,9 @@
 					role: values.role.value,
 					availability: availability.map((slot) => ({
 						id: slot.id,
-						dayOfWeek: slot.day,
-						startTimeLocal: slot.openHour + ':' + slot.openMinute,
-						endTimeLocal: slot.closeHour + ':' + slot.closeMinute
+						dayOfWeek: Number(slot.day),
+						startTimeLocal: slot.openTime.padStart(5, '0'),
+						endTimeLocal: slot.closeTime.padStart(5, '0')
 					})),
 					removeItems: pendingDeletion,
 					assignedServices: values.assignServices.value || []
@@ -300,6 +281,7 @@
 			}
 
 			invalidateOrganisations();
+			pendingDeletion = [];
 			values.sheet.active = false;
 		} catch {
 			toast.error('Er is een fout opgetreden bij het opslaan.');

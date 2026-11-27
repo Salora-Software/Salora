@@ -40,8 +40,16 @@ export function createRouter() {
   return new Hono<AppBindings>();
 }
 
-export function createApp(env: Env) {
-  const router = createRouter();
+export interface CreateAppOptions {
+  basePath?: string;
+}
+
+export function createApp(env: Env, options: CreateAppOptions = {}) {
+  let router = createRouter();
+
+  if (options.basePath) {
+    router = router.basePath(options.basePath);
+  }
 
   // Register middleware
   router.use(createCorsMiddleware(env));
@@ -53,14 +61,14 @@ export function createApp(env: Env) {
   );
   router.use(loggerMiddleware);
   router.use(drizzleMiddleware);
-  router.use(createAuthMiddleware(env));
+  router.use(createAuthMiddleware(env, options.basePath));
   router.use(orpcMiddleware);
 
   // Register routes
   createBetterAuthRoutes(router);
-  createTrpcRoutes(router);
-  createORPCRoutes(router);
-  createScalarRoutes(router);
+  createTrpcRoutes(router, options.basePath);
+  createORPCRoutes(router, options.basePath);
+  createScalarRoutes(router, options.basePath);
   registerEvents(router);
   return router;
 }

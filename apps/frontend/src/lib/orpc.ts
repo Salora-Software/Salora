@@ -3,7 +3,6 @@ import { RPCLink } from '@orpc/client/fetch';
 import { orpcCustomJsonSerializers, type ORPCClient } from '@salora/shared-types';
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
-import { env } from '$env/dynamic/public';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
 import { browser } from '$app/environment';
 
@@ -42,7 +41,7 @@ const handleOrpcError = (err: any) => {
 export const createOrpcClient = (backendUrl?: string, customFetch?: typeof fetch): ORPCClient =>
 	createORPCClient<ORPCClient>(
 		new RPCLink({
-			url: (backendUrl || (browser ? window.location.origin : '')) + '/orpc',
+			url: (backendUrl || (browser ? window.location.origin : '')) + '/api/orpc',
 			customJsonSerializers: orpcCustomJsonSerializers,
 			fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
 				// Gebruik de meegegeven SvelteKit fetch op SSR, of de globale fetch in de browser
@@ -74,7 +73,7 @@ export const createOrpcClient = (backendUrl?: string, customFetch?: typeof fetch
 		})
 	);
 
-export const orpc = createOrpcClient(env.PUBLIC_BACKEND_URL);
+export const orpc = createOrpcClient();
 
 export type ORPCTanstackUtils = ReturnType<typeof createTanstackQueryUtils<typeof orpc>>;
 export const orpcT: ORPCTanstackUtils = createTanstackQueryUtils(orpc);

@@ -1,6 +1,6 @@
 import type { DateValue } from '@internationalized/date';
 import { DateTime, type WeekdayNumbers } from 'luxon';
-import { TimeSlot } from './types';
+import type { TimeSlot } from './types';
 
 export function convertToUtc(time: string, dayOfWeek: number, organizationTimeZone: string): Date {
 	const momentDayIndex = dayOfWeek - 1;

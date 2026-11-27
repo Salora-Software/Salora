@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { generateUploadUrl } from '@/lib/s3';
 import type { GenerateLogoUploadUrlInput } from './upload-logo.schema';
 import type { PrivateContext } from '@/middleware/trpc';
 

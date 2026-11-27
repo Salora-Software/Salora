@@ -1,16 +1,16 @@
 import { dehydrate, QueryClient } from '@tanstack/svelte-query';
 import type { LayoutLoad } from './$types';
-import { getSession } from '$lib/auth-client';
-import { orpcT } from '$lib/orpc';
+import type { SessionUserType } from '$lib/runes.svelte';
 
 export const ssr = true;
 
 export const load: LayoutLoad = async ({ fetch }) => {
-	const { data } = await getSession({
-		fetchOptions: {
-			customFetchImpl: fetch
-		}
-	});
+	// Use a relative URL so SSR and preview deployments authenticate against
+	// their own origin (SvelteKit's fetch forwards cookies for same-origin).
+	const sessionResponse = await fetch('/api/auth/get-session');
+	const data = sessionResponse.ok
+		? ((await sessionResponse.json()) as SessionUserType)
+		: null;
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {

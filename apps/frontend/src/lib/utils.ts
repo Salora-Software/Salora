@@ -58,9 +58,7 @@ export function toBusinessHours(
 			slot.endTimeLocal ||
 			(slot.endTimeUtc ? convertToLocal(new Date(slot.endTimeUtc), zone) : undefined);
 		if (!start || !end) return [];
-		const [openHour, openMinute] = start.split(':');
-		const [closeHour, closeMinute] = end.split(':');
-		return [{ id: slot.id, day: slot.dayOfWeek, openHour, openMinute, closeHour, closeMinute }];
+		return [{ id: slot.id, day: slot.dayOfWeek, openTime: start, closeTime: end }];
 	});
 }
 

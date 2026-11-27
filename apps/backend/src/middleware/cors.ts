@@ -1,16 +1,10 @@
-import { Env } from "@/lib/env";
+import type { Env } from "@/lib/env";
 import { cors } from "hono/cors";
 
 export function createCorsMiddleware(env: Env) {
-  // 1. Zorg dat TRUSTED_IPS altijd een opgeschoonde array van strings is
-  const rawOrigins =
-    typeof env.TRUSTED_IPS === "string"
-      ? env.TRUSTED_IPS.split(",")
-      : env.TRUSTED_IPS || [];
-
-  const allowedOrigins = rawOrigins
-    .map((o) => o.trim().replace(/\/$/, "")) // Strip spaties en eventuele trailing slashes
-    .filter(Boolean);
+  const allowedOrigins = env.TRUSTED_IPS.map((o) => o.trim().replace(/\/$/, "")).filter(
+    Boolean,
+  );
 
   return cors({
     origin: (origin) => {

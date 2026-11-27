@@ -72,12 +72,13 @@
 			}
 
 			try {
+				const filledSlots = businessHours.filter((slot) => slot.openTime && slot.closeTime);
 				await orpc.v1.schedule.updateOpeningTimes({
 					organizationId: onboardingBranch.id,
 					removeItems: pendingDeletion,
-					openingTimes: businessHours.map((slot) => ({
+					openingTimes: filledSlots.map((slot) => ({
 						id: slot.id,
-						dayOfWeek: slot.day,
+						dayOfWeek: Number(slot.day),
 						startTimeLocal: slot.openTime.padStart(5, '0'),
 						endTimeLocal: slot.closeTime.padStart(5, '0')
 					}))

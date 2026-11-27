@@ -32,11 +32,11 @@
 	import { organization } from '$lib/auth-client';
 	import { Input } from '$lib/components/ui/input/index';
 	import Label from './ui/label/label.svelte';
-	import { TimeSlotScheduler } from './ui/time-slot-scheduler';
+	import { TimeSlotScheduler, type TimeSlot } from './ui/time-slot-scheduler';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { t } from '$lib/translation';
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { colors } from '$lib/colors';
 
 	let {
@@ -50,7 +50,6 @@
 			queryClient: QueryClient;
 		};
 	} = $props();
-	console.log(data);
 
 	const loading = $state({
 		branchLogo: false
@@ -126,53 +125,12 @@
 			}
 		]
 	});
-	const defaultBusinessLayout = [
-		{
-			day: 1,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 2,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 3,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 4,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		},
-		{
-			day: 5,
-			openHour: '',
-			openMinute: '',
-			closeHour: '',
-			closeMinute: ''
-		}
-	];
-	let businessHours:
-		| {
-				id?: string;
-				day: number;
-				openHour: string;
-				openMinute: string;
-				closeHour: string;
-				closeMinute: string;
-		  }[]
-		| [] = $state([...defaultBusinessLayout]);
+	const defaultBusinessLayout: TimeSlot[] = [1, 2, 3, 4, 5].map((day) => ({
+		day,
+		openTime: '',
+		closeTime: ''
+	}));
+	let businessHours: TimeSlot[] = $state(defaultBusinessLayout.map((slot) => ({ ...slot })));
 
 	let pendingDeletion: string[] = $state([]);
 	let nextStep: (() => Promise<void>) | null = $state(null);
@@ -240,7 +198,7 @@
 		if (!activeBranch) return;
 		await data.branchesState.updateOpeningTimes();
 		if (activeBranch.openingTimes.length == 0) {
-			businessHours = [...defaultBusinessLayout];
+			businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 			return;
 		}
 		const mappedBusinessHours = toBusinessHours(
@@ -249,7 +207,7 @@
 		);
 		businessHours = mappedBusinessHours.length
 			? mappedBusinessHours
-			: [...defaultBusinessLayout];
+			: defaultBusinessLayout.map((slot) => ({ ...slot }));
 	}
 
 	async function loadSmtpCommunications() {
@@ -449,14 +407,15 @@
 				loading.branchLogo = true;
 				try {
 					if (!activeBranch) throw new Error('No active branch');
+					const filledSlots = businessHours.filter((slot) => slot.openTime && slot.closeTime);
 					const updatedTimes = await orpc.v1.schedule.updateOpeningTimes({
 						organizationId: activeBranch.id,
 						removeItems: pendingDeletion,
-						openingTimes: businessHours.map((slot) => ({
+						openingTimes: filledSlots.map((slot) => ({
 							id: slot.id,
-							dayOfWeek: slot.day,
-							startTimeLocal: `${slot.openHour}:${slot.openMinute}`,
-							endTimeLocal: `${slot.closeHour}:${slot.closeMinute}`
+							dayOfWeek: Number(slot.day),
+							startTimeLocal: slot.openTime.padStart(5, '0'),
+							endTimeLocal: slot.closeTime.padStart(5, '0')
 						}))
 					});
 					activeBranch.openingTimes = updatedTimes;
@@ -572,8 +531,10 @@
 		}))
 	);
 
-	// Initialize opening times when component loads
-	updateOpeningTimes();
+	// Initialize opening times when component loads (client only; runs during SSR otherwise)
+	onMount(() => {
+		updateOpeningTimes();
+	});
 
 	data.branchesState.onBranchChange((branch) => {
 		if (branch) {
@@ -601,9 +562,9 @@
 				);
 				businessHours = mappedBusinessHours.length
 					? mappedBusinessHours
-					: [...defaultBusinessLayout];
+					: defaultBusinessLayout.map((slot) => ({ ...slot }));
 			} else {
-				businessHours = [...defaultBusinessLayout];
+				businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 			}
 		}
 	});
@@ -911,7 +872,7 @@
 			<div class="mt-4 grid grid-cols-1 gap-4" in:slide={{ duration: 300, easing: cubicOut }}>
 				{#if activeBranch}
 					<div>
-						<Employees variant="small" bind:newEmployee employees={activeBranch.members} {data} />
+						<Employees variant="small" bind:newEmployee />
 					</div>
 				{/if}
 			</div>

@@ -10,7 +10,10 @@ const openAPIGenerator = new OpenAPIGenerator({
   schemaConverters: [new ZodToJsonSchemaConverter()],
 });
 
-export function createScalarRoutes(app: ReturnType<typeof createRouter>) {
+export function createScalarRoutes(
+  app: ReturnType<typeof createRouter>,
+  basePath = "",
+) {
   app.get("/docs/spec.json", async (c) => {
     if (c.var.env.NODE_ENV !== "development") {
       throw new ORPCError("FORBIDDEN", {
@@ -34,7 +37,7 @@ export function createScalarRoutes(app: ReturnType<typeof createRouter>) {
           url: "https://www.gnu.org/licenses/agpl-3.0.html",
         },
       },
-      servers: [{ url: "/api" }],
+      servers: [{ url: `${basePath}/rest` }],
     });
 
     return c.json(spec);
@@ -66,7 +69,7 @@ export function createScalarRoutes(app: ReturnType<typeof createRouter>) {
            sources: [
               {
                 title: 'Salora API',
-                url: '/docs/spec.json',
+                url: '${basePath}/docs/spec.json',
                 default: true 
               },
             //   {

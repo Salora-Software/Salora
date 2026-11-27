@@ -176,7 +176,7 @@ export const resolveTemplateEmail = async (
   env: Env,
 ): Promise<ResolvedTemplateEmail | null> => {
   const db = createDb(env.DB as any);
-  const auth = createAuth(db, payload.origin);
+  const auth = createAuth(db, payload.origin, [payload.origin]);
 
   const organization = await db.query.organization.findFirst({
     where: eq(schema.organization.id, payload.organizationId),

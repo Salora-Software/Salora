@@ -137,12 +137,15 @@ export const createBookingHandler = base
       });
 
       if (!user) {
-        await ctxAuth.internalAdapter.createUser({
-          email: contact.email,
-          name: `${contact.firstName} ${contact.lastName}`,
-          phone: contact.phone || "",
-          organizationId,
-        });
+        await ctxAuth.internalAdapter.createUser(
+          {
+            email: contact.email,
+            name: `${contact.firstName} ${contact.lastName}`,
+            phone: contact.phone || "",
+            organizationId,
+          },
+          { method: "booking" },
+        );
 
         user = await db.query.user.findFirst({
           where: (userTable, { eq }) => eq(userTable.email, contact.email),

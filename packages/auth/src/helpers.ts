@@ -16,7 +16,6 @@ export async function generateDirectMagicLink(
   });
 
   const baseUrl = auth.options.baseURL;
-  // @ts-expect-error basePath is optioneel in de types, maar we hebben een default waarde in de factory
   const basePath = auth.options.basePath || "/api/auth";
 
   const magicLinkUrl = new URL(`${baseUrl}${basePath}/magic-link/verify`);

@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "salora-frontend",
+  "account_id": "87c967818bd79635480bbb45d9bf3269",
   "main": "apps/frontend/.svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-03-20",
   "upload_source_maps": true,
@@ -8,22 +9,9 @@
   "assets": {
     "binding": "ASSETS",
     "directory": "apps/frontend/.svelte-kit/cloudflare",
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "migrations_dir": "packages/database/drizzle",
-      "database_name": "salora-frontend",
-      "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
-    },
-  ],
-  "queues": {
-    "producers": [
-      {
-        "binding": "EMAIL_QUEUE",
-        "queue": "email-jobs",
-      },
-    ],
+    // API requests never resolve to a static asset, skip the asset lookup.
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "none",
   },
   "observability": {
     "logs": {
@@ -37,30 +25,54 @@
   "limits": {
     "cpu_ms": 200,
   },
-  "vars": {
-    "DEPLOY_TARGET": "worker",
-    "SKIP_DEPENDENCY_INSTALL": "true",
-    "NODE_ENV": "production",
-    "LOG_LEVEL": "info",
-    "PUBLIC_FRONTEND_URL": "https://app.salora.app",
-    "PUBLIC_CDN_URL": "https://cdn.salora.app",
-    "MAIL_FALLBACK_SERVER": "example.smtp.com",
-    "MAIL_FALLBACK_PORT": "587",
-    "MAIL_FALLBACK_USERNAME": "usernam",
-    "MAIL_FALLBACK_PASSWORD": "password",
-    "MAIL_EMAIL_SENDER": "noreply@example.com",
-    "TRUSTED_IPS": "https://app.salora.app",
-  },
 
+  // ----------------------------------------------------
+  // NAMED ENVIRONMENTS (deploy with `--env <name>`)
+  // Secrets (BETTER_AUTH_SECRET, SMTP creds) are set with
+  // `wrangler secret put <NAME> --env <name>` and are NOT stored here.
+  // ----------------------------------------------------
   "env": {
-    "development": {
-      "name": "salora-dev", // Aparte Worker in Cloudflare Dashboard
+    "prod": {
+      "name": "salora-frontend",
       "vars": {
-        "PUBLIC_FRONTEND_URL": "https://dev.salora.app",
+        "DEPLOY_TARGET": "worker",
+        "SKIP_DEPENDENCY_INSTALL": "true",
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info",
+        "PUBLIC_FRONTEND_URL": "https://app.salora.app",
+        "PUBLIC_CDN_URL": "https://cdn.salora.app",
+        "MAIL_FALLBACK_SERVER": "example.smtp.com",
+        "MAIL_FALLBACK_PORT": "587",
+        "MAIL_FALLBACK_USERNAME": "usernam",
+        "MAIL_FALLBACK_PASSWORD": "password",
+        "MAIL_EMAIL_SENDER": "noreply@example.com",
+        "TRUSTED_IPS": "https://app.salora.app",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "migrations_dir": "packages/database/drizzle",
+          "database_name": "salora-frontend",
+          "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "EMAIL_QUEUE",
+            "queue": "email-jobs",
+          },
+        ],
+      },
+    },
+    "dev": {
+      "name": "salora-dev",
+      "vars": {
         "DEPLOY_TARGET": "worker",
         "SKIP_DEPENDENCY_INSTALL": "true",
         "NODE_ENV": "development",
         "LOG_LEVEL": "debug",
+        "PUBLIC_FRONTEND_URL": "https://dev.salora.app",
         "PUBLIC_CDN_URL": "https://cdn.salora.app",
         "MAIL_FALLBACK_SERVER": "example.smtp.com",
         "MAIL_FALLBACK_PORT": "587",
@@ -75,6 +87,54 @@
           "migrations_dir": "packages/database/drizzle",
           "database_name": "salora-db-dev",
           "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "EMAIL_QUEUE",
+            "queue": "email-jobs",
+          },
+        ],
+      },
+    },
+  },
+
+  // ----------------------------------------------------
+  // PREVIEWS (Cloudflare Worker preview deployments)
+  // Previews are versions of the top-level worker and use the dev
+  // bindings below, so a preview never touches the production DB.
+  // `wrangler versions upload` / the Cloudflare dashboard use this block.
+  // ----------------------------------------------------
+  "previews": {
+    "vars": {
+      "DEPLOY_TARGET": "worker",
+      "SKIP_DEPENDENCY_INSTALL": "true",
+      "NODE_ENV": "development",
+      "LOG_LEVEL": "debug",
+      "PUBLIC_FRONTEND_URL": "https://dev.salora.app",
+      "PUBLIC_CDN_URL": "https://cdn.salora.app",
+      "MAIL_FALLBACK_SERVER": "example.smtp.com",
+      "MAIL_FALLBACK_PORT": "587",
+      "MAIL_FALLBACK_USERNAME": "usernam",
+      "MAIL_FALLBACK_PASSWORD": "password",
+      "MAIL_EMAIL_SENDER": "noreply@example.com",
+      // `*.workers.dev` so better-auth accepts the generated preview origin.
+      "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173,https://*.workers.dev",
+    },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "migrations_dir": "packages/database/drizzle",
+        "database_name": "salora-db-dev",
+        "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",
+      },
+    ],
+    "queues": {
+      "producers": [
+        {
+          "binding": "EMAIL_QUEUE",
+          "queue": "email-jobs",
         },
       ],
     },

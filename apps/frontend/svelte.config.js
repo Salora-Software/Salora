@@ -13,7 +13,7 @@ const config = {
 		adapter: adapterCloudflare({
 			platformProxy: {
 				configPath: '../../wrangler.jsonc',
-				environment: process.env.NODE_ENV,
+				environment: 'dev',
 				persist: {
 					path: '../../.wrangler/state/v3'
 				}

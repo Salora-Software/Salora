@@ -1,33 +1,18 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { signIn, signUp } from '$lib/auth-client';
+	import { login, register } from './auth.remote';
+	import { loginSchema, registerSchema } from '$lib/auth-schema';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input';
 	import { t } from '$lib/translation';
-	import { onMount } from 'svelte';
-	let loginState: 'login' | 'signup' = $state('login');
-	let authError = {
-		message: '',
-		errored: false,
-		loading: false
-	};
-	let isRegister = $derived(loginState === ('signup' as const));
-	let name = $state('');
-	let email = $state('');
-	let password = $state('');
-	const errorMessage = page.url.searchParams.get('error');
-	if (errorMessage) {
-		authError.errored = true;
-		const errorCode = page.url.searchParams.get('code');
-		const errorVal = errorCode ? t.errors[errorCode as keyof typeof t.errors] : '';
-		authError.message = typeof errorVal === 'string' ? errorVal : '';
-	}
-	onMount(() => {
-		goto('/login', { replaceState: true });
-	});
+
+	let mode = $state<'login' | 'register'>('login');
+	let isRegister = $derived(mode === 'register');
+
+	// Where to send the user after a successful login/register (?redirectTo=/...)
+	const redirectTo = $derived(page.url.searchParams.get('redirectTo') ?? '/');
 </script>
 
 <div class="h-screen lg:grid lg:grid-cols-2">
@@ -49,24 +34,31 @@
 						{t.login.loginDescription}
 					</p>
 				</div>
-				<div class="grid gap-2">
+
+				<form {...login.preflight(loginSchema)} class="grid gap-2" oninput={() => login.validate()}>
+					<input type="hidden" name="redirectTo" value={redirectTo} />
+
 					<div class="mb-4 grid gap-2">
-						<Label for="email">
+						<Label for="login-email">
 							{t.login.email}
 						</Label>
 						<Input
-							error={authError.errored}
-							bind:value={email}
-							id="email"
-							type="email"
+							{...login.fields.email.as('email')}
+							id="login-email"
 							placeholder="johndoe@example.com"
+							autocomplete="email"
+							autocapitalize="none"
+							spellcheck="false"
 							class="h-10"
-							required
 						/>
+						{#each login.fields.email.issues() ?? [] as issue}
+							<p class="text-destructive text-sm">{issue.message}</p>
+						{/each}
 					</div>
+
 					<div class="mb-4 grid gap-2">
 						<div class="flex items-center">
-							<Label for="password">
+							<Label for="login-password">
 								{t.login.password}
 							</Label>
 							<button
@@ -77,53 +69,34 @@
 							</button>
 						</div>
 						<PasswordInput
-							error={authError.errored}
-							id="password"
-							bind:value={password}
-							required
+							{...login.fields._password.as('password')}
+							id="login-password"
+							placeholder="••••••••"
+							autocomplete="current-password"
 							class="h-10"
 						/>
+						{#each login.fields._password.issues() ?? [] as issue}
+							<p class="text-destructive text-sm">{issue.message}</p>
+						{/each}
 					</div>
-					<Button
-						disabled={authError.loading}
-						onclick={async () => {
-							if (email && password) {
-								authError.loading = true;
-								await signIn.email({
-									email: email,
-									password: password,
-									fetchOptions: {
-										onSuccess: (ctx) => {
-											document.location.href = '/';
-										},
-										onError: (ctx) => {
-											authError.errored = true;
-											authError.message = ctx.error.message;
-											authError.loading = false;
-										}
-									}
-								});
-							}
-						}}
-						class="w-full"
-					>
-						{t.login.login}
+
+					<Button type="submit" disabled={login.pending} class="w-full">
+						{login.pending ? t.login.loggingIn : t.login.login}
 					</Button>
-					{#if authError.errored}
-						<p class="text-red-700">
-							<span>{authError.message}</span>
-						</p>
-					{/if}
-				</div>
+
+					{#each login.fields
+						.allIssues()
+						?.filter((issue) => issue.path.length === 0) ?? [] as issue}
+						<p class="text-destructive text-center text-sm" role="alert">{issue.message}</p>
+					{/each}
+				</form>
+
 				<div class="mt-4 text-center text-sm">
 					{t.login.noAccount}
 					<button
 						type="button"
 						class="cursor-pointer border-none bg-transparent p-0 underline"
-						onclick={() => {
-							authError.errored = false;
-							loginState = loginState === 'login' ? 'signup' : 'login';
-						}}
+						onclick={() => (mode = 'register')}
 					>
 						{t.login.noAccountDescription}
 					</button>
@@ -137,84 +110,81 @@
 						{t.login.signUpDescription}
 					</p>
 				</div>
-				<div class="grid gap-2">
+
+				<form
+					{...register.preflight(registerSchema)}
+					class="grid gap-2"
+					oninput={() => register.validate()}
+				>
+					<input type="hidden" name="redirectTo" value={redirectTo} />
+
 					<div class="mb-4 grid gap-2">
-						<Label for="username">
+						<Label for="register-name">
 							{t.login.name}
 						</Label>
 						<Input
-							error={authError.errored}
-							bind:value={name}
-							id="username"
-							type="text"
+							{...register.fields.name.as('text')}
+							id="register-name"
 							placeholder="John Doe"
-							required
+							autocomplete="name"
+							class="h-10"
 						/>
+						{#each register.fields.name.issues() ?? [] as issue}
+							<p class="text-destructive text-sm">{issue.message}</p>
+						{/each}
 					</div>
+
 					<div class="mb-4 grid gap-2">
-						<Label for="email">
+						<Label for="register-email">
 							{t.login.email}
 						</Label>
 						<Input
-							error={authError.errored}
-							bind:value={email}
-							id="email"
-							type="email"
+							{...register.fields.email.as('email')}
+							id="register-email"
 							placeholder="johndoe@example.com"
-							required
+							autocomplete="email"
+							autocapitalize="none"
+							spellcheck="false"
+							class="h-10"
 						/>
+						{#each register.fields.email.issues() ?? [] as issue}
+							<p class="text-destructive text-sm">{issue.message}</p>
+						{/each}
 					</div>
+
 					<div class="mb-4 grid gap-2">
-						<div class="flex items-center">
-							<Label for="password">
-								{t.login.password}
-							</Label>
-						</div>
-						<PasswordInput error={authError.errored} bind:value={password} id="password" required />
+						<Label for="register-password">
+							{t.login.password}
+						</Label>
+						<PasswordInput
+							{...register.fields._password.as('password')}
+							id="register-password"
+							placeholder="••••••••"
+							autocomplete="new-password"
+							class="h-10"
+						/>
+						{#each register.fields._password.issues() ?? [] as issue}
+							<p class="text-destructive text-sm">{issue.message}</p>
+						{/each}
 					</div>
-					<Button
-						onclick={async () => {
-							if (name && email && password) {
-								authError.loading = true;
-								await signUp.email(
-									{
-										email: email,
-										password: password,
-										name: name
-									},
-									{
-										onSuccess: (ctx) => {
-											document.location.href = '';
-										},
-										onError: (ctx) => {
-											authError.errored = true;
-											authError.message = ctx.error.message;
-											authError.loading = false;
-										}
-									}
-								);
-							}
-						}}
-						class="w-full"
-					>
-						{t.login.signUp}
+
+					<Button type="submit" disabled={register.pending} class="w-full">
+						{register.pending ? t.login.registering : t.login.signUp}
 					</Button>
 
-					{#if authError.errored}
-						<p class="text-red-700">
-							<span>{authError.message}</span>
-						</p>
-					{/if}
-				</div>
+					{#each register.fields
+						.allIssues()
+						?.filter((issue) => issue.path.length === 0) ?? [] as issue}
+						<p class="text-destructive text-center text-sm" role="alert">{issue.message}</p>
+					{/each}
+				</form>
+
 				<div class="mt-4 text-center text-sm">
 					{t.login.haveAccount}
 					<button
 						type="button"
 						class="cursor-pointer border-none bg-transparent p-0 underline"
-						onclick={() => {
-							authError.errored = false;
-							loginState = loginState === 'login' ? 'signup' : 'login';
-						}}
+						onclick={() => (mode = 'login')}
 					>
 						{t.login.haveAccountDescription}
 					</button>

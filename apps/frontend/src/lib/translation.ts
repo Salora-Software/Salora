@@ -39,18 +39,26 @@ export const translations = {
 		},
 		login: {
 			login: 'Inloggen',
-			loginDescription: 'Vul je e-email hieronder om in te ',
+			loginDescription: 'Vul je e-mailadres hieronder in om in te loggen',
 			signUp: 'Aanmelden',
 			signUpDescription: 'Vul je naam hieronder in om een nieuw account aan te maken',
 			name: 'Naam',
-			email: 'E-email',
+			email: 'E-mail',
 			password: 'Wachtwoord',
 			forgotPassword: 'Wachtwoord vergeten?',
 			noAccount: 'Nog geen account?',
 			noAccountDescription: 'Maak een account aan',
 			haveAccount: 'Heb je al een account?',
 			haveAccountDescription: 'Log in',
-			register: 'Registreren'
+			register: 'Registreren',
+			loggingIn: 'Inloggen…',
+			registering: 'Account aanmaken…',
+			validation: {
+				emailRequired: 'Vul je e-mailadres in',
+				emailInvalid: 'Vul een geldig e-mailadres in',
+				passwordRequired: 'Vul je wachtwoord in',
+				nameRequired: 'Vul je naam in (minimaal 2 tekens)'
+			}
 		},
 		pages: {
 			overview: 'Overzicht',
@@ -72,7 +80,13 @@ export const translations = {
 		errors: {
 			default: 'Er is iets fout gegaan. Probeer het later opnieuw.',
 			USER_NOT_FOUND: 'Gebruiker niet gevonden',
-			credentials: 'De e-email of het wachtwoord is fout',
+			credentials: 'De e-mail of het wachtwoord is fout',
+			INVALID_EMAIL: 'Ongeldig e-mailadres',
+			INVALID_EMAIL_OR_PASSWORD: 'Het e-mailadres of wachtwoord is onjuist',
+			USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
+				'Er bestaat al een account met dit e-mailadres. Log in of gebruik een ander e-mailadres.',
+			EMAIL_NOT_VERIFIED: 'Je e-mailadres is nog niet geverifieerd. Controleer je inbox.',
+			PASSWORD_TOO_SHORT: 'Je wachtwoord moet minimaal 8 tekens bevatten',
 			too_small: 'Ingevoerde waarde is te klein',
 			'Invalid email': 'Ongeldig e-mailadres',
 			employee_not_found: 'Er zijn geen medewerkers gevonden voor deze dienst!',
@@ -246,7 +260,15 @@ export const translations = {
 			noAccountDescription: 'Sign in',
 			haveAccount: 'Already have an account?',
 			haveAccountDescription: 'Log in',
-			register: 'Register'
+			register: 'Register',
+			loggingIn: 'Logging in…',
+			registering: 'Creating your account…',
+			validation: {
+				emailRequired: 'Enter your email address',
+				emailInvalid: 'Enter a valid email address',
+				passwordRequired: 'Enter your password',
+				nameRequired: 'Enter your name (at least 2 characters)'
+			}
 		},
 		pages: {
 			overview: 'Overview',
@@ -269,6 +291,12 @@ export const translations = {
 			default: 'Something went wrong. Please try again later.',
 			credentials: 'The email or password is incorrect',
 			USER_NOT_FOUND: 'User not found',
+			INVALID_EMAIL: 'Invalid email address',
+			INVALID_EMAIL_OR_PASSWORD: 'The email address or password is incorrect',
+			USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
+				'An account with this email address already exists. Sign in or use a different email address.',
+			EMAIL_NOT_VERIFIED: 'Your email address is not verified yet. Check your inbox.',
+			PASSWORD_TOO_SHORT: 'Your password must be at least 8 characters',
 			too_small: 'Input value is too small',
 			'Invalid email': 'Invalid email address',
 			employee_not_found: 'No employees found for this service!',

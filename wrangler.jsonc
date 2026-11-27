@@ -29,6 +29,12 @@
   // NAMED ENVIRONMENTS (deploy with `--env <name>`)
   // Secrets (BETTER_AUTH_SECRET, SMTP creds) are set with
   // `wrangler secret put <NAME> --env <name>` and are NOT stored here.
+  //
+  // Database safety: the backend picks the D1 binding from NODE_ENV.
+  //   NODE_ENV=production  -> env.DB      (prod database)
+  //   NODE_ENV=development -> env.DB_DEV  (dev database)
+  // Production only binds DB; dev/previews only bind DB_DEV, so a
+  // misconfigured dev Worker fails loudly instead of touching prod data.
   // ----------------------------------------------------
   "env": {
     "prod": {
@@ -82,7 +88,8 @@
       },
       "d1_databases": [
         {
-          "binding": "DB",
+          // NODE_ENV=development -> getDbBinding() reads DB_DEV
+          "binding": "DB_DEV",
           "migrations_dir": "packages/database/drizzle",
           "database_name": "salora-db-dev",
           "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",
@@ -122,7 +129,7 @@
     },
     "d1_databases": [
       {
-        "binding": "DB",
+        "binding": "DB_DEV",
         "migrations_dir": "packages/database/drizzle",
         "database_name": "salora-db-dev",
         "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",

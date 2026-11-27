@@ -32,7 +32,7 @@
 		"db:generate:worker": "bun run --env-file=.env turbo run generate:worker",
 		"db:push": "bun run --env-file=.env turbo run db:push",
 		"db:migrate": "wrangler d1 migrations apply DB --remote --env prod",
-		"db:migrate:dev": "wrangler d1 migrations apply DB --remote --env dev",
+		"db:migrate:dev": "wrangler d1 migrations apply DB_DEV --remote --env dev",
 		"lint": "turbo run lint",
 		"check": "turbo run check",
 		"format": "prettier --write \"**/*.{ts,tsx,md}\"",

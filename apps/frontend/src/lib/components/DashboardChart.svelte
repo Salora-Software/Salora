@@ -132,16 +132,20 @@
 						}).format(new Date(d))
 				},
 				yAxis: {
+					ticks: 4,
 					format: (v: number) =>
 						new Intl.NumberFormat('nl-NL', {
 							notation: 'compact',
 							maximumFractionDigits: 1
 						}).format(v)
 				},
+				grid: {
+					x: false
+				},
 				area: {
 					curve: curveMonotoneX,
-					'fill-opacity': 0.4,
-					line: { class: 'stroke-1' },
+					'fill-opacity': 0.18,
+					line: { class: 'stroke-2' },
 					motion: 'tween'
 				}
 			}}

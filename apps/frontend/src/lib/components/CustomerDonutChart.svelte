@@ -26,7 +26,6 @@
 			{ value: { label: 'Klanten' } }
 		)
 	) satisfies Chart.ChartConfig;
-	console.log(data);
 </script>
 
 <div class="flex flex-col gap-16">
@@ -41,12 +40,12 @@
 						value="value"
 						c="fill"
 						range={[-95, 95]}
-						innerRadius={-28}
-						cornerRadius={6}
-						padAngle={0.03}
+						innerRadius={-30}
+						cornerRadius={8}
+						padAngle={0.045}
 						props={{
-							group: { class: 'stroke-background stroke-[3px]' },
-							arc: { motion: { type: 'tween', duration: 400 } }
+							group: { class: 'stroke-background stroke-[4px]' },
+							arc: { motion: { type: 'tween', duration: 500 } }
 						}}
 					>
 						{#snippet aboveMarks()}

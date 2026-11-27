@@ -175,7 +175,9 @@
 			title:
 				stats?.appointments?.current !== undefined ? String(stats.appointments.current) : '+00',
 			description: `${stats?.appointments?.change !== undefined ? (stats.appointments.change >= 0 ? '+' : '') + String(stats.appointments.change) : '+00'}% meer dan vorige maand`,
-			icon: CalendarDays
+			icon: CalendarDays,
+			trend:
+				stats?.appointments?.change !== undefined ? Number(stats.appointments.change) : undefined
 		},
 		{
 			name: 'Omzet',
@@ -184,20 +186,24 @@
 					? `€ ${Number(stats.revenue.current).toLocaleString('nl-NL')}`
 					: '€ 0.000',
 			description: `${stats?.revenue?.change !== undefined ? (stats?.revenue.change >= 0 ? '+' : '') + String(stats?.revenue.change) : '+00'}% meer dan vorige maand`,
-			icon: DollarSign
+			icon: DollarSign,
+			trend: stats?.revenue?.change !== undefined ? Number(stats.revenue.change) : undefined
 		},
 		{
 			name: 'Klanten',
 			title: stats?.customers?.current !== undefined ? String(stats?.customers.current) : '+00',
 			description: `${stats?.customers?.change !== undefined ? (stats?.customers.change >= 0 ? '+' : '') + String(stats?.customers.change) : '+00'}% meer dan vorige maand`,
-			icon: UsersRound
+			icon: UsersRound,
+			trend: stats?.customers?.change !== undefined ? Number(stats.customers.change) : undefined
 		},
 		{
 			name: 'Nieuwe Klanten',
 			title:
 				stats?.newCustomers?.current !== undefined ? String(stats?.newCustomers.current) : '+00',
 			description: `${stats?.newCustomers?.change !== undefined ? (stats?.newCustomers.change >= 0 ? '+' : '') + String(stats?.newCustomers.change) : '+00'}% meer dan vorige maand`,
-			icon: UserRoundPlus
+			icon: UserRoundPlus,
+			trend:
+				stats?.newCustomers?.change !== undefined ? Number(stats.newCustomers.change) : undefined
 		}
 	]);
 

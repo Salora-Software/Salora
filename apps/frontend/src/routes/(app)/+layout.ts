@@ -4,8 +4,8 @@ import { BranchesState, SessionUserState, BranchWizardState, type BranchesType }
 import { createOrpcClient, orpcT } from '$lib/orpc';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
 
-export const load: LayoutLoad = async ({ parent, fetch }) => {
-	const orpcServer = createTanstackQueryUtils(createOrpcClient(undefined, fetch));
+export const load: LayoutLoad = async ({ parent, fetch, url }) => {
+	const orpcServer = createTanstackQueryUtils(createOrpcClient(url.origin, fetch));
 	let data = await parent();
 	const session = data.session;
 	if (!session) redirect(307, '/login');

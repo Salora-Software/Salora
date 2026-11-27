@@ -1,6 +1,5 @@
 import { dehydrate, QueryClient } from '@tanstack/svelte-query';
 import type { LayoutLoad } from './$types';
-import { orpcT } from '$lib/orpc';
 
 export const ssr = true;
 

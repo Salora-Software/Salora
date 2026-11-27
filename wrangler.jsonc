@@ -58,7 +58,7 @@
           "binding": "DB",
           "migrations_dir": "packages/database/drizzle",
           //   "database_name": "salora-frontend",
-          //   "database_id": "e948003e-f342-4674-a065-4c47c48174ef",
+          //   "database_id": "e948003e-f342-4674-a065-4c47c48174ef", old
           "database_name": "salora-migrate-test",
           "database_id": "8d216c04-0f72-4f32-a614-2302798af42c",
         },

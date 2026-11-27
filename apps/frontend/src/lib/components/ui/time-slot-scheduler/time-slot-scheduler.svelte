@@ -27,8 +27,8 @@
 
 	let sortedSchedules = $derived(
 		[...schedules].sort((a, b) => {
-			if (a.day !== b.day) return a.day - b.day;
-			return a.openTime?.localeCompare(b?.openTime);
+			if (Number(a.day) !== Number(b.day)) return Number(a.day) - Number(b.day);
+			return (a.openTime ?? '').localeCompare(b.openTime ?? '');
 		})
 	);
 
@@ -68,8 +68,8 @@
 							{t.days[schedule.day as keyof typeof t.days] ?? 'Kies dag'}
 						</Select.Trigger>
 						<Select.Content>
-							{#each Object.entries(t.days) as [dayKey, dayLabel]}
-								<Select.Item value={dayKey}>{dayLabel}</Select.Item>
+							{#each [1, 2, 3, 4, 5, 6, 7] as day}
+								<Select.Item value={String(day)}>{t.days[day]}</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>

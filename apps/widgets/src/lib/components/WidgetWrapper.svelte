@@ -10,7 +10,7 @@
 	import { cn } from '$lib/utils';
 	import { createOrpcClient } from '$lib/orpc';
 
-	let { variant = 'widget', branchId, endpoint = 'http://localhost:8788' } = $props();
+	let { variant = 'widget', branchId, endpoint = 'http://localhost:5173/api' } = $props();
 	let branchData: RouterOutput['v1']['getBranch'] | null = $state(null);
 	let loading = $state(true);
 

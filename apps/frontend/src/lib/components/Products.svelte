@@ -24,18 +24,23 @@
 	import type { QueryClient } from '@tanstack/svelte-query';
 
 	import { orpcT } from '$lib/orpc';
-	import { createQuery, createMutation } from '@tanstack/svelte-query';
+	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { getSessionContext } from '$lib/context/session-context';
 
 	let {
-		queryClient,
+		queryClient: queryClientProp,
 		hideHeader,
 		newService = $bindable()
 	}: {
-		queryClient: QueryClient;
+		queryClient?: QueryClient;
 		hideHeader?: Boolean;
 		newService?: () => void;
 	} = $props();
+
+	// Some routes (e.g. /products) render this component without passing a
+	// queryClient prop. Fall back to the one provided by QueryClientProvider.
+	const contextQueryClient = useQueryClient();
+	const queryClient = $derived(queryClientProp ?? contextQueryClient);
 
 	newService = () => {
 		resetForm();

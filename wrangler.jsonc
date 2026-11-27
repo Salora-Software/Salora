@@ -1,6 +1,6 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "salora-frontend",
+  //   "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "salora",
   "account_id": "87c967818bd79635480bbb45d9bf3269",
   "main": "apps/frontend/.svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-03-20",
@@ -25,7 +25,6 @@
   "limits": {
     "cpu_ms": 200,
   },
-
   // ----------------------------------------------------
   // NAMED ENVIRONMENTS (deploy with `--env <name>`)
   // Secrets (BETTER_AUTH_SECRET, SMTP creds) are set with
@@ -99,7 +98,6 @@
       },
     },
   },
-
   // ----------------------------------------------------
   // PREVIEWS (Cloudflare Worker preview deployments)
   // Previews are versions of the top-level worker and use the dev
@@ -130,6 +128,15 @@
         "database_id": "89f7d5a4-fa43-4c2a-9ba1-9ce071926089",
       },
     ],
+    "observability": {
+      "logs": {
+        "enabled": true,
+        "invocation_logs": true,
+      },
+      "traces": {
+        "enabled": true,
+      },
+    },
     "queues": {
       "producers": [
         {

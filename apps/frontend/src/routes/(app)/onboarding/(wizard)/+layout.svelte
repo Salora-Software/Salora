@@ -7,7 +7,14 @@
 	import { fade, fly } from 'svelte/transition';
 	import Loader2 from '@solar-icons/svelte/linear/loader';
 	import { orpc, orpcT } from '$lib/orpc';
+	import { organization } from '$lib/auth-client';
+	import {
+		ONBOARDING_STEPS,
+		onboardingStepIndexForPath,
+		onboardingStepPath
+	} from '$lib/onboarding';
 	import { createQuery } from '@tanstack/svelte-query';
+	import { toast } from 'svelte-sonner';
 
 	let { children, data } = $props();
 
@@ -15,104 +22,122 @@
 	const wizard = setWizardState();
 	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
 	const orgId = $derived(
-		data.session?.session.activeOrganizationId || branchesQuery.data?.[0]?.id || ''
+		branchesQuery.data?.find((branch) => (branch.onboardingStep ?? 0) > 0)?.id ||
+			data.session?.session.activeOrganizationId ||
+			branchesQuery.data?.[0]?.id ||
+			''
 	);
 
-	type Step = { id: string; path: string; title?: string; description?: string };
+	// First run = the user does not have any organization yet. In that case the
+	// first step has no "back" (there is nothing to go back to). When adding an
+	// extra branch there is an existing org, so "back" exits the wizard.
+	const isFirstRun = $derived((branchesQuery.data?.length ?? 0) === 0);
+
+	type Step = (typeof ONBOARDING_STEPS)[number];
 	type Group = { id: string; label: string; steps: Step[] };
 
-	const groups: Group[] = [
-		{
-			id: 'company',
-			label: 'Bedrijf',
-			steps: [
-				{
-					id: 'company',
-					path: '/onboarding/company',
-					title: 'Bedrijf',
-					description: 'Vul de bedrijfsnaam en adres in'
-				}
-			]
-		},
-		{
-			id: 'settings',
-			label: 'Openingstijden',
-			steps: [
-				{
-					id: 'opening-hours',
-					path: '/onboarding/opening-hours',
-					title: 'Openingstijden',
-					description: 'Stel hier de openingstijden van je bedrijf in'
-				}
-				// {
-				// 	id: 'smtp',
-				// 	path: '/onboarding/smtp',
-				// 	title: 'E-mail instellingen',
-				// 	description: 'Stel hier de SMTP-instellingen in'
-				// }
-			]
-		},
-		{
-			id: 'products',
-			label: 'Producten',
-			steps: [
-				{
-					id: 'products',
-					path: '/onboarding/products',
-					title: 'Producten',
-					description: 'Voeg hier je producten toe'
-				}
-			]
-		},
-		{
-			id: 'employees',
-			label: 'Medewerkers',
-			steps: [
-				{
-					id: 'employees',
-					path: '/onboarding/employees',
-					title: 'Medewerkers',
-					description: 'Voeg hier je medewerkers toe'
-				}
-			]
-		}
-	];
+	const flatSteps = ONBOARDING_STEPS;
+	const groups: Group[] = flatSteps.map((step) => ({
+		id: step.id,
+		label: step.group,
+		steps: [step]
+	}));
 
-	let flatSteps = $derived(groups.flatMap((g) => g.steps));
-	let currentStepIndex = $derived(flatSteps.findIndex((s) => page.url.pathname.includes(s.path)));
-
+	let currentStepIndex = $derived(onboardingStepIndexForPath(page.url.pathname));
 	let isFirstStep = $derived(currentStepIndex <= 0);
 	let isLastStep = $derived(currentStepIndex === flatSteps.length - 1);
 
-	// Titel en Omschrijving ophalen (met fallback vanuit wizard state)
+	// Title en omschrijving ophalen (met fallback vanuit wizard state)
 	let currentTitle = $derived(wizard.stepTitle || flatSteps[currentStepIndex]?.title || '');
 	let currentDescription = $derived(
 		wizard.stepDescription || flatSteps[currentStepIndex]?.description || ''
 	);
 
-	function goBack() {
-		if (!isFirstStep) {
-			wizard.reset();
-			goto(flatSteps[currentStepIndex - 1].path);
+	// Zorg dat de vestiging die in onboarding is ook de actieve vestiging is,
+	// zodat stappen die op de sessie leunen (bijv. SMTP) de juiste org gebruiken.
+	let ensuredActiveOrg = $state<string | null>(null);
+	$effect(() => {
+		const organizationId = orgId;
+		if (!organizationId || ensuredActiveOrg === organizationId) return;
+		ensuredActiveOrg = organizationId;
+		if (data.session?.session.activeOrganizationId !== organizationId) {
+			organization.setActive({ organizationId });
 		}
+	});
+
+	async function resolveOrgId(): Promise<string> {
+		const branches = await data.queryClient.fetchQuery(
+			orpcT.v1.organisation.getOrganisations.queryOptions({})
+		);
+		return (
+			branches.find((branch) => (branch.onboardingStep ?? 0) > 0)?.id ||
+			data.session?.session.activeOrganizationId ||
+			branches[0]?.id ||
+			''
+		);
+	}
+
+	async function persistStep(stepNumber: number) {
+		try {
+			const organizationId = await resolveOrgId();
+			if (!organizationId) return;
+			await orpc.v1.organisation.updateOnboardingStep({ organizationId, step: stepNumber });
+		} catch (error) {
+			// Progress persistence is best-effort; do not block the wizard.
+			console.error('Kon onboarding-stap niet opslaan:', error);
+		}
+	}
+
+	async function goBack() {
+		if (isFirstStep) {
+			if (isFirstRun) return;
+
+			// Add-another mode: leaving the wizard should not bounce straight back
+			// into onboarding, so activate a finished branch first when possible.
+			const finishedBranch = branchesQuery.data?.find(
+				(branch) => (branch.onboardingStep ?? 0) === 0
+			);
+			if (finishedBranch) {
+				await organization.setActive({ organizationId: finishedBranch.id });
+			}
+			wizard.reset();
+			goto('/');
+			return;
+		}
+
+		wizard.reset();
+		await persistStep(currentStepIndex);
+		goto(flatSteps[currentStepIndex - 1].path);
 	}
 
 	async function goNext() {
 		// 1. Voer eerst de geregistreerde actie uit op de actieve pagina (bijv. API/oRPC call)
 		const success = await wizard.executeOnNext();
+		if (!success) return;
 
-		// 2. Als de actie succesvol was (of er was geen actie), navigeer door
-		if (success) {
-			if (isLastStep) {
-				await orpc.v1.organisation.finishOrganisation({
-					organizationId: orgId
+		// 2. Laatste stap: onboarding afronden.
+		if (isLastStep) {
+			try {
+				const organizationId = await resolveOrgId();
+				if (organizationId) {
+					await orpc.v1.organisation.finishOrganisation({ organizationId });
+				}
+				await data.queryClient.invalidateQueries({
+					queryKey: orpcT.v1.organisation.getOrganisations.queryKey()
 				});
+				await data.branchesState?.updateBranches(true);
 				goto('/');
-			} else {
-				wizard.reset();
-				goto(flatSteps[currentStepIndex + 1].path);
+			} catch (error) {
+				console.error('Kon onboarding niet afronden:', error);
+				toast.error('Er is iets misgegaan bij het afronden van de onboarding');
 			}
+			return;
 		}
+
+		// 3. Bewaar de voortgang zodat een refresh/navigatie op de juiste stap terugkomt.
+		await persistStep(currentStepIndex + 2);
+		wizard.reset();
+		goto(flatSteps[currentStepIndex + 1].path);
 	}
 
 	function getGroupProgress(group: Group): number {
@@ -203,7 +228,7 @@
 
 								<div class="mt-8 flex items-center justify-between">
 									<Button
-										disabled={isFirstStep || wizard.isSubmitting}
+										disabled={(isFirstStep && isFirstRun) || wizard.isSubmitting}
 										variant="outline"
 										onclick={goBack}
 										class="px-6"

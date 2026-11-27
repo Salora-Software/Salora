@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
-import { BranchesState, SessionUserState, BranchWizardState, type BranchesType } from '$lib/runes.svelte';
-import { createOrpcClient, orpcT } from '$lib/orpc';
+import { BranchesState, SessionUserState, type BranchesType } from '$lib/runes.svelte';
+import { createOrpcClient } from '$lib/orpc';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
 
 export const load: LayoutLoad = async ({ parent, fetch, url }) => {
@@ -10,7 +10,6 @@ export const load: LayoutLoad = async ({ parent, fetch, url }) => {
 	const session = data.session;
 	if (!session) redirect(307, '/login');
 	let sessionState = new SessionUserState(session);
-	let branchWizardState = new BranchWizardState();
 
 	const branches = await data.queryClient.ensureQueryData(
 		orpcServer.v1.organisation.getOrganisations.queryOptions({})
@@ -25,11 +24,17 @@ export const load: LayoutLoad = async ({ parent, fetch, url }) => {
 		branchesState.setActiveBranch(0);
 	}
 
+	// First run: a user without any organization must finish onboarding before
+	// entering the app. Onboarding routes themselves are exempt.
+	const isOnboardingRoute = url.pathname.startsWith('/onboarding');
+	if (!isOnboardingRoute && organizationBranches.length === 0) {
+		redirect(307, '/onboarding/welcome');
+	}
+
 	return {
 		session: sessionState.value,
 		branches: organizationBranches,
 		sessionState,
-		branchesState,
-		branchWizardState
+		branchesState
 	};
 };

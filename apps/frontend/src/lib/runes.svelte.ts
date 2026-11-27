@@ -137,30 +137,3 @@ export class BranchesState {
 		this.onChangeCallbacks.forEach((cb) => cb(this.getActiveBranch()));
 	}
 }
-
-type BranchWizardType = {
-	open: boolean;
-	notClosable: boolean;
-	step: number;
-	[key: string]: any;
-};
-export class BranchWizardState {
-	value: BranchWizardType = $state(<BranchWizardType>{
-		open: false,
-		notClosable: false,
-		step: 0,
-		id: ''
-	});
-	constructor(initialValue: BranchWizardType = { open: false, step: 0 } as BranchWizardType) {
-		this.value = initialValue;
-	}
-	open(notClosable: boolean = false, step: number = 0, id?: string) {
-		this.value.open = true;
-		this.value.notClosable = notClosable;
-		this.value.step = step;
-		this.value.id = id;
-	}
-	close() {
-		this.value.open = false;
-	}
-}

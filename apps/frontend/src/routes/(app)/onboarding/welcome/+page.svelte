@@ -3,6 +3,17 @@
 	import { colors } from '$lib/colors';
 	import Confetti from 'svelte-confetti';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+
+	let { data } = $props();
+
+	// The welcome screen is first-run only. Users that already have a branch
+	// (e.g. they opened another one) go straight back to the app.
+	onMount(() => {
+		if (data.branches?.length) {
+			goto('/');
+		}
+	});
 </script>
 
 <div

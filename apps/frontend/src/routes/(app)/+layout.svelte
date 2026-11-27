@@ -10,7 +10,6 @@
 
 	let breadcrumbPath = $derived(() => ['dashboard', ...page.url.pathname.split('/').slice(2)]);
 	import { t } from '$lib/translation.js';
-	import BranchWizard from '$lib/components/BranchWizard.svelte';
 	import DarkToggle from '$lib/components/DarkToggle.svelte';
 	import NotificationComponent from '$lib/components/NotificationComponent.svelte';
 	import { cn } from '$lib/utils';
@@ -33,7 +32,6 @@
 {#if isHiddenSidebar}
 	{@render children()}
 {:else}
-	<BranchWizard {data} />
 	<Sidebar.Provider bind:open>
 		<AppSidebar {data} />
 		<main class="grid h-full min-h-screen w-full grid-rows-[auto_1fr]">

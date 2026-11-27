@@ -30,9 +30,9 @@
 		type BranchesType,
 		type SessionUserType,
 		BranchesState,
-		SessionUserState,
-		BranchWizardState
+		SessionUserState
 	} from '$lib/runes.svelte';
+	import { onboardingStepPath } from '$lib/onboarding';
 	import { t } from '$lib/translation';
 	import { page } from '$app/state';
 	import * as Collapsible from '$lib/components/ui/collapsible';
@@ -49,11 +49,13 @@
 			branches: BranchesType;
 			sessionState: SessionUserState;
 			branchesState: BranchesState;
-			branchWizardState: BranchWizardState;
 		};
 	} = $props();
 
 	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
+	// Read through BranchesState so switching branches updates the UI reactively.
+	const branches = $derived(branchesState.value.branches);
+	const activeBranch = $derived(branches.find((branch) => branch.active));
 	const appVersion = __APP_VERSION__;
 
 	// Menu items.
@@ -134,31 +136,28 @@
 	};
 	const sidebar = useSidebar();
 	onMount(async () => {
-		trpc.v1.authenticated.organization.getBranches.query({}).then(async (branches) => {
-			if (branches.length <= 0) {
-				data.branchWizardState.open(true);
-				return;
-			}
-			let { data: org } = await organization.getFullOrganization();
-			if (org && org.onboardingStep) {
-				data.branchWizardState.open(data.branches.length > 2, org.onboardingStep, org.id);
-			}
-			if (!org && branches.length > 0) {
-				const branch = branchesState.setActiveBranch(0);
-				await organization.setActive({
-					organizationId: branches[0].id
-				});
+		const fetchedBranches = await trpc.v1.authenticated.organization.getBranches.query({});
+		if (fetchedBranches.length === 0) {
+			// First-run onboarding is enforced by the (app) layout guard.
+			return;
+		}
 
-				if (branch && branch.onboardingStep) {
-					data.branchWizardState.open(data.branches.length > 2, branch.onboardingStep, branch.id);
-				}
-			}
-			branchesState.setBranches(branches as BranchesType, org?.id || branches[0]?.id);
+		const activeOrganizationId = data.session?.session.activeOrganizationId;
+		branchesState.setBranches(
+			fetchedBranches as BranchesType,
+			activeOrganizationId || fetchedBranches[0].id
+		);
 
-			if (branches.length === 0) {
-				data.branchWizardState.open(true);
-			}
-		});
+		if (!activeOrganizationId) {
+			await organization.setActive({ organizationId: fetchedBranches[0].id });
+		}
+
+		// If the active organization has unfinished onboarding, take the user
+		// straight back to the step they were on.
+		const { data: fullOrganization } = await organization.getFullOrganization();
+		if (fullOrganization?.onboardingStep) {
+			goto(onboardingStepPath(fullOrganization.onboardingStep));
+		}
 	});
 </script>
 
@@ -195,12 +194,11 @@
 											: (typeof props.class === 'string' ? props.class.replace('!p-2', '') : '') +
 												' !p-0') + ' !h-12 cursor-pointer '}
 									>
-										{#if data.branches.find((branch) => branch.active)}
+										{#if activeBranch}
 											<div class="bg-muted flex h-8 min-w-8 items-center justify-center rounded-md">
-												{#if data.branches.find((branch) => branch.active)?.logo}
+												{#if activeBranch.logo}
 													<img
-														src={env.PUBLIC_CDN_URL +
-															data.branches.find((branch) => branch.active)?.logo}
+														src={env.PUBLIC_CDN_URL + activeBranch.logo}
 														alt="@shadcn"
 														class="h-full w-full rounded-md"
 													/>
@@ -210,10 +208,10 @@
 											</div>
 											<div class="flex max-w-36.25 flex-col gap-1">
 												<h3 class="text-foreground truncate text-sm font-semibold">
-													{data.branches.find((branch) => branch.active)?.name}
+													{activeBranch.name}
 												</h3>
 												<h4 class="text-muted-foreground truncate text-xs">
-													{data.branches.find((branch) => branch.active)?.location}
+													{activeBranch.location}
 												</h4>
 											</div>
 											<Sidebar.MenuBadge>
@@ -242,7 +240,7 @@
 							<Tooltip.Provider delayDuration={0}>
 								<Tooltip.Root>
 									<Tooltip.Trigger class="text-muted-foreground flex items-center font-normal">
-										{data.branches.length}/1
+										{branches.length}/1
 									</Tooltip.Trigger>
 									<Tooltip.Content class="w-31.25">
 										<p class=" text-xs">Maximum aantal vestigingen</p>
@@ -250,19 +248,20 @@
 								</Tooltip.Root>
 							</Tooltip.Provider>
 						</DropdownMenu.Label>
-						{#if data.branches}
-							{#each data.branches as branch, index (branch.name)}
+						{#if branches}
+							{#each branches as branch, index (branch.name)}
 								<DropdownMenu.Item
 									onSelect={async () => {
 										branchesState.setActiveBranch(index);
-										if (branch.onboardingStep) {
-											data.branchWizardState.open(false, branch.onboardingStep, branch.id);
-										}
 										await organization.setActive({
 											organizationId: branch.id
 										});
 										const encodedOrgId = btoa(JSON.stringify(branch));
 										document.cookie = `cache_org_active=${encodedOrgId}; path=/;`;
+
+										if (branch.onboardingStep) {
+											goto(onboardingStepPath(branch.onboardingStep));
+										}
 									}}
 									class="gap-2 p-2"
 								>
@@ -278,7 +277,14 @@
 												<LandmarkLinear size="20" />
 											{/if}
 										</div>
-										{branch.name}
+										<div class="flex min-w-0 flex-col">
+											<span class="truncate">{branch.name}</span>
+											{#if branch.onboardingStep}
+												<span class="text-muted-foreground text-[10px]"
+													>Onboarding niet afgerond</span
+												>
+											{/if}
+										</div>
 										{#if branch.active}
 											<Check class="text-primary-500" />
 										{/if}
@@ -290,7 +296,7 @@
 						<DropdownMenu.Item
 							class="gap-2 p-2"
 							onclick={() => {
-								data.branchWizardState.open(false);
+								goto('/onboarding/company?new=1');
 							}}
 						>
 							<div class=" flex size-6 items-center justify-center rounded-md border">

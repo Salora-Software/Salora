@@ -18,8 +18,22 @@ export const finishOrganizationHandler = protectedBase
       input: { organizationId },
       context: {
         var: { drizzle: db },
+        session: { user },
       },
     }) => {
+      const member = await db.query.member.findFirst({
+        where: and(
+          eq(schema.member.organizationId, organizationId),
+          eq(schema.member.userId, user.id),
+        ),
+      });
+
+      if (!member) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Je hebt geen toegang tot deze organisatie.",
+        });
+      }
+
       // update the organization to mark it as finished
       await db
         .update(schema.organization)

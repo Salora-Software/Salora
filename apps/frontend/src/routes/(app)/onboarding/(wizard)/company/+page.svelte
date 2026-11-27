@@ -9,11 +9,17 @@
 	import { z } from 'zod';
 	import { toast } from 'svelte-sonner';
 	import { organization } from '$lib/auth-client';
+	import { page } from '$app/state';
 
 	const wizard = getWizardState();
 	const { data } = $props();
 	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
-	let onboardingBranch = $derived(branchesQuery.data?.find((branch) => branch.onboardingStep));
+	let onboardingBranch = $derived(
+		branchesQuery.data?.find((branch) => (branch.onboardingStep ?? 0) > 0)
+	);
+	// "Maak een vestiging" enters with ?new=1: always create, never update the
+	// (possibly unfinished) existing organization.
+	let createNew = $derived(page.url.searchParams.get('new') === '1');
 
 	type CompanyAddress = {
 		country: string;
@@ -107,7 +113,7 @@
 				streetNumber: parsed.data.houseNumber
 			};
 
-			if (onboardingBranch) {
+			if (onboardingBranch && !createNew) {
 				await orpc.v1.organisation.updateOrganisation({
 					organizationId: onboardingBranch.id,
 					...payload
@@ -129,7 +135,7 @@
 	});
 
 	$effect(() => {
-		if (!onboardingBranch || hasPrefilled) return;
+		if (createNew || !onboardingBranch || hasPrefilled) return;
 
 		const parsedAddress = parseAddress(onboardingBranch);
 		companyName = onboardingBranch.name;

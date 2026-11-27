@@ -7,10 +7,10 @@
   "private": true,
   "dependencies": {
     "@salora/scheduler": "workspace:*",
-    "luxon": "^3.7.1"
+    "luxon": "^3.7.2"
   },
   "devDependencies": {
-    "@types/luxon": "^3.7.0",
-    "typescript": "^5.8.2"
+    "@types/luxon": "^3.7.6",
+    "typescript": "^5.9.3"
   }
 }

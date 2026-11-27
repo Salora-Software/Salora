@@ -124,8 +124,8 @@
       "MAIL_FALLBACK_USERNAME": "usernam",
       "MAIL_FALLBACK_PASSWORD": "password",
       "MAIL_EMAIL_SENDER": "noreply@example.com",
-      // `*.workers.dev` so better-auth accepts the generated preview origin.
-      "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173,https://*.workers.dev",
+      // Allow the preview domains so better-auth accepts preview origins.
+      "TRUSTED_IPS": "https://dev.salora.app,http://localhost:5173,https://*.new.salora.app,https://*.salora.app,https://*.workers.dev",
     },
     "d1_databases": [
       {

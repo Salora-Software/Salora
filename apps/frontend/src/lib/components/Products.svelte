@@ -24,6 +24,7 @@
 	import type { QueryClient } from '@tanstack/svelte-query';
 
 	import { orpcT } from '$lib/orpc';
+	import { isAbortError } from '$lib/is-abort-error';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { getSessionContext } from '$lib/context/session-context';
 
@@ -240,7 +241,9 @@
 			formState.isSheetOpen = false;
 			resetForm();
 		} catch (e) {
-			toast.error('Er is een fout opgetreden.');
+			if (!isAbortError(e)) {
+				toast.error('Er is een fout opgetreden.');
+			}
 		} finally {
 			formState.isSaving = false;
 		}

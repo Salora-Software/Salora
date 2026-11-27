@@ -8,6 +8,7 @@ import { env } from '$env/dynamic/public';
 import { toast } from 'svelte-sonner';
 import { observable } from '@trpc/server/observable';
 import { getErrorMessage, t } from './translation';
+import { isAbortError } from './is-abort-error';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTrpcQueryProxy } from './createTrpcQueryProxy';
 
@@ -21,6 +22,13 @@ export const customLink: TRPCLink<AppRouter> = () => {
 					observer.next(value);
 				},
 				error(err) {
+					// Cancelled/aborted requests are expected (navigation, query
+					// cancellation, ...). Propagate without showing an error toast.
+					if (isAbortError(err)) {
+						observer.error(err);
+						return;
+					}
+
 					try {
 						let errors: { message: keyof typeof t.errors; code: keyof typeof t.errors }[] =
 							JSON.parse(err.message);

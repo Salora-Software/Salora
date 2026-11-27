@@ -3,10 +3,14 @@ import { RPCLink } from '@orpc/client/fetch';
 import { orpcCustomJsonSerializers, type ORPCClient } from '@salora/shared-types';
 import { toast } from 'svelte-sonner';
 import { t } from './translation';
+import { isAbortError } from './is-abort-error';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
 import { browser } from '$app/environment';
 
 const handleOrpcError = (err: any) => {
+	// Cancelled/aborted requests are expected (navigation, query cancellation, ...).
+	if (isAbortError(err)) return;
+
 	try {
 		if (err?.data?.issues) {
 			// Zod error issues wrapper maybe?
@@ -66,6 +70,10 @@ export const createOrpcClient = (backendUrl?: string, customFetch?: typeof fetch
 					}
 					return response;
 				} catch (err) {
+					// A cancelled request is not a failure; just bubble it up.
+					if (isAbortError(err) || init?.signal?.aborted) {
+						throw err;
+					}
 					handleOrpcError(err);
 					throw err;
 				}

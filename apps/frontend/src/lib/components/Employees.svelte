@@ -577,7 +577,7 @@
 								bind:value={values.assignServices.value}
 								bind:open={values.assignServices.open}
 							>
-								<Select.Trigger class="h-auto min-h-10 w-full px-3 py-1.5">
+								<Select.Trigger class="h-auto! min-h-10 w-full px-3 py-1.5">
 									<div class="flex flex-wrap gap-2">
 										{#if values.assignServices.value && values.assignServices.value.length > 0}
 											{#each values.assignServices.value as option}

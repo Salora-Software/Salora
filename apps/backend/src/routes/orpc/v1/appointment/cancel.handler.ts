@@ -16,21 +16,12 @@ export const cancelAppointmentHandler = protectedBase
     async ({
       input: { appointmentId, branchId },
       context: {
-        var: { drizzle: db, auth, emailQueue },
+        var: { drizzle: db, emailQueue },
         req,
+        session,
       },
     }) => {
       const url = new URL(req.url);
-
-      const session = await auth.api.getSession({
-        headers: req.header(),
-      });
-
-      if (!session) {
-        throw new ORPCError("UNAUTHORIZED", {
-          message: "you_need_to_be_authenticated_to_cancel_an_appointment",
-        });
-      }
 
       const customer = await db.query.customer.findFirst({
         where: (customerTable, { eq }) =>

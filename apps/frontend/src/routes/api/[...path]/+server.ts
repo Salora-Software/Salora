@@ -3,10 +3,19 @@ import { parseEnv } from '@backend/lib/env';
 
 import type { RequestHandler } from './$types';
 
+/**
+ * The Hono app (router, middleware, routes) is stateless and the bindings are
+ * stable for a Worker isolate, so build it once instead of on every `/api/*`
+ * request. This keeps route registration off the per-request CPU budget.
+ */
+let app: ReturnType<typeof createApp> | undefined;
+
 const handler: RequestHandler = ({ request, platform }) => {
 	const rawEnv = (platform?.env ?? {}) as Record<string, unknown>;
-	const env = parseEnv(rawEnv);
-	const app = createApp(env, { basePath: '/api' });
+
+	if (!app) {
+		app = createApp(parseEnv(rawEnv), { basePath: '/api' });
+	}
 
 	return app.fetch(request, rawEnv as never, platform?.ctx as never);
 };

@@ -1,6 +1,5 @@
 // src/hooks.server.ts
 import type { Handle, HandleFetch } from '@sveltejs/kit';
-import { QueryClient } from '@tanstack/query-core';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	return resolve(event, {
@@ -11,7 +10,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 export const handleFetch: HandleFetch = async ({ request, event, fetch }) => {
 	// Stuur cookies of specifieke headers door van de client-aanvraag
 	const cookie = event.request.headers.get('cookie');
-	console.log('handleFetch called', request.url, cookie);
 	if (cookie) {
 		request.headers.set('cookie', cookie);
 	}

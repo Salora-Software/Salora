@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '@/middleware/trpc';
+import { schema } from '@salora/database';
+import { count, and, eq, gte, lte } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
@@ -201,17 +203,17 @@ export const router = createRouter({
 						createdAt: true
 					}
 				}),
-				db.query.customer.findMany({
-					where: (customer, { and, eq, gte, lte }) =>
+				db
+					.select({ count: count() })
+					.from(schema.customer)
+					.where(
 						and(
-							eq(customer.organizationId, organizationId!),
-							gte(customer.createdAt, startOfLastPeriodUTC),
-							lte(customer.createdAt, endOfLastPeriodUTC)
-						),
-					columns: {
-						id: true
-					}
-				}),
+							eq(schema.customer.organizationId, organizationId!),
+							gte(schema.customer.createdAt, startOfLastPeriodUTC),
+							lte(schema.customer.createdAt, endOfLastPeriodUTC)
+						)
+					)
+					.then((rows) => rows[0]?.count ?? 0),
 				db.query.booking.findMany({
 					where: (booking, { and, eq, lt }) =>
 						and(
@@ -292,9 +294,9 @@ export const router = createRouter({
 					? ((totalCustomersThisPeriod - totalCustomersLastPeriod) / totalCustomersLastPeriod) * 100
 					: 100;
 			const newCustomerChange =
-				newCustomersLastPeriod.length > 0
-					? ((newCustomersThisPeriod.length - newCustomersLastPeriod.length) /
-						newCustomersLastPeriod.length) *
+				newCustomersLastPeriod > 0
+					? ((newCustomersThisPeriod.length - newCustomersLastPeriod) /
+						newCustomersLastPeriod) *
 					100
 					: 100; // Determine grouping strategy based on date range
 			const totalDays = Math.ceil(endOfPeriod.diff(startOfPeriod, 'days').days) + 1;

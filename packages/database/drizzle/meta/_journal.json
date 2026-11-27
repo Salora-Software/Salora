@@ -64,6 +64,13 @@
       "when": 1795719626686,
       "tag": "0008_lively_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1795781823916,
+      "tag": "0009_pale_scream",
+      "breakpoints": true
     }
   ]
 }

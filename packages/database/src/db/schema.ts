@@ -1,6 +1,7 @@
 import {
   sqliteTable,
   foreignKey,
+  index,
   uniqueIndex,
   text,
   real,
@@ -109,6 +110,7 @@ export const account = sqliteTable(
     password: text(),
   },
   (table) => [
+    index("account_userId_idx").on(table.userId),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],
@@ -140,7 +142,7 @@ export const organization = sqliteTable(
     onboardingStep: integer().default(0),
     requiredBookingFields: text(),
   },
-  (table) => [],
+  (table) => [index("organization_slug_idx").on(table.slug)],
 );
 
 export const openingTime = sqliteTable(
@@ -163,12 +165,16 @@ export const openingTime = sqliteTable(
   ],
 );
 
-export const verification = sqliteTable("verification", {
-  ...commonColumns,
-  identifier: text().notNull(),
-  value: text().notNull(),
-  expiresAt: integer({ mode: "timestamp" }).notNull(),
-});
+export const verification = sqliteTable(
+  "verification",
+  {
+    ...commonColumns,
+    identifier: text().notNull(),
+    value: text().notNull(),
+    expiresAt: integer({ mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
 
 export const member = sqliteTable(
   "member",
@@ -180,6 +186,10 @@ export const member = sqliteTable(
     invitationStatus: text().default("ACTIVE").notNull(),
   },
   (table) => [
+    uniqueIndex("member_organizationId_userId_unique").on(
+      table.organizationId,
+      table.userId,
+    ),
     foreignKey({
       columns: [table.organizationId],
       foreignColumns: [organization.id],
@@ -210,6 +220,12 @@ export const customer = sqliteTable(
     userId: text(),
   },
   (table) => [
+    index("customer_organizationId_idx").on(table.organizationId),
+    index("customer_email_organizationId_idx").on(
+      table.email,
+      table.organizationId,
+    ),
+    index("customer_userId_idx").on(table.userId),
     foreignKey({
       columns: [table.organizationId],
       foreignColumns: [organization.id],
@@ -256,14 +272,18 @@ export const invitation = sqliteTable(
   ],
 );
 
-export const user = sqliteTable("user", {
-  ...commonColumns,
-  name: text().notNull(),
-  email: text().notNull(),
-  emailVerified: integer({ mode: "boolean" }).notNull(),
-  image: text(),
-  phone: text(),
-});
+export const user = sqliteTable(
+  "user",
+  {
+    ...commonColumns,
+    name: text().notNull(),
+    email: text().notNull(),
+    emailVerified: integer({ mode: "boolean" }).notNull(),
+    image: text(),
+    phone: text(),
+  },
+  (table) => [uniqueIndex("user_email_unique").on(table.email)],
+);
 
 export const employeeService = sqliteTable(
   "employee_service",
@@ -328,6 +348,10 @@ export const calendarItem = sqliteTable(
     timeOffId: text(),
   },
   (table) => [
+    index("calendar_item_organizationId_type_idx").on(
+      table.organizationId,
+      table.type,
+    ),
     foreignKey({
       columns: [table.organizationId],
       foreignColumns: [organization.id],
@@ -393,6 +417,8 @@ export const booking = sqliteTable(
     status: text().notNull(),
   },
   (table) => [
+    index("booking_customerId_idx").on(table.customerId),
+    index("booking_organizationId_idx").on(table.organizationId),
     foreignKey({
       columns: [table.serviceId],
       foreignColumns: [service.id],
@@ -487,6 +513,7 @@ export const note = sqliteTable(
     authorId: text().notNull(),
   },
   (table) => [
+    index("note_customerId_idx").on(table.customerId),
     foreignKey({
       columns: [table.customerId],
       foreignColumns: [customer.id],
@@ -538,6 +565,8 @@ export const session = sqliteTable(
     activeOrganizationId: text(),
   },
   (table) => [
+    uniqueIndex("session_token_unique").on(table.token),
+    index("session_userId_idx").on(table.userId),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],

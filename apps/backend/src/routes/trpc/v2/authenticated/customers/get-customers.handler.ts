@@ -1,4 +1,4 @@
-import { count, desc, eq, like, and, or, type SQL } from 'drizzle-orm';
+import { count, desc, eq, inArray, like, and, max, or, type SQL } from 'drizzle-orm';
 import type { PrivateContext } from '@/middleware/trpc';
 import { schema } from '@salora/database';
 import type { GetCustomersInput } from './get-customers.schema';
@@ -27,15 +27,7 @@ export const getCustomersHandler = async ({
 			where: and(...whereClause),
 			orderBy: [desc(schema.customer.createdAt)],
 			offset: skip,
-			limit: take,
-			with: {
-				bookings: {
-					columns: {
-						createdAt: true
-					},
-					orderBy: [desc(schema.booking.createdAt)]
-				}
-			}
+			limit: take
 		}),
 		db
 			.select({ value: count() })
@@ -44,15 +36,38 @@ export const getCustomersHandler = async ({
 			.then((rows) => rows[0]?.value ?? 0)
 	]);
 
-	const transformedCustomers = customers.map((customer) => ({
-		id: customer.id,
-		name: customer.name,
-		email: customer.email,
-		phone: customer.phone,
-		createdAt: customer.createdAt,
-		bookingCount: customer.bookings.length,
-		lastBookingDate: customer.bookings.length > 0 ? customer.bookings[0].createdAt : null
-	}));
+	const customerIds = customers.map((customer) => customer.id);
+
+	const bookingStats =
+		customerIds.length > 0
+			? await db
+				.select({
+					customerId: schema.booking.customerId,
+					bookingCount: count(),
+					lastBookingDate: max(schema.booking.createdAt)
+				})
+				.from(schema.booking)
+				.where(inArray(schema.booking.customerId, customerIds))
+				.groupBy(schema.booking.customerId)
+			: [];
+
+	const bookingStatsByCustomer = new Map(
+		bookingStats.map((stats) => [stats.customerId, stats])
+	);
+
+	const transformedCustomers = customers.map((customer) => {
+		const stats = bookingStatsByCustomer.get(customer.id);
+
+		return {
+			id: customer.id,
+			name: customer.name,
+			email: customer.email,
+			phone: customer.phone,
+			createdAt: customer.createdAt,
+			bookingCount: stats?.bookingCount ?? 0,
+			lastBookingDate: stats?.lastBookingDate ?? null
+		};
+	});
 
 	return {
 		customers: transformedCustomers,

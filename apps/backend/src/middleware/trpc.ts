@@ -11,6 +11,7 @@ import { schema } from "@salora/database";
 import { eq, and } from "drizzle-orm";
 import pino from "pino";
 import type { AppBindings } from "@/lib/factory";
+import { getRequestSession } from "@/lib/session";
 
 const logger = pino({ browser: { asObject: true } });
 
@@ -37,6 +38,7 @@ export const createContext = (
     cacheSeconds,
     db: c.get("drizzle"),
     auth: c.get("auth"),
+    getSession: () => getRequestSession(c),
   };
 };
 
@@ -84,9 +86,7 @@ export const privateProcedure = publicProcedure
     const branchId = opts.input.organizationId;
     const headers = new Headers(opts.ctx.headers);
 
-    const session = await opts.ctx.auth.api.getSession({
-      headers: headers,
-    });
+    const session = await opts.ctx.getSession();
 
     if (!session) {
       throw new TRPCError({
@@ -130,9 +130,7 @@ export const portalProcedure = publicProcedure
   .use(async (opts) => {
     const headers = new Headers(opts.ctx.headers);
 
-    const session = await opts.ctx.auth.api.getSession({
-      headers: headers,
-    });
+    const session = await opts.ctx.getSession();
 
     if (!session) {
       return opts.next({

@@ -22,13 +22,20 @@ import { createTrpcRoutes } from "@/routes/trpc";
 import { createScalarRoutes } from "@/routes/scalar";
 import { createAuth } from "@salora/auth";
 
+export type AuthInstance = ReturnType<typeof createAuth>;
+export type SessionResult = Awaited<
+  ReturnType<AuthInstance["api"]["getSession"]>
+>;
+
 export interface AppBindings {
   Variables: {
     logger: Logger;
     env: Env;
     drizzle: ReturnType<typeof createDb>;
     corsChecked: boolean;
-    auth: ReturnType<typeof createAuth>;
+    auth: AuthInstance;
+    /** Per-request memoized session lookup, set by `getRequestSession`. */
+    session?: Promise<SessionResult>;
     orpcHandler: RPCHandler<any>;
     trpcHandler: any;
     openapiHandler: OpenAPIHandler<any>;

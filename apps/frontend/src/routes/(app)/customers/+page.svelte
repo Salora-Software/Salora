@@ -76,10 +76,6 @@
 		});
 	}
 
-	$effect(() => {
-		prefetchCustomersPage(currentPage + 1);
-		prefetchCustomersPage(currentPage - 1);
-	});
 	let customersQuery = $derived(
 		trpcQuery.v2.authenticated.customers.getCustomers.createQuery(
 			{

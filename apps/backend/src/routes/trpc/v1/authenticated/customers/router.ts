@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router as createRouter, privateProcedure } from '@/middleware/trpc';
 import { schema } from '@salora/database';
-import { count, and, or, ilike, desc, eq, gte, lte, type SQL } from 'drizzle-orm';
+import { count, and, or, ilike, desc, eq, gte, inArray, lte, max, type SQL } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 
@@ -11,7 +11,7 @@ export const router = createRouter({
 			z.object({
 				organizationId: z.string(),
 				skip: z.number().optional().default(0),
-				take: z.number().optional().default(10),
+				take: z.number().int().min(1).max(100).optional().default(10),
 				search: z.string().optional()
 			})
 		)
@@ -57,15 +57,7 @@ export const router = createRouter({
 						where: and(...whereClause),
 						orderBy: [desc(schema.customer.createdAt)],
 						offset: skip,
-						limit: take,
-						with: {
-							bookings: {
-								columns: {
-									createdAt: true
-								},
-								orderBy: [desc(schema.booking.createdAt)]
-							}
-						}
+						limit: take
 					}),
 					db
 						.select({ value: count() })
@@ -74,16 +66,39 @@ export const router = createRouter({
 						.then((rows) => rows[0]?.value ?? 0)
 				]);
 
+				const customerIds = customers.map((customer) => customer.id);
+
+				const bookingStats =
+					customerIds.length > 0
+						? await db
+							.select({
+								customerId: schema.booking.customerId,
+								bookingCount: count(),
+								lastBookingDate: max(schema.booking.createdAt)
+							})
+							.from(schema.booking)
+							.where(inArray(schema.booking.customerId, customerIds))
+							.groupBy(schema.booking.customerId)
+						: [];
+
+				const bookingStatsByCustomer = new Map(
+					bookingStats.map((stats) => [stats.customerId, stats])
+				);
+
 				// Transform customers to include booking count and last booking date
-				const transformedCustomers = customers.map((customer) => ({
-					id: customer.id,
-					name: customer.name,
-					email: customer.email,
-					phone: customer.phone,
-					createdAt: customer.createdAt,
-					bookingCount: customer.bookings.length,
-					lastBookingDate: customer.bookings.length > 0 ? customer.bookings[0].createdAt : null
-				}));
+				const transformedCustomers = customers.map((customer) => {
+					const stats = bookingStatsByCustomer.get(customer.id);
+
+					return {
+						id: customer.id,
+						name: customer.name,
+						email: customer.email,
+						phone: customer.phone,
+						createdAt: customer.createdAt,
+						bookingCount: stats?.bookingCount ?? 0,
+						lastBookingDate: stats?.lastBookingDate ?? null
+					};
+				});
 
 				return {
 					customers: transformedCustomers,

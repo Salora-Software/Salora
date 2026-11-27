@@ -246,7 +246,8 @@
 				organizationId: activeBranch?.id
 			},
 			{
-				refetchInterval: 8000,
+				refetchInterval: 30000,
+				refetchOnWindowFocus: true,
 				queryKey: ['getUpcomingAppointments', activeBranch?.id],
 				enabled: !!activeBranch
 				// Only refetch if the active branch is set

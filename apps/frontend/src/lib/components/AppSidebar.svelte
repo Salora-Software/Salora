@@ -531,14 +531,14 @@
 							await signOut({
 								fetchOptions: {
 									onSuccess: () => {
-										goto('/login');
+										goto('/login', { invalidateAll: true });
 									}
 								}
 							});
 						}}
 					>
 						<LogOut />
-						Log out
+						Afmelden
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

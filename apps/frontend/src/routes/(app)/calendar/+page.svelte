@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import EventCalandar from '$lib/components/EventCalandar.svelte';
 	import { AppointmentSheet } from '$lib/components/calendar';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
@@ -13,12 +14,10 @@
 	import { trpcQuery } from '$lib/trpc.js';
 	import { language, t } from '$lib/translation.js';
 	import { DateTime, Interval } from 'luxon';
-	import type { BranchType } from '$lib/runes.svelte.js';
-	import { onMount } from 'svelte';
 	let { data } = $props();
 	const queryClient = $derived(data.queryClient);
-	const branchesState = $derived(data.branchesState);
-	let activeBranch: BranchType | null = $state(null);
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch ?? null);
 	let selectedDate = $state<DateValue | undefined>(today(getLocalTimeZone()));
 	let calendarDate = $state<DateValue | undefined>(undefined);
 	let cancelRefetching = $state(false);
@@ -220,13 +219,6 @@
 	};
 
 	let sortedMembers = $state<MemberType[]>([]);
-	onMount(() => {
-		activeBranch = branchesState.getActiveBranch();
-		branchesState.onBranchChange((branch) => {
-			activeBranch = branch;
-		});
-	});
-
 	$effect(() => {
 		people = sortedMembers.map((member: MemberType) => ({
 			name: member.user.name,

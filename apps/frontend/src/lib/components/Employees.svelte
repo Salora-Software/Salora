@@ -35,7 +35,7 @@
 	import { Separator } from './ui/separator/';
 	import ComingSoon from './ComingSoon.svelte';
 	import { cn } from '$lib/utils';
-	import { getSessionContext } from '$lib/context/session-context';
+	import { getBranchesContext } from '$lib/context/branches-context';
 
 	let {
 		variant = 'normal',
@@ -46,13 +46,11 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
-	const session = getSessionContext();
 
-	// --- Queries (oRPC) ---
-	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
-
-	let orgId = $derived(session.activeOrganizationId || branchesQuery.data?.[0]?.id || '');
-	let activeBranch = $derived(branchesQuery.data?.find((b) => b.id === orgId));
+	// --- Active branch (shared reactive source) ---
+	const branchesState = getBranchesContext();
+	let activeBranch = $derived(branchesState.activeBranch);
+	let orgId = $derived(activeBranch?.id ?? '');
 
 	// Haal employees/members op van de actieve vestiging
 	let employees = $derived(activeBranch?.members || []);

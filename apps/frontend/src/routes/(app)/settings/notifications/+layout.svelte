@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { trpcQuery } from '$lib/trpc';
 	import type { Snippet } from 'svelte';
 	import { cn } from '$lib/utils.js';
@@ -11,8 +12,9 @@
 	}
 
 	let { data, children } = $props();
+	const branchesState = getBranchesContext();
 
-	const organizationId = $derived(data.branchesState?.getActiveBranch()?.id);
+	const organizationId = $derived(branchesState.activeBranch?.id);
 
 	const notificationTypes = [
 		{ id: 'EMAIL_APPROVED', name: 'Afspraak bevestigd' },

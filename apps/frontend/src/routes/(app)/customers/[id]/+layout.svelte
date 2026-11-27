@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ArrowLeft from '@solar-icons/svelte/linear/arrow-left';
 	import Edit from '@solar-icons/svelte/linear/pen';
@@ -18,14 +19,10 @@
 	import { trpcQuery } from '$lib/trpc';
 	import EditCustomerModal from '$lib/components/EditCustomerModal.svelte';
 	import type { Customer } from '$lib/types.js';
-	import { BranchesState } from '$lib/runes.svelte';
 
 	const { data, children } = $props();
-	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
-	if (!data.branchesState && (data.branches?.length ?? 0) > 0) {
-		branchesState.setActiveBranch(0);
-	}
-	let activeBranch = $state(branchesState.getActiveBranch());
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch);
 	const organizationId = $derived(activeBranch?.id || '');
 	const customerId = $derived(page.params.id);
 
@@ -104,10 +101,6 @@
 					averageBookingValue: '€0.00'
 				}
 	);
-	branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
-	});
-
 	const tabs = ['overview', 'bookings', 'notes', 'notifications'];
 </script>
 

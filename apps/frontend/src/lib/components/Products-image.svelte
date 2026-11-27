@@ -44,10 +44,7 @@
 			};
 		};
 	} = $props();
-	let activeBranch = $state(branchesState.getActiveBranch());
-	branchesState.onBranchChange(() => {
-		activeBranch = branchesState.getActiveBranch();
-	});
+	const activeBranch = $derived(branchesState.activeBranch);
 </script>
 
 <div class="flex justify-end">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { renderEmail, AppointmentEmailSchema } from '@salora/emails';
 	import {
 		getAllowedTemplateVariablePaths,
@@ -20,9 +21,10 @@
 	import { page } from '$app/state';
 
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 	const target = $derived(page.params.target);
 	const templateId = $derived(page.params.id);
-	const organizationId = $derived(data.branchesState.getActiveBranch()?.id);
+	const organizationId = $derived(branchesState.activeBranch?.id);
 
 	let loading = $state(false);
 	let subject = $state('');

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import * as Card from '$lib/components/ui/card/';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { fly, scale, slide } from 'svelte/transition';
@@ -19,12 +20,9 @@
 
 	let { data } = $props();
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch);
 	const customerId = $derived(page.params.id);
-
-	data.branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
-	});
 
 	let pageSize: number = $state(20);
 	let currentPage: number = $state(0);
@@ -42,14 +40,21 @@
 		trpcQuery.v1.authenticated.customers.getCustomerNotes.createQuery(
 			{
 				customerId: customerId!,
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId!,
+				organizationId: activeBranch?.id || '',
 				skip: currentPage * pageSize,
 				take: pageSize,
 				search: searchQuery.trim() || undefined
 			},
 			{
-				queryKey: ['customerNotes', customerId, currentPage, pageSize, searchQuery],
-				enabled: !!customerId && !!(activeBranch?.id || data.session.session.activeOrganizationId)
+				queryKey: [
+					'customerNotes',
+					customerId,
+					activeBranch?.id,
+					currentPage,
+					pageSize,
+					searchQuery
+				],
+				enabled: !!customerId && !!(activeBranch?.id || '')
 			}
 		)
 	);
@@ -73,15 +78,11 @@
 
 	async function addNote(e: Event) {
 		e.preventDefault();
-		if (
-			newNote.trim().length > 0 &&
-			customerId &&
-			(activeBranch?.id || data.session.session.activeOrganizationId)
-		) {
+		if (newNote.trim().length > 0 && customerId && (activeBranch?.id || '')) {
 			try {
 				await trpc.v1.authenticated.customers.createCustomerNote.mutate({
 					customerId,
-					organizationId: activeBranch?.id || data.session.session.activeOrganizationId!,
+					organizationId: activeBranch?.id || '',
 					content: newNote.trim()
 				});
 
@@ -97,13 +98,13 @@
 	}
 
 	async function deleteNote(noteId: string) {
-		if (!customerId || !(activeBranch?.id || data.session.session.activeOrganizationId)) return;
+		if (!customerId || !(activeBranch?.id || '')) return;
 
 		try {
 			await trpc.v1.authenticated.customers.deleteCustomerNote.mutate({
 				noteId,
 				customerId,
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId!
+				organizationId: activeBranch?.id || ''
 			});
 
 			// Invalidate and refetch notes

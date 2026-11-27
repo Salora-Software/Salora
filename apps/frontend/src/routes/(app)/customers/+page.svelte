@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import ChevronDown from '@solar-icons/svelte/linear/alt-arrow-down';
 	import {
 		type ColumnDef,
@@ -32,10 +33,8 @@
 	import { Debounced } from 'runed';
 	let { data } = $props();
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
-	data.branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
-	});
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch);
 
 	let pageSize: number = $state(10);
 	let pageSizeStr: string = $state('10');
@@ -47,9 +46,7 @@
 	let searchValue: string = $state(page.url.searchParams.get('search') || '');
 	let searchDebounced = new Debounced(() => searchValue, 300);
 	let prevData: any = $state(null);
-	let organizationId = $derived(
-		activeBranch?.id || data.session.session.activeOrganizationId || ''
-	);
+	let organizationId = $derived(activeBranch?.id || '');
 
 	let skip = $derived(currentPage * pageSize);
 	let normalizedSearch = $derived(searchDebounced.current.trim() || undefined);

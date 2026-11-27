@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import House from '@solar-icons/svelte/bold-duotone/house';
@@ -52,7 +53,7 @@
 		};
 	} = $props();
 
-	const branchesState = data.branchesState ?? new BranchesState(data.branches ?? []);
+	const branchesState = getBranchesContext();
 	// Read through BranchesState so switching branches updates the UI reactively.
 	const branches = $derived(branchesState.value.branches);
 	const activeBranch = $derived(branches.find((branch) => branch.active));
@@ -142,14 +143,16 @@
 			return;
 		}
 
-		const activeOrganizationId = data.session?.session.activeOrganizationId;
-		branchesState.setBranches(
-			fetchedBranches as BranchesType,
-			activeOrganizationId || fetchedBranches[0].id
-		);
+		// Preserve the branch the user already has selected (e.g. from the
+		// cache_org_active cookie); only fall back to the session/first branch.
+		const currentActiveId = branchesState.activeBranchId;
+		const activeOrganizationId =
+			currentActiveId || data.session?.session.activeOrganizationId || fetchedBranches[0].id;
 
-		if (!activeOrganizationId) {
-			await organization.setActive({ organizationId: fetchedBranches[0].id });
+		branchesState.setBranches(fetchedBranches as BranchesType, activeOrganizationId);
+
+		if (!data.session?.session.activeOrganizationId && !currentActiveId) {
+			await organization.setActive({ organizationId: activeOrganizationId });
 		}
 
 		// If the active organization has unfinished onboarding, take the user
@@ -249,15 +252,10 @@
 							</Tooltip.Provider>
 						</DropdownMenu.Label>
 						{#if branches}
-							{#each branches as branch, index (branch.name)}
+							{#each branches as branch (branch.name)}
 								<DropdownMenu.Item
 									onSelect={async () => {
-										branchesState.setActiveBranch(index);
-										await organization.setActive({
-											organizationId: branch.id
-										});
-										const encodedOrgId = btoa(JSON.stringify(branch));
-										document.cookie = `cache_org_active=${encodedOrgId}; path=/;`;
+										await branchesState.switchTo(branch.id);
 
 										if (branch.onboardingStep) {
 											goto(onboardingStepPath(branch.onboardingStep));

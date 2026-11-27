@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import InfoCard from '$lib/components/InfoCard.svelte';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index';
@@ -140,6 +141,7 @@
 		return `${df.format(selectedDates.start.toDate(getLocalTimeZone()))} - ${df.format(selectedDates.end.toDate(getLocalTimeZone()))}`;
 	};
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 	let { session } = $derived(data);
 	const df = new DateFormatter('en-US', {
 		dateStyle: 'long'
@@ -155,7 +157,7 @@
 
 	const statusTypes = ['CONFIRMED', 'PENDING', 'CANCELLED', 'COMPLETED'];
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const activeBranch = $derived(branchesState.activeBranch);
 	let dashboardStatsQuery = $derived(
 		trpcQuery.v2.authenticated.dashboard.getDashboardStats.createQuery(
 			{
@@ -333,9 +335,6 @@
 		})
 	);
 
-	data.branchesState.onBranchChange(async (branch) => {
-		activeBranch = branch;
-	});
 	$effect(() => {
 		// Only update selectedDates from calendar if both start and end are defined
 		// and the calendar range is different from the current selection

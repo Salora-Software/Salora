@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import Loader from '@solar-icons/svelte/linear/loader';
@@ -14,10 +15,11 @@
 	import { cn } from '$lib/utils.js';
 	import { trpc, trpcQuery } from '$lib/trpc.js';
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 
 	type RequiredBookingField = 'firstName' | 'lastName' | 'email' | 'phone' | 'notes';
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const activeBranch = $derived(branchesState.activeBranch);
 	let generalSettings = $derived(
 		trpcQuery.v1.authenticated.settings.getGeneralSettings.createQuery({
 			organizationId: activeBranch?.id
@@ -130,10 +132,6 @@
 				? 'border-primary bg-primary text-primary-foreground'
 				: 'border-input bg-background text-muted-foreground hover:bg-muted'
 		);
-
-	data.branchesState.onBranchChange(async () => {
-		activeBranch = data.branchesState.getActiveBranch();
-	});
 </script>
 
 <h2 class="text-2xl font-semibold">{t.pages.general}</h2>

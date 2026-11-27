@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import ChevronDown from '@solar-icons/svelte/linear/alt-arrow-down';
 	import {
 		type ColumnDef,
@@ -38,12 +39,9 @@
 
 	let { data } = $props();
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch);
 	const customerId = $derived(page.params.id);
-
-	data.branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
-	});
 
 	let pageSize: number = $state(10);
 	let pageSizeStr: string = $state('10');
@@ -62,13 +60,20 @@
 		trpcQuery.v1.authenticated.customers.getCustomerBookings.createQuery(
 			{
 				customerId: customerId ?? '',
-				organizationId: activeBranch?.id || data.session.session.activeOrganizationId,
+				organizationId: activeBranch?.id || '',
 				skip: currentPage * pageSize || 0,
 				take: pageSize || 10,
 				search: searchQuery.trim() || undefined
 			},
 			{
-				queryKey: ['customerBookings', customerId, currentPage, pageSize, searchQuery],
+				queryKey: [
+					'customerBookings',
+					customerId,
+					activeBranch?.id,
+					currentPage,
+					pageSize,
+					searchQuery
+				],
 				placeholderData: () => {
 					return keepPreviousData(prevData);
 				},

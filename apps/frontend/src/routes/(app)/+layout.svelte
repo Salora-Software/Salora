@@ -4,7 +4,6 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { page } from '$app/state';
-	import { afterNavigate, goto, onNavigate } from '$app/navigation';
 
 	let { children, data } = $props();
 
@@ -16,17 +15,15 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import SquareArrowOutUpRight from '@solar-icons/svelte/linear/square-top-up';
 	import { setSessionContext } from '$lib/context/session-context.js';
+	import { setBranchesContext } from '$lib/context/branches-context.js';
 	let open = $state(true);
-
-	onNavigate(() => {
-		data.branchesState?.resetOnChangeCallbacks();
-	});
 
 	const isHiddenSidebar = $derived.by(() => {
 		const hiddenPaths = ['/onboarding', '/onboarding/'];
 		return hiddenPaths.some((path) => page.url.pathname.startsWith(path));
 	});
 	setSessionContext(() => data.session ?? null);
+	setBranchesContext(data.branchesState);
 </script>
 
 {#if isHiddenSidebar}
@@ -66,7 +63,7 @@
 					<Button
 						onclick={() =>
 							window.open(
-								`http://localhost:5174/popup/${data.branchesState.getActiveBranch()?.id}`,
+								`http://localhost:5174/popup/${data.branchesState.activeBranch?.id}`,
 								'_blank'
 							)}
 						variant="outline"

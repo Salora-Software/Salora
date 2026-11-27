@@ -45,6 +45,22 @@ export class BranchesState {
 	}
 	_lastUpdatedBranches: Date = new Date();
 	_lastUpdatedOpeningTimes: Date = new Date();
+
+	/** Reactive list of branches (reads the $state proxy). */
+	get branches(): BranchesType {
+		return this.value.branches;
+	}
+
+	/** Reactive active branch. */
+	get activeBranch(): BranchType {
+		return this.value.branches.find((branch) => branch.active);
+	}
+
+	/** Reactive active branch id. */
+	get activeBranchId(): string | undefined {
+		return this.activeBranch?.id;
+	}
+
 	getActiveBranch(): BranchType {
 		return this.value.branches.find((branch) => branch.active);
 	}
@@ -63,6 +79,28 @@ export class BranchesState {
 		const index = branches.findIndex((b) => b.id === id);
 		this.setActiveBranch(index);
 		return this.getActiveBranch();
+	}
+
+	/**
+	 * Single entry point for switching branches.
+	 *
+	 * Updates the reactive local state immediately, then persists the active
+	 * organization server-side. Everything that reads `branchesState.activeBranch`
+	 * (or `activeBranchId`) updates automatically.
+	 */
+	async switchTo(branchId: string) {
+		const index = this.value.branches.findIndex((branch) => branch.id === branchId);
+		if (index === -1) return this.getActiveBranch();
+
+		const branch = this.setActiveBranch(index);
+		await organization.setActive({ organizationId: branchId });
+
+		if (typeof document !== 'undefined') {
+			// Store only the id (branch objects can exceed the cookie size limit).
+			document.cookie = `cache_org_active=${encodeURIComponent(branchId)}; path=/;`;
+		}
+
+		return branch;
 	}
 	updateActiveBranch(branch: BranchType) {
 		this.onChangeCallbacks.forEach((cb) => cb(branch));

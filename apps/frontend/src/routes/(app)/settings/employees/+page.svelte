@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import CircleUser from '@solar-icons/svelte/linear/user-circle';
 	import Menu from '@solar-icons/svelte/linear/hamburger-menu';
 	import Package2 from '@solar-icons/svelte/linear/box-minimalistic';
@@ -18,14 +19,12 @@
 	import { trpc } from '$lib/trpc';
 
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
-	data.branchesState.onBranchChange(() => {
-		activeBranch = data.branchesState.getActiveBranch();
-	});
+	const activeBranch = $derived(branchesState.activeBranch);
 	let newEmployee = $state(() => {});
 	onMount(async () => {
-		data.branchesState.updateBranches();
+		branchesState.updateBranches();
 	});
 </script>
 

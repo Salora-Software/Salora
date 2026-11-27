@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import CircleUser from '@solar-icons/svelte/linear/user-circle';
 	import Menu from '@solar-icons/svelte/linear/hamburger-menu';
 	import Package2 from '@solar-icons/svelte/linear/box-minimalistic';
@@ -19,11 +20,12 @@
 	import Layout from '../+layout.svelte';
 	import { SettingsInput, type SettingsInputProps } from '$lib/components/ui/settings-input/index';
 	import { organization } from '$lib/auth-client';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { trpc } from '$lib/trpc';
 	import { env } from '$env/dynamic/public';
 	import { compressImage } from '$lib/utils';
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 	let loading = $state({
 		branchLogo: false
 	});
@@ -34,10 +36,10 @@
 				description: 'De naam van de vestiging.',
 				type: 'input',
 				placeholder: 'Vestiging Naam',
-				value: () => data.branchesState.getActiveBranch()?.name || '',
+				value: () => branchesState.getActiveBranch()?.name || '',
 				onclick: async (value) => {
 					if (typeof value !== 'string') return;
-					let activeBranch = data.branchesState.getActiveBranch();
+					let activeBranch = branchesState.getActiveBranch();
 					if (activeBranch) {
 						await organization.update({
 							organizationId: activeBranch.id,
@@ -54,10 +56,10 @@
 				description: 'Laat klanten weten waar ze je kunnen vinden.',
 				type: 'input',
 				placeholder: 'Nederland, Amsterdam, 1234 AB, Straatnaam 1',
-				value: () => data.branchesState.getActiveBranch()?.location || '',
+				value: () => branchesState.getActiveBranch()?.location || '',
 				onclick: async (value) => {
 					if (typeof value !== 'string') return;
-					let activeBranch = data.branchesState.getActiveBranch();
+					let activeBranch = branchesState.getActiveBranch();
 					if (activeBranch) {
 						await trpc.v1.authenticated.organization.updateLocation.mutate({
 							organizationId: activeBranch.id,
@@ -72,10 +74,10 @@
 				description: 'Laat klanten weten waar ze je kunnen vinden op het web.',
 				type: 'input',
 				placeholder: 'https://example.com',
-				value: () => data.branchesState.getActiveBranch()?.website || '',
+				value: () => branchesState.getActiveBranch()?.website || '',
 				onclick: async (value) => {
 					if (typeof value !== 'string') return;
-					let activeBranch = data.branchesState.getActiveBranch();
+					let activeBranch = branchesState.getActiveBranch();
 					if (activeBranch) {
 						await trpc.v1.authenticated.organization.updateWebsite.mutate({
 							organizationId: activeBranch.id,
@@ -90,10 +92,10 @@
 				description: 'Laat klanten weten waar ze je kunnen bellen.',
 				type: 'input',
 				placeholder: '+31 6 12345678',
-				value: () => data.branchesState.getActiveBranch()?.phone || '',
+				value: () => branchesState.getActiveBranch()?.phone || '',
 				onclick: async (value) => {
 					if (typeof value !== 'string') return;
-					let activeBranch = data.branchesState.getActiveBranch();
+					let activeBranch = branchesState.getActiveBranch();
 					if (activeBranch) {
 						await trpc.v1.authenticated.organization.updatePhone.mutate({
 							organizationId: activeBranch.id,
@@ -108,10 +110,10 @@
 				description: 'Laat klanten weten waar ze je kunnen mailen.',
 				type: 'input',
 				placeholder: 'example@example.com',
-				value: () => data.branchesState.getActiveBranch()?.email || '',
+				value: () => branchesState.getActiveBranch()?.email || '',
 				onclick: async (value) => {
 					if (typeof value !== 'string') return;
-					let activeBranch = data.branchesState.getActiveBranch();
+					let activeBranch = branchesState.getActiveBranch();
 					if (activeBranch) {
 						await trpc.v1.authenticated.organization.updateMail.mutate({
 							organizationId: activeBranch.id,
@@ -131,7 +133,7 @@
 				value: 'Verwijderen',
 				danger: true,
 				onclick: async () => {
-					const activeBranch = data.branchesState.getActiveBranch();
+					const activeBranch = branchesState.getActiveBranch();
 					if (!activeBranch) {
 						toast.error('Er is een fout opgetreden bij het verwijderen van de vestiging');
 						return;
@@ -145,12 +147,17 @@
 			}
 		]
 	});
-	data.branchesState.onBranchChange(async () => {
-		// TODO: Dit werkt erg gaar... Maar werkt!
-		let savedInputs = inputs;
+	const activeBranch = $derived(branchesState.activeBranch);
+
+	$effect(() => {
+		// Re-init the inputs when the active branch changes.
+		const branch = activeBranch;
+		if (!branch) return;
+		const savedInputs = untrack(() => inputs);
 		inputs = {};
-		await tick();
-		inputs = savedInputs;
+		tick().then(() => {
+			inputs = savedInputs;
+		});
 	});
 </script>
 
@@ -178,7 +185,7 @@
 			document.body.removeChild(fileInput);
 			if (!file) return;
 
-			const activeBranch = data.branchesState.getActiveBranch();
+			const activeBranch = branchesState.getActiveBranch();
 			if (!activeBranch) {
 				toast.error('No active branch found');
 				return;
@@ -252,7 +259,7 @@
 				</span>
 			</div>
 			<Avatar.Image
-				src={env.PUBLIC_CDN_URL + data.branchesState.getActiveBranch()?.logo}
+				src={env.PUBLIC_CDN_URL + branchesState.getActiveBranch()?.logo}
 				alt="@shadcn"
 			/>
 			<Avatar.Fallback>

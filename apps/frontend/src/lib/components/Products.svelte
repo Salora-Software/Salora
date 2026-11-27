@@ -26,7 +26,7 @@
 	import { orpcT } from '$lib/orpc';
 	import { isAbortError } from '$lib/is-abort-error';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { getSessionContext } from '$lib/context/session-context';
+	import { getBranchesContext } from '$lib/context/branches-context';
 
 	let {
 		queryClient: queryClientProp,
@@ -48,12 +48,10 @@
 		formState.isSheetOpen = true;
 	};
 
-	// --- Queries (oRPC) ---
-	let session = getSessionContext();
-	let branchesQuery = createQuery(() => orpcT.v1.organisation.getOrganisations.queryOptions());
-
-	let orgId = $derived(session.activeOrganizationId || branchesQuery.data?.[0]?.id || '');
-	let activeBranch = $derived(branchesQuery.data?.find((b) => b.id === orgId));
+	// --- Active branch (shared reactive source) ---
+	const branchesState = getBranchesContext();
+	let activeBranch = $derived(branchesState.activeBranch);
+	let orgId = $derived(activeBranch?.id ?? '');
 
 	let servicesQuery = createQuery(() => ({
 		...orpcT.v1.service.getServices.queryOptions({ input: { organizationId: orgId } }),

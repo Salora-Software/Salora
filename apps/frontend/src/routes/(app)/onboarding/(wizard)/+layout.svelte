@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index';
@@ -17,6 +18,7 @@
 	import { toast } from 'svelte-sonner';
 
 	let { children, data } = $props();
+	const branchesState = getBranchesContext();
 
 	// Maak de wizard state beschikbaar voor alle kind-pagina's
 	const wizard = setWizardState();
@@ -125,7 +127,7 @@
 				await data.queryClient.invalidateQueries({
 					queryKey: orpcT.v1.organisation.getOrganisations.queryKey()
 				});
-				await data.branchesState?.updateBranches(true);
+				await branchesState.updateBranches(true);
 				goto('/');
 			} catch (error) {
 				console.error('Kon onboarding niet afronden:', error);

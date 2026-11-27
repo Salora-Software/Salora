@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { onMount } from 'svelte';
 	import type { ChartConfig } from '$lib/components/ui/chart/index.js';
@@ -149,7 +150,8 @@
 	});
 
 	// Get active branch and customer ID from page state
-	let activeBranch = $state(data.branchesState.getActiveBranch());
+	const branchesState = getBranchesContext();
+	const activeBranch = $derived(branchesState.activeBranch);
 	const organizationId = $derived(activeBranch?.id || '');
 	const customerId = $derived(page.params.id);
 
@@ -190,11 +192,6 @@
 			selectedDates.end = selectedDatesRange.end;
 			selectedDatesRange.open = false;
 		}
-	});
-
-	// Listen for branch changes
-	data.branchesState.onBranchChange((branch) => {
-		activeBranch = branch;
 	});
 
 	// Derived loading state

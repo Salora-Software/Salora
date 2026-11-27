@@ -1,13 +1,15 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { page } from '$app/state';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import { t } from '$lib/translation.js';
 	import { cn } from '$lib/utils.js';
 	import LoaderCircle from '@solar-icons/svelte/linear/loader';
 	let { children, data } = $props();
+	const branchesState = getBranchesContext();
 </script>
 
-{#if (data.branchesState?.value?.branches?.length ?? data.branches?.length ?? 0) !== 0}
+{#if (branchesState.value.branches.length ?? data.branches?.length ?? 0) !== 0}
 	<div class="h-full">
 		<div class="h-full items-center md:flex-row md:items-start md:gap-6">
 			<div class={cn('h-full w-full', !page.data.fullWidth ? 'mx-auto mt-6' : '')}>

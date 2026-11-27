@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import CircleUser from '@solar-icons/svelte/linear/user-circle';
 	import Menu from '@solar-icons/svelte/linear/hamburger-menu';
 	import Package2 from '@solar-icons/svelte/linear/box-minimalistic';
@@ -17,10 +18,10 @@
 	} from '$lib/components/ui/time-slot-scheduler/time-slot-scheduler.svelte';
 	import Loader from '@solar-icons/svelte/linear/loader';
 	import { toast } from 'svelte-sonner';
-	import { onMount } from 'svelte';
 	import { orpc } from '$lib/orpc.js';
 	import { toBusinessHours } from '$lib/utils';
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 	const defaultBusinessLayout: TimeSlot[] = [1, 2, 3, 4, 5].map((day) => ({
 		day,
 		openTime: '',
@@ -32,7 +33,7 @@
 	async function updateOpeningTimes() {
 		pendingDeletion = [];
 		if (!activeBranch) return;
-		await data.branchesState.updateOpeningTimes();
+		await branchesState.updateOpeningTimes();
 		if (activeBranch.openingTimes.length == 0) {
 			businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 			return;
@@ -42,18 +43,13 @@
 			businessHours = defaultBusinessLayout.map((slot) => ({ ...slot }));
 		}
 	}
-	onMount(async () => {
-		activeBranch = data.branchesState.getActiveBranch();
-		if (activeBranch)
-			businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
-		updateOpeningTimes();
-	});
+	const activeBranch = $derived(branchesState.activeBranch);
 
-	let activeBranch = $state(data.branchesState.getActiveBranch());
-	data.branchesState.onBranchChange(() => {
-		activeBranch = data.branchesState.getActiveBranch();
-		if (activeBranch)
-			businessHours = toBusinessHours(activeBranch.openingTimes, activeBranch.timeZone);
+	$effect(() => {
+		const branch = activeBranch;
+		if (branch) {
+			businessHours = toBusinessHours(branch.openingTimes, branch.timeZone);
+		}
 		updateOpeningTimes();
 	});
 </script>
@@ -91,7 +87,7 @@
 				}))
 			});
 			activeBranch.openingTimes = updatedTimes;
-			data.branchesState.updateActiveBranch(activeBranch);
+			branchesState.updateActiveBranch(activeBranch);
 			pendingDeletion = [];
 			toast.success(`Succesvol bijgewerkt`);
 		} catch (error) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getBranchesContext } from '$lib/context/branches-context';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { PasswordInput } from '$lib/components/ui/password-input';
@@ -9,6 +10,7 @@
 	import { trpc, trpcQuery } from '$lib/trpc';
 
 	let { data } = $props();
+	const branchesState = getBranchesContext();
 	let loading = $state(false);
 	let values = $state({
 		smtpServer: '',
@@ -40,7 +42,7 @@
 		loading = true;
 		try {
 			await trpc.v1.authenticated.communication.saveCommunications.mutate({
-				organizationId: data.branchesState.getActiveBranch()?.id!,
+				organizationId: branchesState.activeBranch?.id!,
 				communications: [
 					{
 						type: 'EMAIL',

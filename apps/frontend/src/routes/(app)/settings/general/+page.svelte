@@ -6,6 +6,7 @@
 	import Check from '@solar-icons/svelte/linear/check';
 	import Lock from '@solar-icons/svelte/linear/lock';
 	import { t } from '$lib/translation.js';
+	import { bookingStatusIcons, bookingStatusColors, type BookingStatus } from '$lib/booking-status';
 	import { toast } from 'svelte-sonner';
 	import timezones from '$lib/timezones.json';
 	import * as Select from '$lib/components/ui/select';
@@ -143,18 +144,25 @@
 <p class="mb-1 text-sm text-gray-500">De standaard status die een nieuwe afspraak krijgt.</p>
 <Select.Root type="single" bind:value={form.appointmentStatus}>
 	<Select.Trigger class="mb-8 w-45" disabled={generalSettings.isLoading}>
-		{#if form.appointmentStatus}
+		{@const StatusIcon = bookingStatusIcons[(form.appointmentStatus ?? 'PENDING') as BookingStatus]}
+		<span class="inline-flex items-center gap-1.5">
+			<StatusIcon
+				size="14"
+				class={bookingStatusColors[(form.appointmentStatus ?? 'PENDING') as BookingStatus]}
+			/>
 			{t.database.enums.bookingStatus[
-				form.appointmentStatus as keyof typeof t.database.enums.bookingStatus
+				(form.appointmentStatus ?? 'PENDING') as keyof typeof t.database.enums.bookingStatus
 			]}
-		{:else}
-			{t.database.enums.bookingStatus.PENDING}
-		{/if}
+		</span>
 	</Select.Trigger>
 	<Select.Content>
 		{#each Object.keys(t.database.enums.bookingStatus) as key}
+			{@const StatusIcon = bookingStatusIcons[key as BookingStatus]}
 			<Select.Item value={key}>
-				{t.database.enums.bookingStatus[key as keyof typeof t.database.enums.bookingStatus]}
+				<span class="inline-flex items-center gap-1.5">
+					<StatusIcon size="14" class={bookingStatusColors[key as BookingStatus]} />
+					{t.database.enums.bookingStatus[key as keyof typeof t.database.enums.bookingStatus]}
+				</span>
 			</Select.Item>
 		{/each}
 	</Select.Content>

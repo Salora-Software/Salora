@@ -6,10 +6,10 @@ export const translations = {
 		database: {
 			enums: {
 				bookingStatus: {
-					CONFIRMED: '✅ Bevestigd',
-					COMPLETED: '☑️ Voltooid',
-					CANCELLED: '❌ Geannuleerd',
-					PENDING: '⏳ In afwachting'
+					CONFIRMED: 'Bevestigd',
+					COMPLETED: 'Voltooid',
+					CANCELLED: 'Geannuleerd',
+					PENDING: 'In afwachting'
 				},
 				calendarItemType: {
 					BOOKING: 'Boeking',
@@ -110,10 +110,10 @@ export const translations = {
 		database: {
 			enums: {
 				bookingStatus: {
-					CONFIRMED: '✅ Confirmed',
-					COMPLETED: '☑️ Completed',
-					CANCELLED: '❌ Cancelled',
-					PENDING: '⏳ Pending'
+					CONFIRMED: 'Confirmed',
+					COMPLETED: 'Completed',
+					CANCELLED: 'Cancelled',
+					PENDING: 'Pending'
 				},
 				calendarItemType: {
 					BOOKING: 'Booking',

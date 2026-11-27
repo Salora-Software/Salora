@@ -12,6 +12,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { language, t } from '$lib/translation.js';
+	import { bookingStatusIcons, bookingStatusColors, type BookingStatus } from '$lib/booking-status';
 	import { cn } from '$lib/utils';
 	import { DateFormatter, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	// Import DateValue and DateRange from bits-ui instead to ensure type compatibility
@@ -626,20 +627,34 @@
 									}}
 								>
 									<Select.Trigger class="w-full min-w-25" disabled={item.isUpdating}>
-										<span class="text-foreground">
-											{item.isUpdating
-												? 'Bezig met bijwerken...'
-												: t.database.enums.bookingStatus[
-														item.status as keyof typeof t.database.enums.bookingStatus
-													]}
+										{@const StatusIcon = bookingStatusIcons[item.status as BookingStatus]}
+										<span class="text-foreground inline-flex items-center gap-1.5">
+											{#if item.isUpdating}
+												Bezig met bijwerken...
+											{:else}
+												<StatusIcon
+													size="14"
+													class={bookingStatusColors[item.status as BookingStatus]}
+												/>
+												{t.database.enums.bookingStatus[
+													item.status as keyof typeof t.database.enums.bookingStatus
+												]}
+											{/if}
 										</span>
 									</Select.Trigger>
 									<Select.Content>
 										{#each statusTypes as status}
+											{@const StatusIcon = bookingStatusIcons[status as BookingStatus]}
 											<Select.Item value={status}>
-												{t.database.enums.bookingStatus[
-													status as keyof typeof t.database.enums.bookingStatus
-												]}
+												<span class="inline-flex items-center gap-1.5">
+													<StatusIcon
+														size="14"
+														class={bookingStatusColors[status as BookingStatus]}
+													/>
+													{t.database.enums.bookingStatus[
+														status as keyof typeof t.database.enums.bookingStatus
+													]}
+												</span>
 											</Select.Item>
 										{/each}
 									</Select.Content>

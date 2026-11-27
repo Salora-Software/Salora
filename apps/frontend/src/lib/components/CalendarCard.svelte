@@ -91,6 +91,7 @@
 	import CalendarCardDatePicker from './CalendarCard-DatePicker.svelte';
 	import { Textarea } from './ui/textarea';
 	import { t } from '$lib/translation';
+	import { bookingStatusIcons, bookingStatusColors, type BookingStatus } from '$lib/booking-status';
 	import * as Select from './ui/select';
 	let colorConversion = {
 		red: {
@@ -256,7 +257,7 @@
 						<span
 							class="m-1 ml-[-15px] rotate-[-8deg] transform text-4xl font-semibold text-red-500"
 						>
-							{t.database.enums.bookingStatus[status].slice(1)}
+							{t.database.enums.bookingStatus[status]}
 						</span>
 					{/each}
 				</div>
@@ -399,11 +400,14 @@
 								>
 									<div class="mx-auto my-auto">
 										{#if editData.status}
-											{t.database.enums.bookingStatus[editData.status][0] +
-												t.database.enums.bookingStatus[editData.status][1]}
+											{@const StatusIcon = bookingStatusIcons[editData.status as BookingStatus]}
+											<StatusIcon
+												size="16"
+												class={bookingStatusColors[editData.status as BookingStatus]}
+											/>
 										{:else if status}
-											{t.database.enums.bookingStatus[status][0] +
-												t.database.enums.bookingStatus[status][1]}
+											{@const StatusIcon = bookingStatusIcons[status as BookingStatus]}
+											<StatusIcon size="16" class={bookingStatusColors[status as BookingStatus]} />
 										{:else}
 											<CircleCheck size="16" class="" />
 										{/if}
@@ -421,17 +425,24 @@
 														<div class="flex flex-wrap gap-2">
 															<h2>
 																{editData.status
-																	? t.database.enums.bookingStatus[editData.status].slice(1)
+																	? t.database.enums.bookingStatus[editData.status]
 																	: 'Status van de afspraak'}
 															</h2>
 														</div>
 													</Select.Trigger>
 													<Select.Content>
 														{#each Object.keys(t.database.enums.bookingStatus) as status, index}
+															{@const StatusIcon = bookingStatusIcons[status as BookingStatus]}
 															<Select.Item value={status} class="w-full">
-																{t.database.enums.bookingStatus[
-																	status as keyof typeof t.database.enums.bookingStatus
-																]}
+																<span class="inline-flex items-center gap-2">
+																	<StatusIcon
+																		size="16"
+																		class={bookingStatusColors[status as BookingStatus]}
+																	/>
+																	{t.database.enums.bookingStatus[
+																		status as keyof typeof t.database.enums.bookingStatus
+																	]}
+																</span>
 															</Select.Item>
 														{/each}
 													</Select.Content>
@@ -450,7 +461,7 @@
 														class={cn(editData.status ? '' : 'text-gray-600', 'truncate text-sm ')}
 													>
 														{editData.status
-															? t.database.enums.bookingStatus[editData.status].slice(1)
+															? t.database.enums.bookingStatus[editData.status]
 															: 'Status toevoegen...'}
 													</p>
 												</div>

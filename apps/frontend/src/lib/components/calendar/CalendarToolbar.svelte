@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { DateTime } from 'luxon';
 	import { type DateValue } from '@internationalized/date';
 	import * as Popover from '$lib/components/ui/popover';
@@ -23,7 +24,8 @@
 		onToday,
 		onPick,
 		onCreate,
-		onViewChange
+		onViewChange,
+		trailing
 	}: {
 		selectedDate: DateValue;
 		timezone: string;
@@ -33,8 +35,9 @@
 		onNext: () => void;
 		onToday: () => void;
 		onPick: (date: DateValue) => void;
-		onCreate: () => void;
+		onCreate?: () => void;
 		onViewChange: (view: CalendarView) => void;
+		trailing?: Snippet;
 	} = $props();
 
 	let calendarOpen = $state(false);
@@ -132,9 +135,13 @@
 		</div>
 	</div>
 
-	<Button size="sm" class="h-8 shrink-0 gap-1.5" onclick={onCreate}>
-		<Plus size={16} />
-		<span class="hidden sm:inline">Nieuwe afspraak</span>
-		<span class="sm:hidden">Nieuw</span>
-	</Button>
+	{#if trailing}
+		{@render trailing()}
+	{:else}
+		<Button size="sm" class="h-8 shrink-0 gap-1.5" onclick={() => onCreate?.()}>
+			<Plus size={16} />
+			<span class="hidden sm:inline">Nieuwe afspraak</span>
+			<span class="sm:hidden">Nieuw</span>
+		</Button>
+	{/if}
 </div>

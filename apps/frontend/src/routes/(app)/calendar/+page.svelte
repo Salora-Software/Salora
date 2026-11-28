@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getBranchesContext } from '$lib/context/branches-context';
 	import {
-		AppointmentSheet,
+		CreateAppointmentPopover,
 		CalendarToolbar,
 		WeekStrip,
 		ResourceCalendar,
@@ -37,6 +37,7 @@
 	let selectedDate = $state<DateValue>(today(getLocalTimeZone()));
 	let view = $state<CalendarView>('day');
 	let createAppointmentOpen = $state(false);
+	let createDraft = $state<{ start: Date; end: Date; memberId?: string } | null>(null);
 	let cancelRefetching = $state(false);
 
 	const selectedDT = $derived(
@@ -371,6 +372,16 @@
 		selectedDate = date;
 		view = 'day';
 	}
+	function createFromRange(start: Date, end: Date, memberId?: string) {
+		createDraft = { start, end, memberId };
+		createAppointmentOpen = true;
+	}
+
+	$effect(() => {
+		if (!createAppointmentOpen) {
+			createDraft = null;
+		}
+	});
 </script>
 
 <div class="flex h-[calc(100dvh-4rem)] w-full flex-col overflow-hidden">
@@ -383,9 +394,26 @@
 		onNext={goNext}
 		onToday={goToday}
 		onPick={pickDate}
-		onCreate={() => (createAppointmentOpen = true)}
 		onViewChange={changeView}
-	/>
+	>
+		{#snippet trailing()}
+			<CreateAppointmentPopover
+				bind:open={createAppointmentOpen}
+				branch={activeBranch}
+				{timezone}
+				{selectedDate}
+				initialStart={createDraft
+					? DateTime.fromJSDate(createDraft.start).setZone(timezone)
+					: undefined}
+				initialEnd={createDraft
+					? DateTime.fromJSDate(createDraft.end).setZone(timezone)
+					: undefined}
+				initialMemberId={createDraft?.memberId}
+				onSaved={() =>
+					queryClient.invalidateQueries({ queryKey: ['getCalendar', activeBranch?.id || ''] })}
+			/>
+		{/snippet}
+	</CalendarToolbar>
 
 	{#if view === 'day'}
 		<WeekStrip days={weekStripDays} onSelect={pickDate} />
@@ -403,6 +431,7 @@
 					onEventChange={handleEventChange}
 					onEventDelete={handleEventDelete}
 					onEventSave={handleEventSave}
+					onCreateRange={createFromRange}
 					onDragStateChange={(dragging) => (cancelRefetching = dragging)}
 				/>
 			{/key}
@@ -420,18 +449,10 @@
 					onEventChange={handleEventChange}
 					onEventDelete={handleEventDelete}
 					onEventSave={handleEventSave}
+					onCreateRange={createFromRange}
 					onDragStateChange={(dragging) => (cancelRefetching = dragging)}
 				/>
 			{/key}
 		</div>
 	{/if}
 </div>
-
-<AppointmentSheet
-	bind:open={createAppointmentOpen}
-	branch={activeBranch}
-	{selectedDate}
-	{queryClient}
-	onSaved={() =>
-		queryClient.invalidateQueries({ queryKey: ['getCalendar', activeBranch?.id || ''] })}
-/>

@@ -84,6 +84,26 @@ export type EventDeleteHandler = (id: string) => Promise<void> | void;
 export type EventSaveHandler = (id: string, data: BookingEditData) => Promise<void> | void;
 export type DragStateHandler = (dragging: boolean) => void;
 
+export type SelectionAnchor = {
+	getBoundingClientRect: () => {
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+		top: number;
+		right: number;
+		bottom: number;
+		left: number;
+	};
+};
+
+export type CreateRangeHandler = (
+	start: Date,
+	end: Date,
+	memberId: string | undefined,
+	anchor: SelectionAnchor
+) => void;
+
 export type CalendarUiProps = {
 	services?: ServiceType[];
 	members?: MemberType[];

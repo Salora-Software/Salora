@@ -9,6 +9,7 @@
 	import type { MemberType, ServiceType } from '$lib/trpc';
 	import BookingCard from './BookingCard.svelte';
 	import BookingEditPopover from './BookingEditPopover.svelte';
+	import { dragSelect } from './selection';
 	import {
 		computeLanes,
 		formatBookedDuration,
@@ -19,6 +20,7 @@
 	import type {
 		CalendarEvent,
 		CalendarResource,
+		CreateRangeHandler,
 		DragStateHandler,
 		EventChangeHandler,
 		EventDeleteHandler,
@@ -35,12 +37,14 @@
 		timezone,
 		dayStart,
 		isToday = false,
+		creating = false,
 		hourHeight = 96,
 		class: className,
 		onEventChange,
 		onEventDelete,
 		onEventSave,
-		onDragStateChange
+		onDragStateChange,
+		onCreateRange
 	}: {
 		events: CalendarEvent[];
 		offShift: OffShiftBlock[];
@@ -50,12 +54,14 @@
 		timezone: string;
 		dayStart: Date;
 		isToday?: boolean;
+		creating?: boolean;
 		hourHeight?: number;
 		class?: string;
 		onEventChange: EventChangeHandler;
 		onEventDelete: EventDeleteHandler;
 		onEventSave: EventSaveHandler;
 		onDragStateChange?: DragStateHandler;
+		onCreateRange?: CreateRangeHandler;
 	} = $props();
 
 	const totalHeight = $derived(24 * hourHeight);
@@ -66,6 +72,13 @@
 	let nowMinutes = $state(0);
 	let lastScrollKey = '';
 	let dragPos = $state<Record<string, { x: number; y: number }>>({});
+	let selection = $state<{ key: string; startMin: number; endMin: number } | null>(null);
+
+	$effect(() => {
+		if (!creating) {
+			selection = null;
+		}
+	});
 
 	const eventsByResource = $derived.by(() => {
 		const map = new Map<string, Positioned<CalendarEvent>[]>();
@@ -278,6 +291,29 @@
 						class="border-border/70 relative min-w-[150px] flex-1 border-l"
 						style={`background-image: repeating-linear-gradient(to bottom, var(--calendar-grid-line) 0 1px, transparent 1px ${hourHeight}px), repeating-linear-gradient(to bottom, var(--calendar-grid-line-sub) 0 1px, transparent 1px ${snapPx}px);`}
 					>
+						<div
+							class="absolute inset-0 z-[1] cursor-crosshair touch-none"
+							use:dragSelect={{
+								hourHeight,
+								dayStart,
+								snapMinutes: 15,
+								onPreview: (range) => {
+									selection = range ? { key: resource.id, ...range } : null;
+								},
+								onCreate: (start, end, anchor) => {
+									onCreateRange?.(start, end, resource.virtual ? undefined : resource.id, anchor);
+								}
+							}}
+							aria-hidden="true"
+						></div>
+
+						{#if selection && selection.key === resource.id}
+							<div
+								class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
+								style={`top: ${pxForMinutes(selection.startMin, hourHeight)}px; height: ${pxForMinutes(selection.endMin - selection.startMin, hourHeight)}px;`}
+							></div>
+						{/if}
+
 						{#each blocks as block (block.start.getTime())}
 							<div
 								class="calendar-offshift absolute inset-x-0 rounded-sm"

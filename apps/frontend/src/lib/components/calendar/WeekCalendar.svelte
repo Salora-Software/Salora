@@ -7,6 +7,7 @@
 	import type { MemberType, ServiceType } from '$lib/trpc';
 	import BookingCard from './BookingCard.svelte';
 	import BookingEditPopover from './BookingEditPopover.svelte';
+	import { dragSelect } from './selection';
 	import {
 		computeLanes,
 		formatBookedDuration,
@@ -16,6 +17,7 @@
 	} from './time';
 	import type {
 		CalendarEvent,
+		CreateRangeHandler,
 		DragStateHandler,
 		EventChangeHandler,
 		EventDeleteHandler,
@@ -30,11 +32,13 @@
 		members = [],
 		timezone,
 		hourHeight = 96,
+		creating = false,
 		class: className,
 		onEventChange,
 		onEventDelete,
 		onEventSave,
 		onDragStateChange,
+		onCreateRange,
 		onSelectDay
 	}: {
 		days: WeekDayColumn[];
@@ -43,11 +47,13 @@
 		members?: MemberType[];
 		timezone: string;
 		hourHeight?: number;
+		creating?: boolean;
 		class?: string;
 		onEventChange: EventChangeHandler;
 		onEventDelete: EventDeleteHandler;
 		onEventSave: EventSaveHandler;
 		onDragStateChange?: DragStateHandler;
+		onCreateRange?: CreateRangeHandler;
 		onSelectDay: (date: DateValue) => void;
 	} = $props();
 
@@ -59,6 +65,13 @@
 	let nowMinutes = $state(0);
 	let lastScrollKey = '';
 	let dragPos = $state<Record<string, { x: number; y: number }>>({});
+	let selection = $state<{ key: string; startMin: number; endMin: number } | null>(null);
+
+	$effect(() => {
+		if (!creating) {
+			selection = null;
+		}
+	});
 
 	const memberName = $derived.by(() => {
 		const map = new Map<string, string>();
@@ -236,6 +249,29 @@
 					>
 						{#if day.availableMinutes === 0}
 							<div class="calendar-offshift pointer-events-none absolute inset-0"></div>
+						{/if}
+
+						<div
+							class="absolute inset-0 z-[1] cursor-crosshair touch-none"
+							use:dragSelect={{
+								hourHeight,
+								dayStart: day.dayStart,
+								snapMinutes: 15,
+								onPreview: (range) => {
+									selection = range ? { key: dayKey(day), ...range } : null;
+								},
+								onCreate: (start, end, anchor) => {
+									onCreateRange?.(start, end, undefined, anchor);
+								}
+							}}
+							aria-hidden="true"
+						></div>
+
+						{#if selection && selection.key === dayKey(day)}
+							<div
+								class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
+								style={`top: ${pxForMinutes(selection.startMin, hourHeight)}px; height: ${pxForMinutes(selection.endMin - selection.startMin, hourHeight)}px;`}
+							></div>
 						{/if}
 
 						{#each dayEvents as event (event.id)}

@@ -1,4 +1,4 @@
-export { default as AppointmentSheet } from './AppointmentSheet.svelte';
+export { default as CreateAppointmentPopover } from './CreateAppointmentPopover.svelte';
 export { default as CalendarToolbar } from './CalendarToolbar.svelte';
 export { default as WeekStrip } from './WeekStrip.svelte';
 export { default as ResourceCalendar } from './ResourceCalendar.svelte';
@@ -18,5 +18,6 @@ export type {
 	EventChangeHandler,
 	EventDeleteHandler,
 	EventSaveHandler,
-	DragStateHandler
+	DragStateHandler,
+	CreateRangeHandler
 } from './types';

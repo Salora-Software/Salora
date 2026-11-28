@@ -21,6 +21,7 @@
 	import { trpcQuery } from '$lib/trpc.js';
 	import { language } from '$lib/translation.js';
 	import type { BookingStatus } from '$lib/booking-status';
+	import LoaderCircle from '@solar-icons/svelte/linear/loader';
 	import { DateTime } from 'luxon';
 	import { today, getLocalTimeZone, fromDate, type DateValue } from '@internationalized/date';
 	import {
@@ -93,6 +94,10 @@
 				refetchInterval: cancelRefetching ? false : 5000
 			}
 		)
+	);
+
+	const loading = $derived(
+		calendarQuery.isLoading || (!calendarQuery.data && calendarQuery.isFetching)
 	);
 
 	const roleOrder: Record<string, number> = { owner: 0, admin: 1, employee: 2 };
@@ -467,50 +472,60 @@
 		onViewChange={changeView}
 	/>
 
-	{#if view === 'day'}
-		<WeekStrip days={weekStripDays} onSelect={pickDate} />
-		<div class="min-h-0 flex-1">
-			{#key activeBranch?.id}
-				<ResourceCalendar
-					events={dayEvents}
-					offShift={dayOffShift}
-					{resources}
-					services={activeBranch?.services ?? []}
-					members={activeBranch?.members ?? []}
-					{timezone}
-					dayStart={day.start}
-					{isToday}
-					{selection}
-					onSelectionChange={handleSelectionChange}
-					onEventChange={handleEventChange}
-					onEventDelete={handleEventDelete}
-					onEventSave={handleEventSave}
-					onCreateRange={createFromRange}
-					onDragStateChange={(dragging) => (cancelRefetching = dragging)}
-				/>
-			{/key}
-		</div>
-	{:else}
-		<div class="min-h-0 flex-1">
-			{#key activeBranch?.id}
-				<WeekCalendar
-					days={weekColumns}
-					events={allEvents}
-					services={activeBranch?.services ?? []}
-					members={activeBranch?.members ?? []}
-					{timezone}
-					onSelectDay={openDay}
-					{selection}
-					onSelectionChange={handleSelectionChange}
-					onEventChange={handleEventChange}
-					onEventDelete={handleEventDelete}
-					onEventSave={handleEventSave}
-					onCreateRange={createFromRange}
-					onDragStateChange={(dragging) => (cancelRefetching = dragging)}
-				/>
-			{/key}
-		</div>
-	{/if}
+	<div class="relative flex min-h-0 flex-1 flex-col">
+		{#if view === 'day'}
+			<WeekStrip days={weekStripDays} onSelect={pickDate} />
+			<div class="min-h-0 flex-1">
+				{#key activeBranch?.id}
+					<ResourceCalendar
+						events={dayEvents}
+						offShift={dayOffShift}
+						{resources}
+						services={activeBranch?.services ?? []}
+						members={activeBranch?.members ?? []}
+						{timezone}
+						dayStart={day.start}
+						{isToday}
+						{selection}
+						onSelectionChange={handleSelectionChange}
+						onEventChange={handleEventChange}
+						onEventDelete={handleEventDelete}
+						onEventSave={handleEventSave}
+						onCreateRange={createFromRange}
+						onDragStateChange={(dragging) => (cancelRefetching = dragging)}
+					/>
+				{/key}
+			</div>
+		{:else}
+			<div class="min-h-0 flex-1">
+				{#key activeBranch?.id}
+					<WeekCalendar
+						days={weekColumns}
+						events={allEvents}
+						services={activeBranch?.services ?? []}
+						members={activeBranch?.members ?? []}
+						{timezone}
+						onSelectDay={openDay}
+						{selection}
+						onSelectionChange={handleSelectionChange}
+						onEventChange={handleEventChange}
+						onEventDelete={handleEventDelete}
+						onEventSave={handleEventSave}
+						onCreateRange={createFromRange}
+						onDragStateChange={(dragging) => (cancelRefetching = dragging)}
+					/>
+				{/key}
+			</div>
+		{/if}
+
+		{#if loading}
+			<div
+				class="bg-background/60 absolute inset-0 z-20 flex items-center justify-center backdrop-blur-[1px]"
+			>
+				<LoaderCircle class="text-muted-foreground h-8 w-8 animate-spin" />
+			</div>
+		{/if}
+	</div>
 </div>
 
 {#if createDraft && createDraftEvent}

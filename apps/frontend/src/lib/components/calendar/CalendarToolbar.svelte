@@ -70,7 +70,7 @@
 		<Popover.Root bind:open={calendarOpen}>
 			<Popover.Trigger
 				class={cn(
-					'hover:bg-accent flex h-9 min-w-0 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors'
+					'hover:bg-accent flex h-9 w-60 min-w-0 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors'
 				)}
 			>
 				<CalendarIcon size={16} class="text-muted-foreground shrink-0" />
@@ -85,7 +85,7 @@
 			<button
 				type="button"
 				class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-l-md transition-colors"
-				aria-label="Vorige dag"
+				aria-label="Vorige"
 				onclick={onPrev}
 			>
 				<ChevronLeft size={16} />
@@ -101,18 +101,18 @@
 			<button
 				type="button"
 				class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-r-md transition-colors"
-				aria-label="Volgende dag"
+				aria-label="Volgende"
 				onclick={onNext}
 			>
 				<ChevronRight size={16} />
 			</button>
 		</div>
 
-		<div class="border-border/70 flex items-center gap-0.5 rounded-md border p-0.5">
+		<div class="border-border/70 flex h-8 items-stretch overflow-hidden rounded-md border">
 			<button
 				type="button"
 				class={cn(
-					'rounded px-2 py-0.5 text-xs font-medium transition-colors',
+					'flex h-full items-center px-2.5 text-xs font-medium transition-colors',
 					view === 'day' ? 'bg-accent' : 'text-muted-foreground hover:text-foreground'
 				)}
 				onclick={() => onViewChange('day')}
@@ -122,7 +122,7 @@
 			<button
 				type="button"
 				class={cn(
-					'rounded px-2 py-0.5 text-xs font-medium transition-colors',
+					'border-border/70 flex h-full items-center border-l px-2.5 text-xs font-medium transition-colors',
 					view === 'week' ? 'bg-accent' : 'text-muted-foreground hover:text-foreground'
 				)}
 				onclick={() => onViewChange('week')}

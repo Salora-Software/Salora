@@ -11,6 +11,7 @@
 		type CalendarView,
 		type CalendarEvent,
 		type CalendarResource,
+		type StatusMinutes,
 		type OffShiftBlock,
 		type BookingEditData
 	} from '$lib/components/calendar';
@@ -151,28 +152,41 @@
 			.reduce((sum, block) => sum + (block.end.getTime() - block.start.getTime()) / 60000, 0);
 	}
 
-	function bookedMinutesFor(memberId: string | null): number {
-		return dayEvents
-			.filter((event) => event.memberId === memberId && event.status !== 'CANCELLED')
-			.reduce((sum, event) => sum + overlapMinutes(event.start, event.end, day.start, day.end), 0);
+	function statusMinutesFor(memberId: string | null): StatusMinutes {
+		const result: StatusMinutes = { PENDING: 0, CONFIRMED: 0, COMPLETED: 0, CANCELLED: 0 };
+		for (const event of dayEvents) {
+			if (event.memberId !== memberId || !event.status) continue;
+			result[event.status] += overlapMinutes(event.start, event.end, day.start, day.end);
+		}
+		return result;
+	}
+
+	function bookedTotal(statusMinutes: StatusMinutes): number {
+		return statusMinutes.PENDING + statusMinutes.CONFIRMED + statusMinutes.COMPLETED;
 	}
 
 	const resources = $derived.by<CalendarResource[]>(() => {
-		const list: CalendarResource[] = sortedMembers.map((member) => ({
-			id: member.id,
-			name: member.user.name,
-			avatar: member.user.image ?? undefined,
-			bookedMinutes: bookedMinutesFor(member.id),
-			availableMinutes: Math.max(0, dayMinutes() - offShiftMinutesFor(member.id))
-		}));
+		const list: CalendarResource[] = sortedMembers.map((member) => {
+			const statusMinutes = statusMinutesFor(member.id);
+			return {
+				id: member.id,
+				name: member.user.name,
+				avatar: member.user.image ?? undefined,
+				bookedMinutes: bookedTotal(statusMinutes),
+				availableMinutes: Math.max(0, dayMinutes() - offShiftMinutesFor(member.id)),
+				statusMinutes
+			};
+		});
 
 		const unassigned = dayEvents.filter((event) => !event.memberId);
 		if (unassigned.length > 0) {
+			const statusMinutes = statusMinutesFor(null);
 			list.push({
 				id: '__unassigned__',
 				name: 'Niet toegewezen',
-				bookedMinutes: bookedMinutesFor(null),
+				bookedMinutes: bookedTotal(statusMinutes),
 				availableMinutes: 0,
+				statusMinutes,
 				virtual: true
 			});
 		}

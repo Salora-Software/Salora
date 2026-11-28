@@ -23,12 +23,20 @@ export type OffShiftBlock = {
 	end: Date;
 };
 
+export type StatusMinutes = {
+	PENDING: number;
+	CONFIRMED: number;
+	COMPLETED: number;
+	CANCELLED: number;
+};
+
 export type CalendarResource = {
 	id: string;
 	name: string;
 	avatar?: string;
 	bookedMinutes: number;
 	availableMinutes: number;
+	statusMinutes: StatusMinutes;
 	virtual?: boolean;
 };
 

@@ -5,6 +5,7 @@
 	import { env } from '$env/dynamic/public';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { cn } from '$lib/utils';
+	import { t } from '$lib/translation';
 	import type { MemberType, ServiceType } from '$lib/trpc';
 	import BookingCard from './BookingCard.svelte';
 	import BookingEditPopover from './BookingEditPopover.svelte';
@@ -86,6 +87,36 @@
 		}
 		return map;
 	});
+
+	function statusSegments(resource: CalendarResource) {
+		const statusMinutes = resource.statusMinutes;
+		return [
+			{ key: 'PENDING', minutes: statusMinutes.PENDING, color: 'var(--booking-pending-bar)' },
+			{ key: 'CONFIRMED', minutes: statusMinutes.CONFIRMED, color: 'var(--booking-confirmed-bar)' },
+			{ key: 'COMPLETED', minutes: statusMinutes.COMPLETED, color: 'var(--booking-completed-bar)' }
+		].filter((segment) => segment.minutes > 0);
+	}
+
+	function statusTitle(resource: CalendarResource): string {
+		const statusMinutes = resource.statusMinutes;
+		const parts: string[] = [];
+		if (statusMinutes.PENDING) {
+			parts.push(
+				`${t.database.enums.bookingStatus.PENDING} ${formatBookedDuration(statusMinutes.PENDING)}`
+			);
+		}
+		if (statusMinutes.CONFIRMED) {
+			parts.push(
+				`${t.database.enums.bookingStatus.CONFIRMED} ${formatBookedDuration(statusMinutes.CONFIRMED)}`
+			);
+		}
+		if (statusMinutes.COMPLETED) {
+			parts.push(
+				`${t.database.enums.bookingStatus.COMPLETED} ${formatBookedDuration(statusMinutes.COMPLETED)}`
+			);
+		}
+		return parts.join(' · ');
+	}
 
 	function topPx(start: Date): number {
 		const clamped = Math.max(start.getTime(), dayStart.getTime());
@@ -185,15 +216,22 @@
 									Niet toegewezen
 								</p>
 							{:else}
-								<div class="mt-1 flex items-center gap-1.5">
+								<div class="mt-1 flex items-center gap-1.5" title={statusTitle(resource)}>
 									<span class="text-muted-foreground text-[10px] leading-none tabular-nums">
 										{formatBookedDuration(resource.bookedMinutes)}
 									</span>
 									<div class="bg-muted h-1 flex-1 overflow-hidden rounded-full">
 										<div
-											class="bg-primary h-full rounded-full transition-[width] duration-300"
+											class="flex h-full overflow-hidden rounded-full"
 											style={`width: ${occupancyRatio(resource.bookedMinutes, resource.availableMinutes) * 100}%`}
-										></div>
+										>
+											{#each statusSegments(resource) as segment (segment.key)}
+												<span
+													class="h-full"
+													style={`flex-grow: ${segment.minutes}; flex-basis: 0; background-color: ${segment.color};`}
+												></span>
+											{/each}
+										</div>
 									</div>
 								</div>
 							{/if}

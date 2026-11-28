@@ -8,6 +8,7 @@ export { default as BookingEditPopover } from './BookingEditPopover.svelte';
 export type {
 	CalendarEvent,
 	CalendarResource,
+	StatusMinutes,
 	OffShiftBlock,
 	BookingEditData,
 	DayCapacity,

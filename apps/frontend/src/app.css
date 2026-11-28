@@ -107,6 +107,11 @@
 	--booking-neutral-bg: hsl(220 14% 96%);
 	--booking-neutral-border: hsl(220 10% 86%);
 	--booking-neutral-text: hsl(220 15% 30%);
+
+	/* Booking status bars (saturated for thin capacity bars) */
+	--booking-pending-bar: var(--warning);
+	--booking-confirmed-bar: var(--primary);
+	--booking-completed-bar: var(--success);
 }
 
 .dark {
@@ -202,6 +207,11 @@
 	--booking-neutral-bg: hsl(220 8% 22%);
 	--booking-neutral-border: hsl(220 8% 32%);
 	--booking-neutral-text: hsl(0 0% 90%);
+
+	/* Booking status bars (saturated for thin capacity bars) */
+	--booking-pending-bar: var(--warning);
+	--booking-confirmed-bar: var(--primary);
+	--booking-completed-bar: var(--success);
 }
 
 @theme inline {

@@ -11,43 +11,42 @@
 	font-family: 'Geist', serif;
 }
 :root {
-  --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --icon-primary: var(--primary);
-  --icon-secondary: color-mix(in oklab, var(--primary) 70%, var(--background));
-  --solar-secondary-color: var(--icon-secondary);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+	--radius: 0.5rem;
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.141 0.005 285.823);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.141 0.005 285.823);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.141 0.005 285.823);
+	--primary: oklch(0.623 0.214 259.815);
+	--primary-foreground: oklch(0.97 0.014 254.604);
+	--icon-primary: var(--primary);
+	--icon-secondary: color-mix(in oklab, var(--primary) 70%, var(--background));
+	--solar-secondary-color: var(--icon-secondary);
+	--secondary: oklch(0.967 0.001 286.375);
+	--secondary-foreground: oklch(0.21 0.006 285.885);
+	--muted: oklch(0.967 0.001 286.375);
+	--muted-foreground: oklch(0.552 0.016 285.938);
+	--accent: oklch(0.967 0.001 286.375);
+	--accent-foreground: oklch(0.21 0.006 285.885);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.92 0.004 286.32);
+	--input: oklch(0.92 0.004 286.32);
+	--ring: oklch(0.623 0.214 259.815);
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.141 0.005 285.823);
+	--sidebar-primary: oklch(0.623 0.214 259.815);
+	--sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+	--sidebar-accent: oklch(0.967 0.001 286.375);
+	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+	--sidebar-border: oklch(0.92 0.004 286.32);
+	--sidebar-ring: oklch(0.623 0.214 259.815);
 
-  
 	/* Service category colors for light mode */
 	--category-hair-bg: hsl(210 100% 96%);
 	--category-hair-border: hsl(210 100% 85%);
@@ -82,55 +81,72 @@
 	--warning: hsl(38 92% 60%);
 	--warning-foreground: hsl(0 0% 98%);
 
-	/* Calendar colors for light mode */
-	--calendar-red-border: hsl(0 70% 50%);
-	--calendar-red-background: hsl(0 70% 96%);
-	--calendar-blue-border: hsl(210 100% 50%);
-	--calendar-blue-background: hsl(210 100% 96%);
-	--calendar-green-border: hsl(120 60% 40%);
-	--calendar-green-background: hsl(120 60% 96%);
-	--calendar-yellow-border: hsl(45 85% 40%);
-	--calendar-yellow-background: hsl(45 85% 96%);
-	--calendar-purple-border: hsl(270 60% 45%);
-	--calendar-purple-background: hsl(270 60% 96%);
-	--calendar-pink-border: hsl(330 60% 55%);
-	--calendar-pink-background: hsl(330 60% 96%);
+	/* Calendar grid hairlines */
+	--calendar-grid-line: #e5e7eb;
+	--calendar-grid-line-sub: #eef0f3;
+	--calendar-hatch: hsl(220 9% 46% / 0.14);
+	--calendar-offshift-bg: hsl(220 14% 96% / 0.55);
+
+	/* Booking status colors for light mode */
+	--booking-pending-bg: hsl(38 95% 95%);
+	--booking-pending-border: hsl(38 90% 68%);
+	--booking-pending-text: hsl(30 90% 28%);
+
+	--booking-confirmed-bg: hsl(210 100% 96%);
+	--booking-confirmed-border: hsl(210 90% 72%);
+	--booking-confirmed-text: hsl(214 90% 32%);
+
+	--booking-completed-bg: hsl(152 55% 95%);
+	--booking-completed-border: hsl(152 50% 66%);
+	--booking-completed-text: hsl(161 90% 24%);
+
+	--booking-cancelled-bg: hsl(220 14% 96%);
+	--booking-cancelled-border: hsl(220 10% 86%);
+	--booking-cancelled-text: hsl(220 9% 46%);
+
+	--booking-neutral-bg: hsl(220 14% 96%);
+	--booking-neutral-border: hsl(220 10% 86%);
+	--booking-neutral-text: hsl(220 15% 30%);
+
+	/* Booking status bars (saturated for thin capacity bars) */
+	--booking-pending-bar: var(--warning);
+	--booking-confirmed-bar: var(--primary);
+	--booking-completed-bar: var(--success);
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.546 0.245 262.881);
-  --primary-foreground: oklch(0.379 0.146 265.522);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.379 0.146 265.522);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+	--background: oklch(0.141 0.005 285.823);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.21 0.006 285.885);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.21 0.006 285.885);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.546 0.245 262.881);
+	--primary-foreground: oklch(0.379 0.146 265.522);
+	--secondary: oklch(0.274 0.006 286.033);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.274 0.006 286.033);
+	--muted-foreground: oklch(0.705 0.015 286.067);
+	--accent: oklch(0.274 0.006 286.033);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.488 0.243 264.376);
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+	--sidebar: oklch(0.21 0.006 285.885);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.546 0.245 262.881);
+	--sidebar-primary-foreground: oklch(0.379 0.146 265.522);
+	--sidebar-accent: oklch(0.274 0.006 286.033);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.488 0.243 264.376);
 
-  
 	/* Service category colors for dark mode */
 	--category-hair-bg: hsl(210 30% 15%);
 	--category-hair-border: hsl(210 50% 25%);
@@ -165,19 +181,37 @@
 	--warning: hsl(38 92% 70%);
 	--warning-foreground: hsl(220 15% 6%);
 
-	/* Calendar colors for dark mode - vibrant and offwhite backgrounds */
-	--calendar-red-border: hsl(0 100% 70%);
-	--calendar-red-background: hsl(0 100% 97%);
-	--calendar-blue-border: hsl(210 100% 75%);
-	--calendar-blue-background: hsl(210 100% 97%);
-	--calendar-green-border: hsl(120 70% 65%);
-	--calendar-green-background: hsl(120 60% 97%);
-	--calendar-yellow-border: hsl(45 100% 70%);
-	--calendar-yellow-background: hsl(45 100% 97%);
-	--calendar-purple-border: hsl(270 80% 75%);
-	--calendar-purple-background: hsl(270 60% 97%);
-	--calendar-pink-border: hsl(330 80% 80%);
-	--calendar-pink-background: hsl(330 80% 97%);
+	/* Calendar grid hairlines */
+	--calendar-grid-line: hsl(0 0% 100% / 0.12);
+	--calendar-grid-line-sub: hsl(0 0% 100% / 0.06);
+	--calendar-hatch: hsl(0 0% 100% / 0.1);
+	--calendar-offshift-bg: hsl(0 0% 100% / 0.03);
+
+	/* Booking status colors for dark mode */
+	--booking-pending-bg: hsl(38 55% 18%);
+	--booking-pending-border: hsl(38 70% 38%);
+	--booking-pending-text: hsl(38 100% 78%);
+
+	--booking-confirmed-bg: hsl(210 55% 20%);
+	--booking-confirmed-border: hsl(210 65% 42%);
+	--booking-confirmed-text: hsl(210 100% 82%);
+
+	--booking-completed-bg: hsl(158 45% 17%);
+	--booking-completed-border: hsl(158 45% 34%);
+	--booking-completed-text: hsl(152 70% 76%);
+
+	--booking-cancelled-bg: hsl(220 8% 20%);
+	--booking-cancelled-border: hsl(220 8% 30%);
+	--booking-cancelled-text: hsl(220 9% 62%);
+
+	--booking-neutral-bg: hsl(220 8% 22%);
+	--booking-neutral-border: hsl(220 8% 32%);
+	--booking-neutral-text: hsl(0 0% 90%);
+
+	/* Booking status bars (saturated for thin capacity bars) */
+	--booking-pending-bar: var(--warning);
+	--booking-confirmed-bar: var(--primary);
+	--booking-completed-bar: var(--success);
 }
 
 @theme inline {
@@ -253,19 +287,22 @@
 	--color-warning: var(--warning);
 	--color-warning-foreground: var(--warning-foreground);
 
-	/* Calendar colors */
-	--color-calendar-red-border: var(--calendar-red-border);
-	--color-calendar-red-background: var(--calendar-red-background);
-	--color-calendar-blue-border: var(--calendar-blue-border);
-	--color-calendar-blue-background: var(--calendar-blue-background);
-	--color-calendar-green-border: var(--calendar-green-border);
-	--color-calendar-green-background: var(--calendar-green-background);
-	--color-calendar-yellow-border: var(--calendar-yellow-border);
-	--color-calendar-yellow-background: var(--calendar-yellow-background);
-	--color-calendar-purple-border: var(--calendar-purple-border);
-	--color-calendar-purple-background: var(--calendar-purple-background);
-	--color-calendar-pink-border: var(--calendar-pink-border);
-	--color-calendar-pink-background: var(--calendar-pink-background);
+	/* Booking status colors */
+	--color-booking-pending-bg: var(--booking-pending-bg);
+	--color-booking-pending-border: var(--booking-pending-border);
+	--color-booking-pending-text: var(--booking-pending-text);
+	--color-booking-confirmed-bg: var(--booking-confirmed-bg);
+	--color-booking-confirmed-border: var(--booking-confirmed-border);
+	--color-booking-confirmed-text: var(--booking-confirmed-text);
+	--color-booking-completed-bg: var(--booking-completed-bg);
+	--color-booking-completed-border: var(--booking-completed-border);
+	--color-booking-completed-text: var(--booking-completed-text);
+	--color-booking-cancelled-bg: var(--booking-cancelled-bg);
+	--color-booking-cancelled-border: var(--booking-cancelled-border);
+	--color-booking-cancelled-text: var(--booking-cancelled-text);
+	--color-booking-neutral-bg: var(--booking-neutral-bg);
+	--color-booking-neutral-border: var(--booking-neutral-border);
+	--color-booking-neutral-text: var(--booking-neutral-text);
 }
 
 @layer base {

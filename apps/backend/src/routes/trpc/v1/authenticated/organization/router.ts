@@ -118,6 +118,7 @@ export const router = createRouter({
           website: z.string().nullable(),
           maxMembers: z.number().nullable(),
           timeZone: z.string(),
+          appointmentStatus: z.string(),
           onboardingStep: z.number().nullable(),
           services: z.array(
             z.object({

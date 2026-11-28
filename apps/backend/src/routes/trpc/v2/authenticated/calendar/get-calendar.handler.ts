@@ -89,6 +89,7 @@ export const getCalendarHandler = async ({
 			);
 			const closedIntervals = getClosedIntervals(range, filteredOpenings);
 			return {
+				memberId: member.id,
 				person: member.user.name,
 				date: closedIntervals
 			};

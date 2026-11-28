@@ -97,6 +97,12 @@ export type SelectionAnchor = {
 	};
 };
 
+export type CalendarSelection = {
+	key: string;
+	start: Date;
+	end: Date;
+};
+
 export type CreateRangeHandler = (
 	start: Date,
 	end: Date,

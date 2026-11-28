@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { getBranchesContext } from '$lib/context/branches-context';
 	import {
-		CreateAppointmentPopover,
+		AppointmentSheet,
+		BookingEditPopover,
 		CalendarToolbar,
 		WeekStrip,
 		ResourceCalendar,
@@ -12,11 +13,14 @@
 		type CalendarEvent,
 		type CalendarResource,
 		type StatusMinutes,
+		type SelectionAnchor,
+		type CalendarSelection,
 		type OffShiftBlock,
 		type BookingEditData
 	} from '$lib/components/calendar';
 	import { trpcQuery } from '$lib/trpc.js';
 	import { language } from '$lib/translation.js';
+	import type { BookingStatus } from '$lib/booking-status';
 	import { DateTime } from 'luxon';
 	import { today, getLocalTimeZone, fromDate, type DateValue } from '@internationalized/date';
 	import {
@@ -37,8 +41,28 @@
 	let selectedDate = $state<DateValue>(today(getLocalTimeZone()));
 	let view = $state<CalendarView>('day');
 	let createAppointmentOpen = $state(false);
-	let createDraft = $state<{ start: Date; end: Date; memberId?: string } | null>(null);
+	let createPopoverOpen = $state(false);
+	let createDraft = $state<{
+		start: Date;
+		end: Date;
+		memberId?: string;
+		anchor: SelectionAnchor;
+	} | null>(null);
+	let selection = $state<CalendarSelection | null>(null);
 	let cancelRefetching = $state(false);
+
+	const createDraftEvent = $derived<CalendarEvent | null>(
+		createDraft
+			? {
+					id: '',
+					start: createDraft.start,
+					end: createDraft.end,
+					memberId: createDraft.memberId ?? null,
+					title: '',
+					kind: 'BOOKING' as const
+				}
+			: null
+	);
 
 	const selectedDT = $derived(
 		DateTime.fromJSDate(selectedDate.toDate(timezone)).setZone(timezone).startOf('day')
@@ -372,14 +396,59 @@
 		selectedDate = date;
 		view = 'day';
 	}
-	function createFromRange(start: Date, end: Date, memberId?: string) {
-		createDraft = { start, end, memberId };
-		createAppointmentOpen = true;
+	function createFromRange(
+		start: Date,
+		end: Date,
+		memberId: string | undefined,
+		anchor: SelectionAnchor
+	) {
+		createDraft = { start, end, memberId, anchor };
+		createPopoverOpen = true;
+	}
+
+	function handleSelectionChange(next: CalendarSelection | null) {
+		selection = next;
+	}
+
+	function handleCreateChange(editData: BookingEditData) {
+		if (!selection) return;
+		const start = editData.startDate?.toJSDate();
+		const end = editData.endDate?.toJSDate();
+		if (!start || !end) return;
+
+		let key = selection.key;
+		if (view === 'day') {
+			key = editData.memberId ?? '__unassigned__';
+		} else {
+			const column = weekColumns.find(
+				(day) => start.getTime() >= day.dayStart.getTime() && start.getTime() < day.dayEnd.getTime()
+			);
+			if (column) key = String(column.dayStart.getTime());
+		}
+		selection = { key, start, end };
+	}
+
+	async function handleCreateFromDraft(editData: BookingEditData) {
+		if (!activeBranch?.id) return;
+		const startTime = editData.startDate?.toJSDate() ?? new Date();
+		const endTime = editData.endDate?.toJSDate() ?? new Date();
+		await upsertCalendarItem.mutateAsync({
+			type: 'BOOKING',
+			organizationId: activeBranch.id,
+			title: editData.title,
+			notes: editData.notes,
+			status: editData.status ?? 'PENDING',
+			startTime,
+			endTime,
+			serviceId: editData.serviceId ?? null,
+			memberId: editData.memberId ?? null
+		});
 	}
 
 	$effect(() => {
-		if (!createAppointmentOpen) {
+		if (!createPopoverOpen) {
 			createDraft = null;
+			selection = null;
 		}
 	});
 </script>
@@ -394,26 +463,9 @@
 		onNext={goNext}
 		onToday={goToday}
 		onPick={pickDate}
+		onCreate={() => (createAppointmentOpen = true)}
 		onViewChange={changeView}
-	>
-		{#snippet trailing()}
-			<CreateAppointmentPopover
-				bind:open={createAppointmentOpen}
-				branch={activeBranch}
-				{timezone}
-				{selectedDate}
-				initialStart={createDraft
-					? DateTime.fromJSDate(createDraft.start).setZone(timezone)
-					: undefined}
-				initialEnd={createDraft
-					? DateTime.fromJSDate(createDraft.end).setZone(timezone)
-					: undefined}
-				initialMemberId={createDraft?.memberId}
-				onSaved={() =>
-					queryClient.invalidateQueries({ queryKey: ['getCalendar', activeBranch?.id || ''] })}
-			/>
-		{/snippet}
-	</CalendarToolbar>
+	/>
 
 	{#if view === 'day'}
 		<WeekStrip days={weekStripDays} onSelect={pickDate} />
@@ -428,6 +480,8 @@
 					{timezone}
 					dayStart={day.start}
 					{isToday}
+					{selection}
+					onSelectionChange={handleSelectionChange}
 					onEventChange={handleEventChange}
 					onEventDelete={handleEventDelete}
 					onEventSave={handleEventSave}
@@ -446,6 +500,8 @@
 					members={activeBranch?.members ?? []}
 					{timezone}
 					onSelectDay={openDay}
+					{selection}
+					onSelectionChange={handleSelectionChange}
 					onEventChange={handleEventChange}
 					onEventDelete={handleEventDelete}
 					onEventSave={handleEventSave}
@@ -456,3 +512,31 @@
 		</div>
 	{/if}
 </div>
+
+{#if createDraft && createDraftEvent}
+	<div class="hidden">
+		<BookingEditPopover
+			mode="create"
+			bind:open={createPopoverOpen}
+			event={createDraftEvent}
+			services={activeBranch?.services ?? []}
+			members={activeBranch?.members ?? []}
+			{timezone}
+			anchor={createDraft.anchor}
+			defaultStatus={(activeBranch?.appointmentStatus as BookingStatus) ?? 'PENDING'}
+			onChange={handleCreateChange}
+			onCreate={handleCreateFromDraft}
+		>
+			<span>Nieuwe afspraak</span>
+		</BookingEditPopover>
+	</div>
+{/if}
+
+<AppointmentSheet
+	bind:open={createAppointmentOpen}
+	branch={activeBranch}
+	{selectedDate}
+	{queryClient}
+	onSaved={() =>
+		queryClient.invalidateQueries({ queryKey: ['getCalendar', activeBranch?.id || ''] })}
+/>

@@ -13,7 +13,7 @@ const MINUTES_PER_DAY = 24 * 60;
 /**
  * Click-or-drag on an empty grid column to create a time range. A plain click
  * creates a single snap-sized slot; dragging selects a longer range. The
- * selection stays visible after release so the create popover can anchor to it.
+ * popover opens once the selection is finished, anchored below the selection.
  */
 export function dragSelect(node: HTMLElement, config: DragSelectConfig) {
 	let cfg = config;
@@ -83,6 +83,7 @@ export function dragSelect(node: HTMLElement, config: DragSelectConfig) {
 			// pointer capture may already be released
 		}
 		const { startMin, endMin } = normalized();
+		cfg.onPreview({ startMin, endMin });
 		cfg.onCreate(
 			new Date(cfg.dayStart.getTime() + startMin * 60000),
 			new Date(cfg.dayStart.getTime() + endMin * 60000),

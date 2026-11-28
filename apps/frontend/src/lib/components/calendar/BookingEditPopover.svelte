@@ -19,23 +19,35 @@
 	import { t } from '$lib/translation';
 	import { cn } from '$lib/utils';
 	import type { MemberType, ServiceType } from '$lib/trpc';
-	import type { BookingEditData, CalendarEvent } from './types';
+	import type { BookingEditData, CalendarEvent, SelectionAnchor } from './types';
 
 	let {
 		event,
 		services = [],
 		members = [],
 		timezone = 'UTC',
+		mode = 'edit',
+		open = $bindable(false),
+		anchor,
+		defaultStatus,
 		onSave,
+		onCreate,
 		onDelete,
+		onChange,
 		children
 	}: {
 		event: CalendarEvent;
 		services?: ServiceType[];
 		members?: MemberType[];
 		timezone?: string;
-		onSave: (id: string, data: BookingEditData) => Promise<void> | void;
-		onDelete: (id: string) => Promise<void> | void;
+		mode?: 'edit' | 'create';
+		open?: boolean;
+		anchor?: SelectionAnchor | null;
+		defaultStatus?: BookingStatus;
+		onSave?: (id: string, data: BookingEditData) => Promise<void> | void;
+		onCreate?: (data: BookingEditData) => Promise<void> | void;
+		onDelete?: (id: string) => Promise<void> | void;
+		onChange?: (data: BookingEditData) => void;
 		children: Snippet;
 	} = $props();
 
@@ -44,22 +56,23 @@
 	}
 
 	function baseline(): BookingEditData {
+		const creating = mode === 'create';
 		return {
 			title: event.title ?? '',
 			notes: event.notes ?? '',
-			status: event.status,
+			status: event.status ?? (creating ? (defaultStatus ?? 'PENDING') : undefined),
 			startDate: toDateTime(event.start),
 			endDate: toDateTime(event.end),
-			serviceId: event.serviceId,
-			memberId: event.memberId ?? undefined
+			serviceId: event.serviceId ?? (creating ? services[0]?.id : undefined),
+			memberId: event.memberId ?? (creating ? members[0]?.id : undefined)
 		};
 	}
 
-	let open = $state(false);
 	let saving = $state(false);
 	let deleting = $state(false);
 	let confirmClose = $state(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
+	let baselineData = $state<BookingEditData>(baseline());
 	let editData = $state<BookingEditData>(baseline());
 	let lastServiceId = $state<string | undefined>(event.serviceId);
 	let sections = $state({
@@ -70,25 +83,36 @@
 		notes: false
 	});
 
+	const isCreate = $derived(mode === 'create');
 	const isBooking = $derived(event.kind === 'BOOKING');
 	const hasChanges = $derived(
-		editData.title !== (event.title ?? '') ||
-			editData.notes !== (event.notes ?? '') ||
-			editData.status !== event.status ||
-			editData.startDate?.toMillis() !== toDateTime(event.start).toMillis() ||
-			editData.endDate?.toMillis() !== toDateTime(event.end).toMillis() ||
-			editData.serviceId !== event.serviceId ||
-			editData.memberId !== (event.memberId ?? undefined)
+		editData.title !== baselineData.title ||
+			editData.notes !== baselineData.notes ||
+			editData.status !== baselineData.status ||
+			editData.startDate?.toMillis() !== baselineData.startDate?.toMillis() ||
+			editData.endDate?.toMillis() !== baselineData.endDate?.toMillis() ||
+			editData.serviceId !== baselineData.serviceId ||
+			editData.memberId !== baselineData.memberId
 	);
 
 	let prevOpen = $state(false);
+	let titleTouched = false;
+	let lastEmittedStart = -1;
+	let lastEmittedEnd = -1;
 
 	$effect(() => {
 		if (open && !prevOpen) {
-			editData = baseline();
-			lastServiceId = event.serviceId;
+			const initial = baseline();
+			baselineData = initial;
+			editData = { ...initial };
+			lastServiceId = initial.serviceId;
+			titleTouched = false;
+			lastEmittedStart = -1;
+			lastEmittedEnd = -1;
 			sections = { date: false, status: false, service: false, member: false, notes: false };
-			setTimeout(() => titleInput?.focus(), 30);
+			if (mode === 'edit') {
+				setTimeout(() => titleInput?.focus(), 30);
+			}
 		}
 		prevOpen = open;
 	});
@@ -102,6 +126,26 @@
 		}
 	});
 
+	// Create mode: prefill the title the same way the booking flow does.
+	$effect(() => {
+		if (mode !== 'create' || !open || titleTouched) return;
+		const service = services.find((s) => s.id === editData.serviceId);
+		const title = service?.name ?? '';
+		editData.title = title;
+		baselineData.title = title;
+	});
+
+	// Create mode: reflect the filled-in times back to the grid selection.
+	$effect(() => {
+		if (mode !== 'create' || !open) return;
+		const start = editData.startDate?.toMillis() ?? 0;
+		const end = editData.endDate?.toMillis() ?? 0;
+		if (start === lastEmittedStart && end === lastEmittedEnd) return;
+		lastEmittedStart = start;
+		lastEmittedEnd = end;
+		onChange?.(editData);
+	});
+
 	function requestClose() {
 		if (hasChanges) {
 			confirmClose = true;
@@ -113,7 +157,11 @@
 	async function save() {
 		saving = true;
 		try {
-			await onSave(event.id, editData);
+			if (mode === 'create') {
+				await onCreate?.(editData);
+			} else {
+				await onSave?.(event.id, editData);
+			}
 			open = false;
 		} finally {
 			saving = false;
@@ -123,7 +171,7 @@
 	async function remove() {
 		deleting = true;
 		try {
-			await onDelete(event.id);
+			await onDelete?.(event.id);
 			open = false;
 		} finally {
 			deleting = false;
@@ -145,6 +193,8 @@
 		class="w-80 p-0"
 		sideOffset={8}
 		align="start"
+		side="bottom"
+		customAnchor={anchor ?? undefined}
 		onInteractOutside={(e) => {
 			if (hasChanges) {
 				e.preventDefault();
@@ -157,6 +207,7 @@
 				<input
 					bind:this={titleInput}
 					bind:value={editData.title}
+					oninput={() => (titleTouched = true)}
 					class="focus:border-border min-w-0 flex-1 border-0 border-b border-transparent bg-transparent text-sm font-semibold outline-none"
 					placeholder="Titel toevoegen"
 				/>
@@ -352,14 +403,16 @@
 			</div>
 
 			<Separator class="my-2" />
-			<div class="flex justify-between gap-2 px-3 pb-3">
-				<Button variant="destructive" size="sm" disabled={deleting} onclick={remove}>
-					{#if deleting}<Loader size={14} class="mr-1 animate-spin" />{/if}
-					Verwijder
-				</Button>
+			<div class={cn('flex gap-2 px-3 pb-3', isCreate ? 'justify-end' : 'justify-between')}>
+				{#if !isCreate}
+					<Button variant="destructive" size="sm" disabled={deleting} onclick={remove}>
+						{#if deleting}<Loader size={14} class="mr-1 animate-spin" />{/if}
+						Verwijder
+					</Button>
+				{/if}
 				<Button size="sm" disabled={saving} onclick={save}>
 					{#if saving}<Loader size={14} class="mr-1 animate-spin" />{/if}
-					Opslaan
+					{isCreate ? 'Aanmaken' : 'Opslaan'}
 				</Button>
 			</div>
 		</div>

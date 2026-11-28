@@ -20,6 +20,7 @@
 	import type {
 		CalendarEvent,
 		CalendarResource,
+		CalendarSelection,
 		CreateRangeHandler,
 		DragStateHandler,
 		EventChangeHandler,
@@ -37,14 +38,15 @@
 		timezone,
 		dayStart,
 		isToday = false,
-		creating = false,
 		hourHeight = 96,
+		selection = null,
 		class: className,
 		onEventChange,
 		onEventDelete,
 		onEventSave,
 		onDragStateChange,
-		onCreateRange
+		onCreateRange,
+		onSelectionChange
 	}: {
 		events: CalendarEvent[];
 		offShift: OffShiftBlock[];
@@ -54,14 +56,15 @@
 		timezone: string;
 		dayStart: Date;
 		isToday?: boolean;
-		creating?: boolean;
 		hourHeight?: number;
+		selection?: CalendarSelection | null;
 		class?: string;
 		onEventChange: EventChangeHandler;
 		onEventDelete: EventDeleteHandler;
 		onEventSave: EventSaveHandler;
 		onDragStateChange?: DragStateHandler;
 		onCreateRange?: CreateRangeHandler;
+		onSelectionChange?: (selection: CalendarSelection | null) => void;
 	} = $props();
 
 	const totalHeight = $derived(24 * hourHeight);
@@ -72,13 +75,18 @@
 	let nowMinutes = $state(0);
 	let lastScrollKey = '';
 	let dragPos = $state<Record<string, { x: number; y: number }>>({});
-	let selection = $state<{ key: string; startMin: number; endMin: number } | null>(null);
 
-	$effect(() => {
-		if (!creating) {
-			selection = null;
-		}
-	});
+	function selectionBlock(rangeStart: Date): { top: number; height: number } | null {
+		if (!selection) return null;
+		const dayEndMs = rangeStart.getTime() + 24 * 60 * 60 * 1000;
+		const start = Math.max(selection.start.getTime(), rangeStart.getTime());
+		const end = Math.min(selection.end.getTime(), dayEndMs);
+		if (end <= start) return null;
+		return {
+			top: pxForMinutes((start - rangeStart.getTime()) / 60000, hourHeight),
+			height: Math.max(18, pxForMinutes((end - start) / 60000, hourHeight))
+		};
+	}
 
 	const eventsByResource = $derived.by(() => {
 		const map = new Map<string, Positioned<CalendarEvent>[]>();
@@ -298,7 +306,15 @@
 								dayStart,
 								snapMinutes: 15,
 								onPreview: (range) => {
-									selection = range ? { key: resource.id, ...range } : null;
+									onSelectionChange?.(
+										range
+											? {
+													key: resource.id,
+													start: new Date(dayStart.getTime() + range.startMin * 60000),
+													end: new Date(dayStart.getTime() + range.endMin * 60000)
+												}
+											: null
+									);
 								},
 								onCreate: (start, end, anchor) => {
 									onCreateRange?.(start, end, resource.virtual ? undefined : resource.id, anchor);
@@ -308,10 +324,13 @@
 						></div>
 
 						{#if selection && selection.key === resource.id}
-							<div
-								class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
-								style={`top: ${pxForMinutes(selection.startMin, hourHeight)}px; height: ${pxForMinutes(selection.endMin - selection.startMin, hourHeight)}px;`}
-							></div>
+							{@const block = selectionBlock(dayStart)}
+							{#if block}
+								<div
+									class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
+									style={`top: ${block.top}px; height: ${block.height}px;`}
+								></div>
+							{/if}
 						{/if}
 
 						{#each blocks as block (block.start.getTime())}

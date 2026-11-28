@@ -17,6 +17,7 @@
 	} from './time';
 	import type {
 		CalendarEvent,
+		CalendarSelection,
 		CreateRangeHandler,
 		DragStateHandler,
 		EventChangeHandler,
@@ -32,13 +33,14 @@
 		members = [],
 		timezone,
 		hourHeight = 96,
-		creating = false,
+		selection = null,
 		class: className,
 		onEventChange,
 		onEventDelete,
 		onEventSave,
 		onDragStateChange,
 		onCreateRange,
+		onSelectionChange,
 		onSelectDay
 	}: {
 		days: WeekDayColumn[];
@@ -47,13 +49,14 @@
 		members?: MemberType[];
 		timezone: string;
 		hourHeight?: number;
-		creating?: boolean;
+		selection?: CalendarSelection | null;
 		class?: string;
 		onEventChange: EventChangeHandler;
 		onEventDelete: EventDeleteHandler;
 		onEventSave: EventSaveHandler;
 		onDragStateChange?: DragStateHandler;
 		onCreateRange?: CreateRangeHandler;
+		onSelectionChange?: (selection: CalendarSelection | null) => void;
 		onSelectDay: (date: DateValue) => void;
 	} = $props();
 
@@ -65,13 +68,18 @@
 	let nowMinutes = $state(0);
 	let lastScrollKey = '';
 	let dragPos = $state<Record<string, { x: number; y: number }>>({});
-	let selection = $state<{ key: string; startMin: number; endMin: number } | null>(null);
 
-	$effect(() => {
-		if (!creating) {
-			selection = null;
-		}
-	});
+	function selectionBlock(rangeStart: Date): { top: number; height: number } | null {
+		if (!selection) return null;
+		const dayEndMs = rangeStart.getTime() + 24 * 60 * 60 * 1000;
+		const start = Math.max(selection.start.getTime(), rangeStart.getTime());
+		const end = Math.min(selection.end.getTime(), dayEndMs);
+		if (end <= start) return null;
+		return {
+			top: pxForMinutes((start - rangeStart.getTime()) / 60000, hourHeight),
+			height: Math.max(18, pxForMinutes((end - start) / 60000, hourHeight))
+		};
+	}
 
 	const memberName = $derived.by(() => {
 		const map = new Map<string, string>();
@@ -258,7 +266,15 @@
 								dayStart: day.dayStart,
 								snapMinutes: 15,
 								onPreview: (range) => {
-									selection = range ? { key: dayKey(day), ...range } : null;
+									onSelectionChange?.(
+										range
+											? {
+													key: dayKey(day),
+													start: new Date(day.dayStart.getTime() + range.startMin * 60000),
+													end: new Date(day.dayStart.getTime() + range.endMin * 60000)
+												}
+											: null
+									);
 								},
 								onCreate: (start, end, anchor) => {
 									onCreateRange?.(start, end, undefined, anchor);
@@ -268,10 +284,13 @@
 						></div>
 
 						{#if selection && selection.key === dayKey(day)}
-							<div
-								class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
-								style={`top: ${pxForMinutes(selection.startMin, hourHeight)}px; height: ${pxForMinutes(selection.endMin - selection.startMin, hourHeight)}px;`}
-							></div>
+							{@const block = selectionBlock(day.dayStart)}
+							{#if block}
+								<div
+									class="border-primary/60 bg-primary/15 pointer-events-none absolute inset-x-0 z-[3] rounded-sm border"
+									style={`top: ${block.top}px; height: ${block.height}px;`}
+								></div>
+							{/if}
 						{/if}
 
 						{#each dayEvents as event (event.id)}
